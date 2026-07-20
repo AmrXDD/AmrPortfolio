@@ -93,13 +93,13 @@ export function Preloader() {
           transition={{ duration: 0.9, ease: EASE }}
           className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#000000]"
         >
-          {/* Wordmark */}
+          {/* Wordmark — the site's signature Nexium face */}
           <div
             className="flex select-none items-center justify-center text-[#F5F5F5]"
             style={{
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-nexium), var(--font-display), sans-serif",
               fontSize: "clamp(2.25rem, 7.5vw, 5.5rem)",
-              letterSpacing: "0",
+              letterSpacing: "0.01em",
               lineHeight: 1,
             }}
           >
@@ -110,8 +110,7 @@ export function Preloader() {
               Amr
             </motion.span>
             <motion.span
-              className="italic"
-              style={{ fontFamily: "var(--font-serif)" }}
+              style={{ color: "rgba(245,245,245,0.7)" }}
               animate={split ? { x: "0.5ch" } : {}}
               transition={{ duration: 0.9, ease: EASE }}
             >

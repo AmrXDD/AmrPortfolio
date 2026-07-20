@@ -16,7 +16,7 @@ const STATS = [
 export function About() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const yWord = useTransform(scrollYProgress, [0, 1], ["0%", "-20%"]);
+  const yWord = useTransform(scrollYProgress, [0, 1], ["0%", "-6%"]);
 
   return (
     <section
@@ -79,7 +79,7 @@ export function About() {
 
       <motion.div
         style={{ y: yWord }}
-        className="pointer-events-none absolute -bottom-20 left-0 right-0 select-none text-display text-[clamp(8rem,22vw,24rem)] leading-none italic text-bone/[0.035]"
+        className="pointer-events-none absolute bottom-6 left-0 right-0 select-none whitespace-nowrap text-center text-display text-[clamp(2.75rem,12vw,12rem)] italic leading-none text-bone/[0.05]"
       >
         intention.
       </motion.div>

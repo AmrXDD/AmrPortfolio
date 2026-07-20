@@ -2,17 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif, JetBrains_Mono, Michroma } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import { SmoothScroll } from "@/components/providers/smooth-scroll";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/lib/i18n";
-import { Cursor } from "@/components/ui/cursor";
-import { TopControls } from "@/components/top-controls";
-import { SiteDock } from "@/components/site-dock";
-import { StickyWhatsApp } from "@/components/ui/sticky-whatsapp";
-import { Preloader } from "@/components/preloader";
-import { AmbientPlayer } from "@/components/ui/ambient-player";
-import { ScrollProgress } from "@/components/ui/scroll-progress";
-import { SoundFX } from "@/components/ui/sound-fx";
 import { SITE } from "@/lib/constants";
 
 const inter = Inter({
@@ -214,24 +205,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="grain antialiased">
+      <body className="antialiased">
         <ThemeProvider>
-          <LanguageProvider>
-            <Preloader />
-            <SmoothScroll>
-              <Cursor />
-              <TopControls />
-              <ScrollProgress />
-              <main className="relative z-10">{children}</main>
-              {/* Floating magnifying dock replaces the top navbar */}
-              <SiteDock />
-              <StickyWhatsApp />
-            </SmoothScroll>
-            {/* Minimalist ambient-audio control (bottom-left) */}
-            <AmbientPlayer />
-            {/* Synthesized UI tick sounds on hover/click (gated by sound on/off) */}
-            <SoundFX />
-          </LanguageProvider>
+          <LanguageProvider>{children}</LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
