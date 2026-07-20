@@ -43,7 +43,7 @@ export const STRINGS: Dict = {
   "hero.line2": { en: "engineered with", ar: "مصممة بدقة" },
   "hero.line3": { en: "precision.", ar: "متناهية." },
   "hero.subtitle": {
-    en: "I design and engineer products that feel like culture, not software — studios trust me with the hero moments.",
+    en: "I design and engineer products that feel like culture, not software. Studios trust me with the hero moments.",
     ar: "أصمّم وأبني منتجات تُحسّ كثقافة لا كبرمجيات — تأتمنني الاستوديوهات على أهم اللحظات.",
   },
 
@@ -52,7 +52,7 @@ export const STRINGS: Dict = {
   "work.h2": { en: "proofs", ar: "البراهين" },
   "work.h3": { en: "of practice.", ar: "على الممارسة." },
   "work.intro": {
-    en: "Four recent engagements — one flagship, two shipped, one in the kiln. The cards stack as you scroll; each opens the live site.",
+    en: "Four recent engagements, one flagship, two shipped, one in the kiln. The cards stack as you scroll; each opens the live site.",
     ar: "أربعة مشاريع حديثة — واحد رئيسي، اثنان مُطلقان، وواحد قيد التطوير. تتراكم البطاقات أثناء التمرير، وكل منها يفتح الموقع المباشر.",
   },
 
@@ -73,7 +73,7 @@ export const STRINGS: Dict = {
   "form.reason": { en: "Reason for inquiry / details", ar: "سبب الاستفسار / التفاصيل" },
   "form.send": { en: "Send inquiry", ar: "إرسال الاستفسار" },
   "form.sending": { en: "Sending…", ar: "جارٍ الإرسال…" },
-  "form.success": { en: "Thanks — your inquiry is in. I'll reply shortly.", ar: "شكرًا — تم استلام استفسارك. سأرد قريبًا." },
+  "form.success": { en: "Thanks, your inquiry is in. I'll reply shortly.", ar: "شكرًا، تم استلام استفسارك. سأرد قريبًا." },
   "form.error": { en: "Something went wrong. Try again or use WhatsApp.", ar: "حدث خطأ ما. حاول مجددًا أو استخدم واتساب." },
 };
 

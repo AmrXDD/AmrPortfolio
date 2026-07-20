@@ -86,10 +86,10 @@ export function CaseStudy({
               {flagship ? "Featured Case Study" : "Case Study"}
             </Eyebrow>
             <h2 className="mt-6 text-display size-h2 text-bone">
-              <RevealWords text={project.title.split("—")[0].trim()} />
+              <RevealWords text={project.title.split("·")[0].trim()} />
               <br />
               <span className="italic text-bone/80">
-                <RevealWords text={`— ${project.title.split("—")[1]?.trim() ?? ""}`} delay={0.1} />
+                <RevealWords text={project.title.split("·")[1]?.trim() ?? ""} delay={0.1} />
               </span>
             </h2>
           </div>

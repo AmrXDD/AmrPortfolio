@@ -114,7 +114,7 @@ export default async function AdminPage() {
                           {r.service_label || r.service}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4 tabular-nums text-bone/80">{r.budget || "—"}</td>
+                      <td className="whitespace-nowrap px-5 py-4 tabular-nums text-bone/80">{r.budget || "N/A"}</td>
                       <td className="max-w-md px-5 py-4 text-bone/60">{r.reason}</td>
                     </tr>
                   ))}

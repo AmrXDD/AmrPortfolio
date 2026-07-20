@@ -37,7 +37,7 @@ export function About() {
               <RevealWords text="I build software the way" />
               <br />
               <span className="italic text-bone/90">
-                <RevealWords text="film directors build scenes —" delay={0.1} />
+                <RevealWords text="film directors build scenes" delay={0.1} />
               </span>
               <br />
               <RevealWords text="every frame is a decision," delay={0.2} />
@@ -51,7 +51,7 @@ export function About() {
               {/* words sharpen out of a blur in reading order as you scroll */}
               <ScrollReveal
                 className="text-base leading-relaxed text-bone"
-                text="I'm Amr — a creative developer working at the seam between brand, product, and motion. I lead frontend on flagship work for studios and product teams who care about the millisecond, the kerning, the easing curve."
+                text="I'm Amr, a creative developer working at the seam between brand, product, and motion. I lead frontend on flagship work for studios and product teams who care about the millisecond, the kerning, the easing curve."
               />
               <ScrollReveal
                 className="text-base leading-relaxed text-bone"

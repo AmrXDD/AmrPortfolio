@@ -19,6 +19,11 @@ export function LaptopScene() {
   // frameloop is fully STOPPED (not just our updates) — zero GPU cost.
   const [mounted, setMounted] = useState(false);
   const [active, setActive] = useState(false);
+  // Warm-up window: right after mount we render the scene OFF-screen for a
+  // couple of seconds so the GLTF, environment map, textures and shaders all
+  // compile/upload during page-load idle time — that first compile is the
+  // 1–1.5s stutter, so doing it early (while the user is at the top) removes it.
+  const [warm, setWarm] = useState(false);
   const activeRef = useRef(false);
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 300);
@@ -30,7 +35,7 @@ export function LaptopScene() {
           activeRef.current = e.isIntersecting;
           setActive(e.isIntersecting);
         },
-        { rootMargin: "30% 0px 30% 0px" }
+        { rootMargin: "80% 0px 80% 0px" }
       );
       io.observe(el);
     }
@@ -39,6 +44,14 @@ export function LaptopScene() {
       io?.disconnect();
     };
   }, []);
+
+  // Kick the warm-up once the canvas is mounted, then release it.
+  useEffect(() => {
+    if (!mounted) return;
+    setWarm(true);
+    const t = setTimeout(() => setWarm(false), 2800);
+    return () => clearTimeout(t);
+  }, [mounted]);
 
   const introOpacity = useTransform(scrollYProgress, [0, 0.08, 0.16], [1, 1, 0]);
   const insideOpacity = useTransform(scrollYProgress, [0.42, 0.5, 0.74, 0.82], [0, 1, 1, 0]);
@@ -76,9 +89,10 @@ export function LaptopScene() {
       <div className="sticky top-0 h-screen overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[80vh] w-[80vh] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-[120px]" />
 
-        {/* The real MacBook Pro M3 — frameloop stops entirely off-screen */}
+        {/* The real MacBook Pro M3 — renders during the warm-up window and when
+            on screen; fully stops otherwise. */}
         <div className="absolute inset-0">
-          {mounted ? <LaptopCanvas progress={scrollYProgress} activeRef={activeRef} frameloop={active ? "always" : "never"} /> : null}
+          {mounted ? <LaptopCanvas progress={scrollYProgress} activeRef={activeRef} frameloop={warm || active ? "always" : "never"} /> : null}
         </div>
 
         {/* Intro caption */}

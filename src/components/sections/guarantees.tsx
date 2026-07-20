@@ -9,19 +9,19 @@ const CARDS = [
   {
     no: "01",
     t: "One pair of hands.",
-    b: "Strategy, design, motion, and code — no hand-offs, no telephone game. The person you brief is the person who ships, and nothing gets lost between departments that don't exist.",
+    b: "Strategy, design, motion, and code, no hand offs, no telephone game. The person you brief is the person who ships, and nothing gets lost between departments that don't exist.",
     c: "#FF4D1F",
   },
   {
     no: "02",
     t: "Motion with meaning.",
-    b: "Nothing on screen moves without a reason. Every transition communicates hierarchy, causality, or care — never decoration for its own sake. If an animation doesn't earn its frame budget, it doesn't ship.",
+    b: "Nothing on screen moves without a reason. Every transition communicates hierarchy, causality, or care, never decoration for its own sake. If an animation doesn't earn its frame budget, it doesn't ship.",
     c: "#FFB38A",
   },
   {
     no: "03",
-    t: "Ship-ready, day one.",
-    b: "Production quality from the first commit — performance budgets, accessibility, SEO, and analytics built in, not bolted on. The handover is a deploy key, not a folder of maybes.",
+    t: "Ship ready, day one.",
+    b: "Production quality from the first commit, performance budgets, accessibility, SEO, and analytics built in, not bolted on. The handover is a deploy key, not a folder of maybes.",
     c: "#F5F5F5",
   },
 ];

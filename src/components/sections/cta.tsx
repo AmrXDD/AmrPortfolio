@@ -26,17 +26,18 @@ export function CTA() {
       ref={ref}
       className="relative overflow-hidden border-b border-line bg-ink px-5 py-40 md:px-10 md:py-56"
     >
-      {/* Iridescent glow backdrop */}
+      {/* Iridescent glow backdrop — much smaller & softer on mobile so the
+          saturated colours read as a subtle ambient glow, not harsh blobs */}
       <motion.div
         style={{ y: yA, filter }}
-        className="pointer-events-none absolute -left-32 top-1/3 h-[60vh] w-[60vh] rounded-full opacity-60"
+        className="pointer-events-none absolute -left-24 top-1/3 h-[34vh] w-[34vh] rounded-full opacity-30 md:-left-32 md:h-[60vh] md:w-[60vh] md:opacity-60"
         aria-hidden
       >
         <div className="h-full w-full rounded-full bg-gradient-to-br from-plasma via-accent to-cyan blur-3xl" />
       </motion.div>
       <motion.div
         style={{ y: yB, filter }}
-        className="pointer-events-none absolute -right-32 bottom-1/4 h-[50vh] w-[50vh] rounded-full opacity-50"
+        className="pointer-events-none absolute -right-24 bottom-1/4 h-[30vh] w-[30vh] rounded-full opacity-25 md:-right-32 md:h-[50vh] md:w-[50vh] md:opacity-50"
         aria-hidden
       >
         <div className="h-full w-full rounded-full bg-gradient-to-tr from-cyan to-plasma blur-3xl" />
@@ -52,7 +53,7 @@ export function CTA() {
               </p>
               <ScrollReveal
                 className="mt-3 text-sm leading-relaxed text-bone/90"
-                text="Founding-team work, flagship product launches, brand engineering, and the one-off cinematic landing page that earns a studio its next client."
+                text="Founding team work, flagship product launches, brand engineering, and the one off cinematic landing page that earns a studio its next client."
               />
               <p className="mt-8 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
                 Working from
@@ -80,7 +81,7 @@ export function CTA() {
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <WhatsAppCTA
                 label="Open WhatsApp"
-                message="Hey Amr — saw your portfolio. Want to talk about a project."
+                message="Hey Amr, saw your portfolio. Want to talk about a project."
                 className="!py-4 !px-6 !text-sm"
               />
               <EmailCTA />
@@ -93,7 +94,7 @@ export function CTA() {
                 <ContactRow
                   label="01 · Founding work"
                   title="Build something from zero."
-                  desc="Founder-mode partnership for early-stage product. Design, engineering, brand — one pair of hands."
+                  desc="Founder mode partnership for early stage product. Design, engineering, brand, one pair of hands."
                 />
                 <ContactRow
                   label="02 · Flagship launches"
@@ -103,7 +104,7 @@ export function CTA() {
                 <ContactRow
                   label="03 · Social & growth (SMMA)"
                   title="Own the feed."
-                  desc="Content strategy, paid social, and short-form creative that compounds into pipeline."
+                  desc="Content strategy, paid social, and short form creative that compounds into pipeline."
                 />
               </div>
             </div>

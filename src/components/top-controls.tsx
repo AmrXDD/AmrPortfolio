@@ -84,7 +84,7 @@ export function TopControls() {
         {/* Trailing: restored Hire button */}
         <Magnetic strength={0.2}>
           <a
-            href={waLink("Hey Amr — saw your portfolio. Want to hire you.")}
+            href={waLink("Hey Amr, saw your portfolio. Want to hire you.")}
             target="_blank"
             rel="noreferrer"
             data-cursor="link"

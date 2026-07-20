@@ -18,14 +18,14 @@ export function Process() {
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center sm:mb-20 md:mb-28">
             <p className="text-mono text-[11px] uppercase tracking-[0.3em] text-[#0C0C0C]/45">
-              —— 06 · Process
+              06 · Process
             </p>
             <h2 className="mt-6 text-display uppercase leading-none text-[#0C0C0C]" style={{ fontSize: "clamp(2.6rem, 9.5vw, 9rem)" }}>
               <RevealWords text="Method" />
             </h2>
             <ScrollReveal
               className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-[#0C0C0C]/70"
-              text="A five-beat method for inevitable software — the same sequence, every engagement, no improvisation where it counts."
+              text="A five beat method for inevitable software, the same sequence, every engagement, no improvisation where it counts."
             />
           </div>
 

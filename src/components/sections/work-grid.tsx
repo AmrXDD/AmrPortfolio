@@ -76,7 +76,7 @@ function ProjectNav() {
       <div className="pointer-events-auto" style={{ pointerEvents: inView ? "auto" : "none" }}>
         <p className="mb-4 text-mono text-[9px] uppercase tracking-[0.24em] text-bone/40">Recent Work</p>
         <LineSidebar
-          items={PROJECTS.map((p) => p.title.split("—")[0].trim())}
+          items={PROJECTS.map((p) => p.title.split("·")[0].trim())}
           activeIndex={active}
           accentColor="#ff4d1f"
           textColor="rgba(245,245,245,0.55)"
@@ -154,7 +154,7 @@ function StackCard({
             {p.category} · {p.year}
           </p>
           <h3 className="mt-1 truncate text-display leading-tight text-bone" style={{ fontSize: "clamp(1rem, 1.9vw, 1.7rem)" }}>
-            {p.title.split("—")[0].trim()}
+            {p.title.split("·")[0].trim()}
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <StatusPill status={p.status} />

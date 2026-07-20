@@ -31,7 +31,7 @@ function ChromeBar() {
 
 function CodeEditor() {
   return (
-    <div className="code-editor flex h-full flex-col overflow-hidden text-[11px] leading-[1.7] md:text-[12px]">
+    <div className="code-editor flex h-full flex-col overflow-hidden text-[10px] leading-[1.5] md:text-[11px]">
       <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
         <span className="h-2 w-2 rounded-full bg-accent" />
         <span className="font-mono text-[10px] tracking-wide text-bone/50">Hero.tsx</span>
@@ -50,7 +50,7 @@ function CodeEditor() {
           <>  <span className="tok-punc">)</span></>,
           <><span className="tok-punc">{`}`}</span></>,
           <>&nbsp;</>,
-          <><span className="tok-com">{`// shipped from scratch — no template`}</span></>,
+          <><span className="tok-com">{`// shipped from scratch, no template`}</span></>,
         ].map((ln, i) => (
           <div key={i} className="flex gap-4 whitespace-pre">
             <span className="code-gutter w-5 shrink-0 select-none text-right">{i + 1}</span>
@@ -64,12 +64,12 @@ function CodeEditor() {
 
 function BrowserCard() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-line bg-ash shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-line bg-ash shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]">
       <ChromeBar />
-      {/* screen area locked to the screenshot's exact aspect (1866×965) so the
-          whole shot fits perfectly — no crop, no empty page */}
-      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "1866 / 965", background: "#EFEAE2" }}>
-        <Image src={SITE_SHOT} alt="LivFunctional rendered" fill sizes="(min-width: 768px) 520px, 90vw" className="object-cover" />
+      {/* fills the panel; the panel height is tuned so this matches the shot's
+          ~1.93 aspect → the whole site shows with no crop */}
+      <div className="relative flex-1 overflow-hidden" style={{ background: "#EFEAE2" }}>
+        <Image src={SITE_SHOT} alt="LivFunctional rendered" fill sizes="(min-width: 768px) 520px, 90vw" className="object-cover object-top" />
       </div>
     </div>
   );
@@ -116,21 +116,22 @@ export function BrowserCodeScene() {
         <motion.div style={{ opacity: headOpacity }} className="pointer-events-none absolute left-5 top-20 z-30 md:left-10 md:top-28">
           <Eyebrow index="A4">From Scratch</Eyebrow>
           <h2 className="mt-4 max-w-md text-display text-[clamp(1.75rem,4vw,3.25rem)] leading-[0.95] text-bone">
-            The render and its <span className="italic text-bone/70">source, hand-built.</span>
+            The render and its <span className="italic text-bone/70">source, hand built.</span>
           </h2>
         </motion.div>
 
         {/* 3D tilted unit that straightens on scroll */}
         <motion.div
           style={{ rotateY: rotY, scale, transformOrigin: "50% 50%" }}
-          className="flex w-[min(1040px,90vw)] flex-col gap-4 will-change-transform preserve-3d md:flex-row md:items-stretch md:gap-6"
+          className="flex w-[min(1040px,90vw)] flex-col gap-4 will-change-transform preserve-3d md:h-[clamp(280px,34vh,360px)] md:flex-row md:gap-6"
         >
-          <div className="relative backface-hidden md:flex-1">
+          {/* identical panels: same width (flex-1) and same height (h-full) */}
+          <div className="relative h-[38vh] backface-hidden md:h-full md:flex-1">
             <BrowserCard />
           </div>
           <motion.div
             style={{ opacity: codeOpacity, x: codeX }}
-            className="relative h-[42vh] overflow-hidden rounded-xl border border-line backface-hidden md:h-auto md:flex-1"
+            className="relative h-[38vh] overflow-hidden rounded-xl border border-line backface-hidden md:h-full md:flex-1"
           >
             <CodeEditor />
           </motion.div>

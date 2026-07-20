@@ -8,7 +8,7 @@ import { RevealWords } from "@/components/ui/reveal";
 const TENETS = [
   { n: "01", t: "Restraint is a feature.", b: "Every element on screen is an obligation. Remove until it hurts. Then remove one more." },
   { n: "02", t: "Motion is meaning.", b: "If a transition doesn't communicate hierarchy or causality, it shouldn't exist." },
-  { n: "03", t: "Speed is a love letter.", b: "Frame rate, time-to-interactive, latency — these are how a product respects the person using it." },
+  { n: "03", t: "Speed is a love letter.", b: "Frame rate, time to interactive, latency, these are how a product respects the person using it." },
   { n: "04", t: "Brand lives in the details.", b: "The kerning of the caption. The easing of the toast. The empty state nobody will see." },
 ];
 

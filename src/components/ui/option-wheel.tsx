@@ -133,14 +133,27 @@ export function OptionWheel({
     [clamp]
   );
 
-  // wheel scroll
-  const onWheel = useCallback(
-    (e: React.WheelEvent) => {
+  // wheel scroll — native, non-passive listener spins the wheel.
+  const hostRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
       e.preventDefault();
-      setTarget(targetRef.current + (e.deltaY > 0 ? 1 : -1));
-    },
-    [setTarget]
-  );
+      e.stopPropagation();
+      targetRef.current = clamp(targetRef.current + (e.deltaY > 0 ? 1 : -1));
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [clamp]);
+
+  // Fully freeze the page (Lenis) while the pointer is over the wheel, so the
+  // scroll is captured by the box and never leaks to the page. Belt-and-braces
+  // beyond data-lenis-prevent, which Lenis doesn't always honour here.
+  const lenis = () => (window as unknown as { __lenis?: { stop?: () => void; start?: () => void } }).__lenis;
+  const lockScroll = useCallback(() => lenis()?.stop?.(), []);
+  const unlockScroll = useCallback(() => lenis()?.start?.(), []);
+  useEffect(() => () => lenis()?.start?.(), []); // always release on unmount
 
   // drag
   const dragState = useRef<{ y: number; start: number } | null>(null);
@@ -222,18 +235,21 @@ export function OptionWheel({
 
   return (
     <div
+      ref={hostRef}
       role="listbox"
       aria-label="Option wheel"
       aria-activedescendant={`opt-${selected}`}
       tabIndex={0}
-      onWheel={onWheel}
+      onMouseEnter={lockScroll}
+      onMouseLeave={unlockScroll}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       onKeyDown={onKey}
       data-cursor="drag"
-      data-cursor-label="Drag"
+      data-cursor-label="Scroll"
+      data-lenis-prevent
       className={`relative h-[22rem] w-full touch-none select-none outline-none ${className}`}
       style={{
         perspective: "1000px",

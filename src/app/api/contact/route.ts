@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         replyTo: email,
         subject: `New inquiry — ${service_label} (${budget || "no budget"})`,
         text:
-          `Name: ${name}\nEmail: ${email}\nService: ${service_label}\nBudget: ${budget || "—"}\n\n` +
+          `Name: ${name}\nEmail: ${email}\nService: ${service_label}\nBudget: ${budget || "N/A"}\n\n` +
           `Reason / details:\n${reason}`,
       });
     } catch (e) {

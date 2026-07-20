@@ -7,7 +7,7 @@ import { SITE, NAV_LINKS, waLink } from "@/lib/constants";
 const SOCIAL = [
   { l: "Instagram", h: "https://instagram.com/amrrstudios" },
   { l: "Github", h: "https://github.com/AmrXDD" },
-  { l: "WhatsApp", h: waLink("Hey Amr — saw your portfolio. Let's talk.") },
+  { l: "WhatsApp", h: waLink("Hey Amr, saw your portfolio. Let's talk.") },
 ];
 
 function useTime() {
@@ -34,7 +34,7 @@ export function Footer() {
       {/* Giant signature — centred, single, no repetition */}
       <div className="flex items-center justify-center gap-5 border-y border-line py-10 md:py-14">
         <span className="text-display text-[clamp(2.75rem,11vw,10rem)] leading-none text-bone">
-          Amr <span className="italic text-bone/70">Studio</span>
+          Amr <span className="text-bone/70">Studio</span>
         </span>
         <span className="h-3 w-3 rounded-full bg-accent" />
       </div>
@@ -104,16 +104,16 @@ export function Footer() {
 
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-[1600px] flex-col items-start justify-between gap-4 px-5 py-8 text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40 md:flex-row md:items-center md:px-10">
-          <span>© 2026 {SITE.name} Studio. All work hand-coded.</span>
+          <span>© 2026 {SITE.name} Studio. All work hand coded.</span>
           <span>Built with Next.js 15 · TS · Tailwind · R3F · Framer Motion</span>
           <span>
             3D devices:{" "}
             <a href="https://sketchfab.com/3d-models/macbook-pro-m3-16-inch-2024-8e34fc2b303144f78490007d91ff57c4" target="_blank" rel="noreferrer" className="link-underline">jackbaeten</a>
             {" · "}
             <a href="https://sketchfab.com/3d-models/iphone-15-pro-max-5b7b35513a154ac69619dc2b2fe15686" target="_blank" rel="noreferrer" className="link-underline">MpPower™</a>
-            {" "}(CC-BY-4.0)
+            {" "}(CC BY 4.0)
           </span>
-          <span>v.05 — Site of the day candidate</span>
+          <span>v.05 · Site of the day candidate</span>
         </div>
       </div>
     </footer>

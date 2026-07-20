@@ -30,7 +30,7 @@ export function TechLoop() {
   return (
     <section className="relative border-b border-line px-5 py-16 md:px-10 md:py-20">
       <div className="mx-auto max-w-[1400px]">
-        <Eyebrow index="—">Built with</Eyebrow>
+        <Eyebrow index="✦">Built with</Eyebrow>
         <div className="relative mt-8" style={{ height: 72 }}>
           <LogoLoop
             logos={techLogos}

@@ -33,17 +33,17 @@ type Tok = [string, keyof typeof C];
 // Each inner array is a line of tokens. Deliberately high-impact "chef's
 // secrets" logic — motion hooks, shaders, scroll-bound math — not boilerplate.
 const LINES: Tok[][] = [
-  [["// Bind the type to scroll — tight as a physical instrument", "com"]],
+  [["// Bind the type to scroll, tight as a physical instrument", "com"]],
   [["const ", "key"], ["compile", "fn"], [" = (", "pun"], ["p", "var"], [") => ", "pun"], ["SRC", "var"], [".", "pun"], ["slice", "fn"], ["(0, p * ", "pun"], ["SRC", "var"], [".len)", "pun"]],
   [["", "pun"]],
-  [["// Custom reveal — because layout shift is the enemy", "com"]],
+  [["// Custom reveal, because layout shift is the enemy", "com"]],
   [["export const ", "key"], ["useReveal", "fn"], [" = (", "pun"], ["ref", "var"], [") => {", "pun"]],
   [["  const ", "key"], ["{ scrollYProgress: p }", "var"], [" = ", "pun"], ["useScroll", "fn"], ["(ref)", "pun"]],
   [["  const ", "key"], ["y", "var"], [" = ", "pun"], ["useTransform", "fn"], ["(p, [", "pun"], ["0", "num"], [",", "pun"], ["1", "num"], ["], [", "pun"], ["\"40px\"", "str"], [",", "pun"], ["\"0\"", "str"], ["])", "pun"]],
   [["  return ", "key"], ["useSpring", "fn"], ["(y, { damping: ", "pun"], ["26", "num"], [" })", "pun"]],
   [["}", "pun"]],
   [["", "pun"]],
-  [["// GPU — volumetric ember god-rays", "com"]],
+  [["// GPU: volumetric ember god rays", "com"]],
   [["uniform ", "key"], ["float", "type"], [" iTime;", "var"]],
   [["vec3 ", "type"], ["col", "var"], [" = ", "pun"], ["godRays", "fn"], ["(uv, ", "pun"], ["1.6", "num"], [") * ", "pun"], ["ember", "var"], [";", "pun"]],
   [["float ", "type"], ["glow", "var"], [" = ", "pun"], ["pow", "fn"], ["(", "pun"], ["dot", "fn"], ["(n, l), ", "pun"], ["3.0", "num"], [");", "pun"]],
@@ -103,7 +103,7 @@ export function drawCodeMatrix(ctx: CanvasRenderingContext2D, p: number, time: n
   ctx.textBaseline = "middle";
   ctx.fillText("compile.tsx", 100, 24);
   ctx.fillStyle = C.com;
-  ctx.fillText("live · scroll-compiled", W - 210, 24);
+  ctx.fillText("live · scroll compiled", W - 210, 24);
 
   // divider between code + preview
   const splitX = 600;

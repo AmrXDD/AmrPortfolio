@@ -40,7 +40,7 @@ export function MotionShowcase() {
           <div className="col-span-12 md:col-span-5 md:col-start-8">
             <ScrollReveal
               className="text-sm leading-relaxed text-bone/90"
-              text="Animations don't decorate the interface — they choreograph the user's attention. I treat every easing curve, stagger, and pause as a director treats a cut."
+              text="Animations don't decorate the interface, they choreograph the user's attention. I treat every easing curve, stagger, and pause as a director treats a cut."
             />
           </div>
         </div>
@@ -63,7 +63,7 @@ export function MotionShowcase() {
       <div className="mx-auto mt-24 grid max-w-[1600px] grid-cols-12 gap-4 px-5 md:gap-6 md:px-10">
         <DemoTile
           title="Magnetic"
-          subtitle="Cursor-aware interaction"
+          subtitle="Cursor aware interaction"
           className="col-span-12 md:col-span-4"
         >
           <div className="relative flex h-full items-center justify-center">
@@ -101,7 +101,7 @@ export function MotionShowcase() {
 
         <DemoTile
           title="Iridescence"
-          subtitle="GPU-driven color"
+          subtitle="GPU driven color"
           className="col-span-12 md:col-span-4"
         >
           <motion.div

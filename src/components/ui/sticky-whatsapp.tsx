@@ -50,7 +50,7 @@ export function StickyWhatsApp() {
                   Replying in minutes. Tell me what you&apos;re building.
                 </p>
                 <a
-                  href={waLink("Hey Amr — saw your portfolio. Want to talk about a project.")}
+                  href={waLink("Hey Amr, saw your portfolio. Want to talk about a project.")}
                   target="_blank"
                   rel="noreferrer"
                   data-cursor="link"
@@ -64,7 +64,7 @@ export function StickyWhatsApp() {
           </AnimatePresence>
 
           <a
-            href={waLink("Hey Amr — saw your portfolio. Want to talk about a project.")}
+            href={waLink("Hey Amr, saw your portfolio. Want to talk about a project.")}
             target="_blank"
             rel="noreferrer"
             data-cursor="link"

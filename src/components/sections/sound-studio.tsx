@@ -7,7 +7,7 @@ import { RevealWords } from "@/components/ui/reveal";
 import { useTheme } from "@/components/providers/theme-provider";
 import { CLICK_SOUND } from "@/lib/constants";
 
-const GENRES = ["Ambient", "House", "Techno", "Jazz", "Lo-Fi", "Synthwave"];
+const GENRES = ["Ambient", "House", "Techno", "Jazz", "Lo Fi", "Synthwave"];
 
 export function SoundStudio() {
   const { theme } = useTheme();
@@ -25,7 +25,7 @@ export function SoundStudio() {
           </h2>
           <p className="mt-5 max-w-md text-sm leading-relaxed text-bone/65">
             Drag, scroll, or arrow through the wheel. The soft click you hear is the very
-            same tick wired into every interactive element across the site — motion and
+            same tick wired into every interactive element across the site, motion and
             sound treated as one material.
           </p>
         </div>

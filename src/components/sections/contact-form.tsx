@@ -6,7 +6,7 @@ import { ArrowUpRight } from "lucide-react";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
-const BUDGETS = ["< $2k", "$2k – $5k", "$5k – $10k", "$10k – $25k", "$25k+"];
+const BUDGETS = ["Under $2k", "$2k to $5k", "$5k to $10k", "$10k to $25k", "$25k+"];
 
 export function ContactForm() {
   const { t, lang } = useLang();
@@ -61,7 +61,7 @@ export function ContactForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2">
           <span className="text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50">{t("form.name")}</span>
-          <input name="name" required autoComplete="name" className={field} placeholder="—" />
+          <input name="name" required autoComplete="name" className={field} placeholder="Your name" />
         </label>
         <label className="grid gap-2">
           <span className="text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50">{t("form.email")}</span>
@@ -116,7 +116,7 @@ export function ContactForm() {
       {/* Reason for inquiry / details */}
       <label className="grid gap-2">
         <span className="text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50">{t("form.reason")}</span>
-        <textarea name="reason" rows={4} required className={`${field} resize-none`} placeholder="—" />
+        <textarea name="reason" rows={4} required className={`${field} resize-none`} placeholder="Tell me what you're building" />
       </label>
 
       <div className="flex flex-wrap items-center gap-4">

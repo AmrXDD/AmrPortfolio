@@ -125,7 +125,7 @@ export function FullStack() {
     return (
       <section id="stack" className="relative border-b border-line bg-ink px-5 py-24">
         <div className="mx-auto max-w-[560px]">
-          <Eyebrow index="01">Full-Stack</Eyebrow>
+          <Eyebrow index="01">Full Stack</Eyebrow>
           <h2 className="mt-5 text-display size-h2 text-bone">
             One developer, <span className="italic text-bone/70">the whole stack.</span>
           </h2>
@@ -155,12 +155,12 @@ export function FullStack() {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="pointer-events-none absolute left-5 top-24 z-10 md:left-10 md:top-28"
         >
-          <Eyebrow index="01">Full-Stack</Eyebrow>
+          <Eyebrow index="01">Full Stack</Eyebrow>
           <h2 className="mt-4 max-w-md text-display text-[clamp(1.75rem,4vw,3.25rem)] leading-[0.95] text-bone">
             One developer, <span className="italic text-bone/70">the whole stack.</span>
           </h2>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-bone/55">
-            Every layer, end to end — shipped by one pair of hands.
+            Every layer, end to end, shipped by one pair of hands.
           </p>
         </motion.div>
 

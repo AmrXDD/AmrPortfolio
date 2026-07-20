@@ -42,7 +42,7 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-const siteTitle = `${SITE.brand} — ${SITE.role}`;
+const siteTitle = `${SITE.brand} · ${SITE.role}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),

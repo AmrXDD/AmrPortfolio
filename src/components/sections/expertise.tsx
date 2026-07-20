@@ -24,7 +24,7 @@ export function Expertise() {
           <div className="col-span-12 md:col-span-5 md:col-start-8">
             <Reveal>
               <p className="text-sm leading-relaxed text-bone/65">
-                I&apos;m a one-person studio for the things that matter most — strategy,
+                I&apos;m a one person studio for the things that matter most, strategy,
                 interaction, motion, and shipping. For everything else I assemble teams I
                 trust and lead them on the work.
               </p>
