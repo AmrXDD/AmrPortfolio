@@ -1,0 +1,6 @@
+.agents
+.git
+node_modules
+.next
+*.log
+skills-lock.json
