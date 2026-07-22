@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Logo } from "@/components/ui/logo";
-import { buildContract, buildWelcome, buildWhatsNext, type ContractData } from "./doc-builders";
+import { buildContract, type ContractData } from "./doc-builders";
+import { buildContractPdf, buildWelcomePdf, buildWhatsNextPdf } from "./pdf-builders";
 
 const CURRENCIES = ["USD", "KWD", "EUR", "GBP", "AED", "SAR", "EGP"];
 
@@ -21,34 +22,16 @@ const field =
   "w-full rounded-xl border border-line bg-white/[0.03] px-4 py-3 text-sm text-bone placeholder:text-bone/30 outline-none transition-colors focus:border-bone/40";
 const lab = "text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50";
 
-/* Renders the exact HTML document off-screen (real fonts, real CSS) and
-   captures it into an A4 PDF, so the PDF looks identical to the HTML. */
-async function htmlToPdf(html: string, filename: string) {
-  const html2pdf = (await import("html2pdf.js")).default;
-  const frame = document.createElement("iframe");
-  frame.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;";
-  document.body.appendChild(frame);
-  try {
-    const doc = frame.contentDocument!;
-    doc.open();
-    doc.write(html);
-    doc.close();
-    await new Promise((r) => setTimeout(r, 60));
-    await doc.fonts.ready; // Nexium must be in before capture
-    await html2pdf()
-      .set({
-        margin: 0,
-        filename,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, backgroundColor: "#000000", windowWidth: 794 },
-        jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      })
-      .from(doc.body)
-      .save();
-  } finally {
-    frame.remove();
-  }
+function download(filename: string, bytes: Uint8Array) {
+  const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 export function ContractTool() {
@@ -97,10 +80,10 @@ export function ContractTool() {
     try {
       setGenerated(d);
       const base = slug(d.clientName);
-      // Three PDFs captured from the exact same HTML documents.
-      await htmlToPdf(buildContract(d), `Contract-${base}-${d.dateOfIssue}.pdf`);
-      await htmlToPdf(buildWelcome(d), `Welcome-${base}.pdf`);
-      await htmlToPdf(buildWhatsNext(d), `Whats-Next-${base}.pdf`);
+      // Three native PDFs, all built from the same details.
+      download(`Contract-${base}-${d.dateOfIssue}.pdf`, await buildContractPdf(d));
+      download(`Welcome-${base}.pdf`, await buildWelcomePdf(d));
+      download(`Whats-Next-${base}.pdf`, await buildWhatsNextPdf(d));
     } catch (e) {
       console.error(e);
       setError("PDF generation failed. Check the console and try again.");
