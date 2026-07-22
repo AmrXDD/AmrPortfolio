@@ -19,9 +19,11 @@ export default async function AdminPage() {
           <div className="w-full max-w-md rounded-2xl border border-line bg-white/[0.02] p-8">
             <h1 className="text-lg font-semibold text-bone">Admin not configured</h1>
             <p className="mt-3 text-sm leading-relaxed text-bone/60">
-              Set <code className="text-accent">ADMIN_EMAIL</code> and{" "}
-              <code className="text-accent">ADMIN_PASSWORD</code> (plus your Supabase keys) in{" "}
-              <code className="text-accent">.env.local</code>, then restart the dev server.
+              Add your Supabase keys (<code className="text-accent">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+              <code className="text-accent">SUPABASE_SERVICE_ROLE_KEY</code>) to{" "}
+              <code className="text-accent">.env.local</code>, run{" "}
+              <code className="text-accent">supabase/schema.sql</code>, then restart the dev server.
+              Admin users live in the database, not env vars.
             </p>
           </div>
         </Centered>
