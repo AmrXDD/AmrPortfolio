@@ -164,7 +164,17 @@ function Frame({ children, showLogout = false }: { children: React.ReactNode; sh
           <span className="text-bone/25">/</span>
           <span className="text-mono text-[11px] uppercase tracking-[0.24em] text-bone/45">Admin</span>
         </div>
-        {showLogout ? <LogoutButton /> : null}
+        {showLogout ? (
+          <div className="flex items-center gap-4">
+            <a
+              href="/admin/contract"
+              className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent"
+            >
+              Contracts
+            </a>
+            <LogoutButton />
+          </div>
+        ) : null}
       </header>
       <div className="px-6 py-10 md:px-10">{children}</div>
     </main>

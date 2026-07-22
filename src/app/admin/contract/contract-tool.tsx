@@ -101,7 +101,12 @@ export function ContractTool() {
           <span className="text-bone/25">/</span>
           <span className="text-mono text-[11px] uppercase tracking-[0.24em] text-bone/45">Contracts</span>
         </div>
-        <span className="text-mono text-[10px] uppercase tracking-[0.22em] text-accent/80">Generator</span>
+        <a
+          href="/admin"
+          className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent"
+        >
+          Inquiries
+        </a>
       </header>
 
       <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-10 md:px-10 lg:grid-cols-[420px_1fr]">
