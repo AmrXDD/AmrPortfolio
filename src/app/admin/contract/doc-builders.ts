@@ -23,7 +23,9 @@ export type ContractData = {
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const FONT_URL = "https://amrstudio.vercel.app/fonts/Nexium.otf";
+// Same-origin so the in-app preview, print path, and html2pdf capture all
+// load the real Nexium face without CORS issues.
+const FONT_URL = "/fonts/Nexium.otf";
 
 export const fmtDate = (iso: string) => {
   const d = iso ? new Date(iso + "T12:00:00") : new Date();
@@ -73,13 +75,12 @@ function shell(title: string, body: string, accentLabel: string) {
   .step { display: flex; gap: 18px; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin-top: 12px; }
   .step .no { color: var(--accent); font-size: 22px; line-height: 1; min-width: 34px; }
   .step h3 { font-size: 15px; margin-bottom: 4px; }
+  /* Keep whole blocks together when paginating (print + html2pdf capture). */
+  .rule, .step, table, .sig-grid, h2 { break-inside: avoid; page-break-inside: avoid; }
+  /* Print keeps the exact same dark look; force background graphics on. */
   @media print {
-    :root { --ink:#fff; --bone:#111; --line:rgba(0,0,0,0.2); --muted:rgba(0,0,0,0.55); }
-    body { background: #fff; color: #111; }
-    p, li { color: rgba(0,0,0,0.85); }
-    .ring::after { background: #fff; color: #111; }
-    .sig .line { border-bottom-color: rgba(0,0,0,0.5); }
-    .page { padding: 24px 8px; }
+    html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: var(--ink); }
+    .page { padding: 28px 12px; }
   }
 </style></head>
 <body><div class="page">
