@@ -1,17 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Logo } from "@/components/ui/logo";
+import { SITE } from "@/lib/constants";
 
 const EASE = [0.76, 0, 0.24, 1] as const;
+const LOADER_SCALE = 2.6; // how much bigger the logo is on the loader vs its final size
 
 export function Preloader() {
   const [count, setCount] = useState(0);
   const [phase, setPhase] = useState<"count" | "ready" | "exit">("count");
   const [mounted, setMounted] = useState(true);
+  // vertical offset (from viewport centre) the logo glides to on exit
+  const [targetY, setTargetY] = useState(0);
+  const [wordW, setWordW] = useState(0);
+  const wordRef = useRef<HTMLSpanElement>(null);
   const lockedRef = useRef(false);
 
-  // Lock scroll immediately
+  // Measure the wordmark's natural width so we can wipe it open cleanly.
+  useLayoutEffect(() => {
+    if (wordRef.current) setWordW(wordRef.current.scrollWidth || wordRef.current.offsetWidth);
+  }, []);
+
+  // Lock scroll immediately, and keep it locked until the visitor chooses.
   useEffect(() => {
     document.documentElement.classList.add("preloading");
     (window as unknown as { __lenis?: { stop?: () => void } }).__lenis?.stop?.();
@@ -20,16 +32,15 @@ export function Preloader() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Count 00 → 100, then reveal the sound choice.
+  // Count 00 → 100, then reveal the wordmark + sound choice.
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const dur = reduce ? 400 : 1700;
+    const dur = reduce ? 500 : 1900;
     const start = performance.now();
     let raf = 0;
     const tick = (t: number) => {
       const e = Math.min(1, (t - start) / dur);
-      const eased = 1 - Math.pow(1 - e, 3);
-      setCount(Math.round(eased * 100));
+      setCount(Math.round((1 - Math.pow(1 - e, 3)) * 100));
       if (e < 1) raf = requestAnimationFrame(tick);
       else setPhase((p) => (p === "count" ? "ready" : p));
     };
@@ -42,33 +53,30 @@ export function Preloader() {
     const t = setTimeout(() => {
       setCount(100);
       setPhase((p) => (p === "count" ? "ready" : p));
-    }, 2600);
+    }, 3000);
     return () => clearTimeout(t);
   }, []);
 
-  // If the visitor doesn't choose within a while, enter silently so it never hangs.
-  useEffect(() => {
-    if (phase !== "ready") return;
-    const t = setTimeout(() => enter(false), 8000);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  // Release the scroll lock as the overlay begins to fade, and HARD-unmount
-  // after the transition even if onExitComplete never fires (e.g. rAF throttled
-  // on a backgrounded/slow load) — so the overlay can never get stuck.
-  useEffect(() => {
-    if (phase !== "exit") return;
-    unlock();
-    const t = setTimeout(() => setMounted(false), 1300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  // NO auto-enter and NO auto-sound: the loader waits indefinitely for a click.
 
   function enter(sound: boolean) {
     if (phase === "exit") return;
+    // Both the loader group and the top-bar group are horizontally centred, so
+    // we only need the vertical glide: measure the top-bar brand row's centre.
+    const tc = document.querySelector('a[aria-label="Back to top"]') as HTMLElement | null;
+    if (tc) {
+      const r = tc.getBoundingClientRect();
+      setTargetY(r.top + r.height / 2 - window.innerHeight / 2);
+    } else {
+      setTargetY(-(window.innerHeight / 2 - 34));
+    }
     window.dispatchEvent(new CustomEvent("ambient:start", { detail: { on: sound } }));
+    unlock();
     setPhase("exit");
+    // Reveal the top-bar logo exactly when the glide lands (matches the 1.05s
+    // transition), then unmount the loader just after so the handoff is seamless.
+    setTimeout(() => window.dispatchEvent(new CustomEvent("brand:reveal")), 1050);
+    setTimeout(() => setMounted(false), 1300);
   }
 
   function unlock() {
@@ -81,96 +89,90 @@ export function Preloader() {
 
   if (!mounted) return null;
 
-  const split = phase !== "count";
+  const exiting = phase === "exit";
+  const showWord = phase !== "count";
 
   return (
-    <AnimatePresence onExitComplete={() => setMounted(false)}>
-      {phase !== "exit" && (
+    <div className="fixed inset-0 z-[200] overflow-hidden" style={{ pointerEvents: exiting ? "none" : "auto" }}>
+      {/* Black backdrop that fades away as we glide out */}
+      <motion.div
+        className="absolute inset-0 bg-black"
+        animate={{ opacity: exiting ? 0 : 1 }}
+        transition={{ duration: 0.9, ease: EASE, delay: exiting ? 0.2 : 0 }}
+      />
+
+      {/* Centre stage: the logo + wordmark group, centred, that glides up to
+          its resting place on the top bar. Only the group is centred, so both
+          loader and top-bar align horizontally and we only move vertically. */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
-          key="preloader"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.12, filter: "blur(6px)" }}
-          transition={{ duration: 0.9, ease: EASE }}
-          className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#000000]"
+          className="flex items-center"
+          animate={{ y: exiting ? targetY : 0, scale: exiting ? 1 : LOADER_SCALE }}
+          transition={{ duration: 1.05, ease: EASE }}
         >
-          {/* Wordmark — the site's signature Nexium face */}
-          <div
-            className="flex select-none items-center justify-center text-[#F5F5F5]"
-            style={{
-              fontFamily: "var(--font-nexium), var(--font-display), sans-serif",
-              fontSize: "clamp(2.25rem, 7.5vw, 5.5rem)",
-              letterSpacing: "0.01em",
-              lineHeight: 1,
-            }}
+          <Logo size={26} />
+          {/* wordmark wipes open from the logo's edge once loaded, then rides
+              along to its resting spot next to the top-bar logo */}
+          <motion.div
+            className="overflow-hidden"
+            initial={false}
+            animate={{ width: showWord ? wordW : 0, marginLeft: showWord ? 10 : 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: showWord && !exiting ? 0.15 : 0 }}
           >
-            <motion.span
-              animate={split ? { x: "-0.5ch", marginRight: "clamp(2rem,11vw,9rem)" } : {}}
-              transition={{ duration: 0.9, ease: EASE }}
+            <span
+              ref={wordRef}
+              className="text-mono block w-max whitespace-nowrap text-[11px] uppercase tracking-[0.24em] text-[#f5f5f5]"
             >
-              Amr
-            </motion.span>
-            <motion.span
-              style={{ color: "rgba(245,245,245,0.7)" }}
-              animate={split ? { x: "0.5ch" } : {}}
-              transition={{ duration: 0.9, ease: EASE }}
-            >
-              Studio
-            </motion.span>
-          </div>
-
-          {/* Sound choice — appears once loaded */}
-          <AnimatePresence>
-            {phase === "ready" ? (
-              <motion.div
-                key="choice"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 0.35, duration: 0.6, ease: EASE }}
-                className="mt-12 flex flex-col items-center gap-4"
-              >
-                <span className="text-mono text-[10px] uppercase tracking-[0.34em] text-[#F5F5F5]/45">
-                  Best experienced with sound
-                </span>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => enter(true)}
-                    className="rounded-full bg-[#F5F5F5] px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#000] transition-transform duration-300 hover:scale-[1.04]"
-                  >
-                    Enter with sound
-                    <span className="ml-2 text-[#FF4D1F]">●</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => enter(false)}
-                    className="rounded-full border border-[#F5F5F5]/25 px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F5F5]/70 transition-colors duration-300 hover:border-[#F5F5F5]/60 hover:text-[#F5F5F5]"
-                  >
-                    Enter silent
-                  </button>
-                </div>
-                <span className="text-mono text-[9px] uppercase tracking-[0.3em] text-[#F5F5F5]/30">
-                  Recommended: sound on
-                </span>
-                <span className="mt-1 max-w-[280px] text-center text-mono text-[9px] uppercase leading-relaxed tracking-[0.22em] text-[#FF4D1F]/70">
-                  For the best experience, visit on a laptop / desktop
-                </span>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-
-          {/* Loading percentage */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#F5F5F5]/60 md:bottom-10" style={{ fontFamily: "var(--font-mono)" }}>
-            <motion.span
-              animate={phase !== "count" ? { opacity: 0 } : { opacity: 1 }}
-              transition={{ duration: 0.4 }}
-              className="text-[11px] uppercase tracking-[0.4em] tabular-nums"
-            >
-              {String(count).padStart(2, "0")}
-            </motion.span>
-          </div>
+              {SITE.name}/studio
+            </span>
+          </motion.div>
         </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+
+      {/* Sound choice — appears once loaded, fades on exit */}
+      <motion.div
+        className="absolute inset-x-0 top-[58%] flex flex-col items-center gap-4"
+        animate={{ opacity: phase === "ready" ? 1 : 0, y: phase === "ready" ? 0 : 14 }}
+        transition={{ duration: 0.55, ease: EASE, delay: phase === "ready" ? 0.55 : 0 }}
+        style={{ pointerEvents: phase === "ready" ? "auto" : "none" }}
+      >
+        <span className="text-mono text-[10px] uppercase tracking-[0.34em] text-[#F5F5F5]/45">
+          Best experienced with sound
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => enter(true)}
+            className="rounded-full bg-[#F5F5F5] px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#000] transition-transform duration-300 hover:scale-[1.04]"
+          >
+            Enter with sound
+            <span className="ml-2 text-[#FF4D1F]">●</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => enter(false)}
+            className="rounded-full border border-[#F5F5F5]/25 px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F5F5]/70 transition-colors duration-300 hover:border-[#F5F5F5]/60 hover:text-[#F5F5F5]"
+          >
+            Enter silent
+          </button>
+        </div>
+        <span className="text-mono text-[9px] uppercase tracking-[0.3em] text-[#F5F5F5]/30">
+          Recommended: sound on
+        </span>
+        <span className="mt-1 max-w-[280px] text-center text-mono text-[9px] uppercase leading-relaxed tracking-[0.22em] text-[#FF4D1F]/70">
+          For the best experience, visit on a laptop / desktop
+        </span>
+      </motion.div>
+
+      {/* Loading percentage */}
+      <motion.div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#F5F5F5]/60 md:bottom-10"
+        style={{ fontFamily: "var(--font-mono)" }}
+        animate={{ opacity: phase === "count" ? 1 : 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <span className="text-[11px] uppercase tracking-[0.4em] tabular-nums">{String(count).padStart(2, "0")}</span>
+      </motion.div>
+    </div>
   );
 }

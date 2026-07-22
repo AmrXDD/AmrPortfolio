@@ -18,6 +18,26 @@ export function TopControls() {
   const { theme, toggle: toggleTheme } = useTheme();
   const { lang, toggle: toggleLang, t } = useLang();
 
+  // The brand mark stays hidden until the loader logo has finished gliding into
+  // place, so the handoff is seamless (no double logo during the transition).
+  const [brandReady, setBrandReady] = useState(false);
+  useEffect(() => {
+    // No preloader running (e.g. client-side nav)? Show the brand immediately.
+    if (!document.documentElement.classList.contains("preloading")) {
+      setBrandReady(true);
+      return;
+    }
+    const reveal = () => setBrandReady(true);
+    // Fallback aligned to the glide, in case the complete event never fires.
+    const onEnter = () => window.setTimeout(reveal, 1300);
+    window.addEventListener("brand:reveal", reveal);
+    window.addEventListener("ambient:start", onEnter);
+    return () => {
+      window.removeEventListener("brand:reveal", reveal);
+      window.removeEventListener("ambient:start", onEnter);
+    };
+  }, []);
+
   // While the header sits over the white Process sheet, flip its token scope to
   // "light" so the (otherwise white) wordmark and controls stay legible.
   const [onLight, setOnLight] = useState(false);
@@ -67,13 +87,14 @@ export function TopControls() {
           </button>
         </div>
 
-        {/* Center: brand mark */}
+        {/* Center: brand mark — hidden until the loader logo lands on it */}
         <a
           href="#top"
           data-cursor="link"
           data-cursor-label="Top"
           aria-label="Back to top"
-          className="pointer-events-auto absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2.5"
+          className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2.5"
+          style={{ opacity: brandReady ? 1 : 0, pointerEvents: brandReady ? "auto" : "none" }}
         >
           <Logo size={26} />
           <span className="text-mono text-[11px] uppercase tracking-[0.24em] text-bone">

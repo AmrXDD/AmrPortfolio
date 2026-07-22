@@ -24,28 +24,44 @@ export function LaptopScene() {
   // compile/upload during page-load idle time — that first compile is the
   // 1–1.5s stutter, so doing it early (while the user is at the top) removes it.
   const [warm, setWarm] = useState(false);
+  // Wait for the visitor to leave the loader before we touch WebGL — mounting
+  // the canvas / warming it up while the loader is on screen is what janked it.
+  const [entered, setEntered] = useState(false);
   const activeRef = useRef(false);
+
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 300);
-    const el = ref.current;
-    let io: IntersectionObserver | undefined;
-    if (el) {
-      io = new IntersectionObserver(
-        ([e]) => {
-          activeRef.current = e.isIntersecting;
-          setActive(e.isIntersecting);
-        },
-        { rootMargin: "80% 0px 80% 0px" }
-      );
-      io.observe(el);
-    }
-    return () => {
-      clearTimeout(t);
-      io?.disconnect();
-    };
+    const on = () => setEntered(true);
+    window.addEventListener("ambient:start", on);
+    // No loader running (e.g. client-side nav)? Proceed right away.
+    if (!document.documentElement.classList.contains("preloading")) setEntered(true);
+    return () => window.removeEventListener("ambient:start", on);
   }, []);
 
-  // Kick the warm-up once the canvas is mounted, then release it.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        activeRef.current = e.isIntersecting;
+        setActive(e.isIntersecting);
+      },
+      { rootMargin: "80% 0px 80% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Mount the canvas only once we're past the loader AND its exit glide has
+  // finished (~1.3s), so its WebGL init never janks the loader or the handoff.
+  useEffect(() => {
+    if (!entered) return;
+    const t = setTimeout(() => setMounted(true), 1400);
+    return () => clearTimeout(t);
+  }, [entered]);
+
+  // Warm-up window once the canvas is mounted: render off-screen for a couple of
+  // seconds so the GLTF, env map, textures and shaders compile ahead of the
+  // section arriving — killing the on-approach stutter.
   useEffect(() => {
     if (!mounted) return;
     setWarm(true);

@@ -21,12 +21,6 @@ export function Hero() {
   // text-free field as the hero scrolls away.
   const opacity = useTransform(scrollYProgress, [0, 0.32], [1, 0]);
 
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
   // Hold the hero's intro animations until the visitor actually enters the site
   // (clicks a choice in the preloader, which dispatches "ambient:start"), so the
   // reveal plays for them rather than behind the loading screen.
@@ -41,11 +35,20 @@ export function Hero() {
     };
   }, []);
 
+  // Only spin up the hero WebGL (orbital + rays) AFTER the loader has fully left
+  // (~1.3s past entering), so their init never stutters the loader or its glide.
+  const [heroGL, setHeroGL] = useState(false);
+  useEffect(() => {
+    if (!entered || process.env.NEXT_PUBLIC_NO_WEBGL) return;
+    const t = setTimeout(() => setHeroGL(true), 1300);
+    return () => clearTimeout(t);
+  }, [entered]);
+
   return (
     <section id="top" ref={ref} className="relative min-h-[100svh] w-full overflow-hidden">
       {/* Volumetric ember light-rays sweeping from the top-right, behind the orb */}
       <motion.div style={{ opacity }} className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-        {ready && !process.env.NEXT_PUBLIC_NO_WEBGL ? (
+        {heroGL ? (
           <SideRays
             speed={2}
             rayColor1="#ff4d1f"
@@ -72,7 +75,7 @@ export function Hero() {
         }}
         className="pointer-events-none absolute inset-y-0 right-0 z-0 w-full md:w-[74%]"
       >
-        {ready && !process.env.NEXT_PUBLIC_NO_WEBGL ? <OrbitalCanvas /> : null}
+        {heroGL ? <OrbitalCanvas /> : null}
       </motion.div>
 
       {/* Telemetry frame markers */}

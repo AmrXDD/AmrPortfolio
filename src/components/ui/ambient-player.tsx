@@ -6,6 +6,7 @@ import { useGSAP } from "@gsap/react";
 
 const BARS = [0, 1, 2, 3];
 const VOLUME = 0.3; // ambient bed level — present but not intrusive
+const LOOP_END = 105; // seconds — only use 0:00 → 1:45 of the track, then loop
 
 /**
  * AmbientPlayer — a premium, minimalist background-audio controller.
@@ -65,6 +66,17 @@ export function AmbientPlayer() {
     };
     window.addEventListener("ambient:start", onStart);
     return () => window.removeEventListener("ambient:start", onStart);
+  }, []);
+
+  // Loop only the first 1:45 of the track: reset to the start once we hit LOOP_END.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onTime = () => {
+      if (a.currentTime >= LOOP_END) a.currentTime = 0;
+    };
+    a.addEventListener("timeupdate", onTime);
+    return () => a.removeEventListener("timeupdate", onTime);
   }, []);
 
   useGSAP(
