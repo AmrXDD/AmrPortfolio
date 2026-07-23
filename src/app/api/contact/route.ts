@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabaseAdmin, isSupabaseConfigured, CONTACT_TABLE } from "@/lib/supabase";
+import { inquiryConfirmationEmail, inquiryNotificationEmail } from "@/lib/emails/templates";
 
 export const runtime = "nodejs";
 
@@ -48,25 +49,47 @@ export async function POST(req: Request) {
     console.warn("[contact] Supabase not configured — skipping persistence.");
   }
 
-  // 2) Notify by email via Resend (if configured)
+  // 2) Email via Resend (if configured): notify me, and auto-confirm to them.
   const resendKey = process.env.RESEND_API_KEY;
   const to = process.env.CONTACT_TO_EMAIL;
   const from = process.env.RESEND_FROM_EMAIL || "Amr Studio <onboarding@resend.dev>";
+  let confirmed = false;
   if (resendKey && to) {
+    const resend = new Resend(resendKey);
+
+    // 2a) Lead notification to me — branded, readable on a phone.
     try {
-      const resend = new Resend(resendKey);
+      const mail = inquiryNotificationEmail(record);
       await resend.emails.send({
         from,
         to,
         replyTo: email,
-        subject: `New inquiry — ${service_label} (${budget || "no budget"})`,
-        text:
-          `Name: ${name}\nEmail: ${email}\nService: ${service_label}\nBudget: ${budget || "N/A"}\n\n` +
-          `Reason / details:\n${reason}`,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
       });
     } catch (e) {
       // Email failure shouldn't fail the request if the DB write succeeded.
-      console.error("[contact] resend send failed:", e);
+      console.error("[contact] notification send failed:", e);
+    }
+
+    // 2b) Automatic confirmation to the person who inquired.
+    // NOTE: this only reaches arbitrary recipients once RESEND_FROM_EMAIL uses a
+    // domain verified in Resend. On the default onboarding@resend.dev sender,
+    // Resend refuses anything but your own address — the catch keeps that quiet.
+    try {
+      const mail = inquiryConfirmationEmail(record);
+      await resend.emails.send({
+        from,
+        to: email,
+        replyTo: to,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
+      });
+      confirmed = true;
+    } catch (e) {
+      console.error("[contact] auto-confirmation send failed:", e);
     }
   } else {
     console.warn("[contact] Resend not configured — skipping email.");
@@ -80,5 +103,10 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, persisted: Boolean(db), configured: isSupabaseConfigured() });
+  return NextResponse.json({
+    ok: true,
+    persisted: Boolean(db),
+    confirmed,
+    configured: isSupabaseConfigured(),
+  });
 }

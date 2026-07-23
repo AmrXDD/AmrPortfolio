@@ -35,14 +35,10 @@ export function Hero() {
     };
   }, []);
 
-  // Only spin up the hero WebGL (orbital + rays) AFTER the loader has fully left
-  // (~1.3s past entering), so their init never stutters the loader or its glide.
-  const [heroGL, setHeroGL] = useState(false);
-  useEffect(() => {
-    if (!entered || process.env.NEXT_PUBLIC_NO_WEBGL) return;
-    const t = setTimeout(() => setHeroGL(true), 1300);
-    return () => clearTimeout(t);
-  }, [entered]);
+  // Hero WebGL (orbital + rays) mounts the INSTANT the visitor enters — they
+  // should already be there as the loader lifts, not fade in late. Nothing
+  // mounts before entering, so the loader itself still stays jank-free.
+  const heroGL = entered && !process.env.NEXT_PUBLIC_NO_WEBGL;
 
   return (
     <section id="top" ref={ref} className="relative min-h-[100svh] w-full overflow-hidden">
