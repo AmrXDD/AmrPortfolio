@@ -16,7 +16,7 @@ import { Sun, Moon } from "lucide-react";
  */
 export function TopControls() {
   const { theme, toggle: toggleTheme } = useTheme();
-  const { lang, toggle: toggleLang, t } = useLang();
+  const { t } = useLang();
 
   // The brand mark stays hidden until the loader logo has finished gliding into
   // place, so the handoff is seamless (no double logo during the transition).
@@ -62,7 +62,7 @@ export function TopControls() {
   return (
     <header className={cn("pointer-events-none fixed inset-x-0 top-0 z-50 px-4 py-4 md:px-8 md:py-5", onLight && "light")}>
       <div className="relative mx-auto flex max-w-[1800px] items-center justify-between">
-        {/* Leading: theme + language cluster */}
+        {/* Leading: theme control */}
         <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-bone/15 bg-ink/50 p-1 backdrop-blur-xl">
           <button
             type="button"
@@ -72,18 +72,6 @@ export function TopControls() {
             className="flex h-9 w-9 items-center justify-center rounded-full text-bone/70 transition-colors hover:bg-bone/10 hover:text-bone"
           >
             {theme === "dark" ? <Moon size={15} /> : <Sun size={15} />}
-          </button>
-          <span className="h-4 w-px bg-bone/15" />
-          <button
-            type="button"
-            onClick={toggleLang}
-            data-cursor="link"
-            aria-label={lang === "en" ? "Switch to Arabic" : "Switch to English"}
-            className="flex h-9 items-center gap-1.5 rounded-full px-3 text-mono text-[11px] uppercase tracking-[0.16em] text-bone/70 transition-colors hover:bg-bone/10 hover:text-bone"
-          >
-            <span className={lang === "en" ? "text-bone" : "text-bone/40"}>EN</span>
-            <span className="text-bone/25">/</span>
-            <span className={lang === "ar" ? "text-bone" : "text-bone/40"} style={{ fontFamily: "'Segoe UI', Tahoma, sans-serif" }}>ع</span>
           </button>
         </div>
 

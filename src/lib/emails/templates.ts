@@ -2,7 +2,7 @@
  * Every branded email Amr Studio sends, built on the shared shell so they all
  * carry the same ink / bone / ember look as the generated contract documents.
  *
- * Each builder returns { subject, html, text } — hand it straight to Resend.
+ * Each builder returns { subject, html, text }, hand it straight to Resend.
  */
 
 import { SITE, waLink } from "@/lib/constants";
@@ -30,8 +30,8 @@ export type InquiryData = {
 export function inquiryConfirmationEmail(d: InquiryData): Email {
   const body = [
     h1(`Got it, ${firstName(d.name)}.`),
-    sub(`Your inquiry landed — ${d.service_label}${d.budget ? ` · ${d.budget}` : ""}`),
-    p("Thanks for reaching out. This is an automatic confirmation that your message arrived safely — a real reply from me follows, usually within one working day (Kuwait time, GMT+3)."),
+    sub(`Your inquiry landed, ${d.service_label}${d.budget ? ` · ${d.budget}` : ""}`),
+    p("Thanks for reaching out. This is an automatic confirmation that your message arrived safely, a real reply from me follows, usually within one working day (Kuwait time, GMT+3)."),
 
     section("What you sent"),
     kv([
@@ -47,7 +47,7 @@ export function inquiryConfirmationEmail(d: InquiryData): Email {
     section("What happens next"),
     step("01", "I read the brief properly", "Not a template reply. I go through what you sent and work out whether I'm genuinely the right person for it."),
     step("02", "You get an honest answer", "A direct response with my read on the project, a ballpark on scope and cost, and any questions I need answered."),
-    step("03", "We scope it together", "If it's a fit, you get a written proposal with fixed deliverables and pricing — no open-ended hourly surprises."),
+    step("03", "We scope it together", "If it's a fit, you get a written proposal with fixed deliverables and pricing, no open-ended hourly surprises."),
 
     p("If it's urgent, WhatsApp is the fastest line to me."),
     button("Message me on WhatsApp", waLink(`Hi Amr, I just sent an inquiry about ${d.service_label}.`)),
@@ -55,12 +55,12 @@ export function inquiryConfirmationEmail(d: InquiryData): Email {
   ].join("");
 
   return pack(
-    `Your inquiry landed — ${SITE.brand}`,
+    `Your inquiry landed, ${SITE.brand}`,
     emailShell({
-      preheader: `Thanks ${firstName(d.name)} — I've got your ${d.service_label} inquiry and will reply within a working day.`,
+      preheader: `Thanks ${firstName(d.name)}, I've got your ${d.service_label} inquiry and will reply within a working day.`,
       badge: "Inquiry Received",
       body,
-      footerNote: "You're getting this because you submitted the contact form on amrstudio. No list, no newsletter — just this confirmation.",
+      footerNote: "You're getting this because you submitted the contact form on amrstudio. No list, no newsletter, just this confirmation.",
     })
   );
 }
@@ -82,11 +82,11 @@ export function inquiryNotificationEmail(d: InquiryData): Email {
     section("Their brief"),
     p(esc(d.reason).replace(/\n/g, "<br>"), { html: true }),
     button("Reply by email", `mailto:${d.email}?subject=${encodeURIComponent(`Re: your ${d.service_label} inquiry`)}`),
-    p("Reply directly to this email and it goes straight to them — the reply-to is already set."),
+    p("Reply directly to this email and it goes straight to them, the reply-to is already set."),
   ].join("");
 
   return pack(
-    `New inquiry — ${d.name} · ${d.service_label}${d.budget ? ` (${d.budget})` : ""}`,
+    `New inquiry, ${d.name} · ${d.service_label}${d.budget ? ` (${d.budget})` : ""}`,
     emailShell({
       preheader: `${d.name}: ${d.reason.slice(0, 110)}`,
       badge: "Lead",
@@ -99,44 +99,43 @@ export function inquiryNotificationEmail(d: InquiryData): Email {
    Marketing: first-touch to a studio/founder you want to work with. */
 
 export type PitchData = {
-  toName: string;
   company?: string;
-  /** The specific thing you noticed — what makes this not a mass mail. */
+  /** Opening phrase before the company name, e.g. "An outside read on".
+      Editable so the whole pitch re-niches without a code change. */
+  hook: string;
+  /** The specific thing you noticed, what makes this not a mass mail. */
   observation: string;
   /** What you'd do about it. */
   angle: string;
-  /** Optional reference project slug to name-drop. */
+  /** "What I do" bullets. Owned by the sender, so moving from studio work to
+      consultancy (or any niche) is just editing these, never the template. */
+  offer: string[];
+  /** "Recent work" / proof bullets. */
+  proof: string[];
+  /** Optional reference link to drop. */
   proofUrl?: string;
 };
 
 export function coldPitchEmail(d: PitchData): Email {
+  const who = (d.company || "").trim() || "you";
+  const hook = (d.hook || "").trim() || "An outside read on";
+  const opener = `${hook} ${who}`;
   const body = [
-    h1(`${firstName(d.toName)} — a quick note about ${d.company || "your site"}.`),
+    h1(`${opener}.`),
     sub(`${SITE.role} · ${SITE.city}`),
     p(d.observation),
     p(d.angle),
 
-    section("What I do"),
-    bullets([
-      "Cinematic, motion-first websites — the kind people finish scrolling.",
-      "Product engineering in Next.js and TypeScript, shipped production-grade on day one.",
-      "Bilingual EN/AR builds with correct RTL from the first commit.",
-    ]),
+    ...(d.offer.length ? [section("What I do"), bullets(d.offer)] : []),
+    ...(d.proof.length ? [section("Recent work"), bullets(d.proof)] : []),
 
-    section("Recent work"),
-    bullets([
-      "Scenarios — moved a contracting studio into creative-house positioning; first international RFP won within a month.",
-      "Quipmed — a medical distributor site clinicians actually trust; bounce down 38%.",
-      "LivFunctional — bilingual wellness program converting cold traffic at 4.1%.",
-    ]),
-
-    p("If this is worth ten minutes, reply to this email or message me directly — no pitch deck, just a conversation about whether it's a fit."),
-    button("Start a conversation", waLink(`Hi Amr, saw your note about ${d.company || "our site"}.`)),
+    p("If this is worth ten minutes, reply to this email or message me directly. No pitch deck, just a conversation about whether it's a fit."),
+    button("Start a conversation", waLink(`Hi Amr, saw your note about ${who}.`)),
     linkRow(d.proofUrl ? "Relevant work:" : "The portfolio:", d.proofUrl || SITE.url),
   ].join("");
 
   return pack(
-    `${d.company ? `${d.company} — ` : ""}a thought on your website`,
+    opener,
     emailShell({
       preheader: d.observation.slice(0, 120),
       badge: "Introduction",
@@ -150,7 +149,6 @@ export function coldPitchEmail(d: PitchData): Email {
    Marketing: the second touch, after silence. */
 
 export type FollowUpData = {
-  toName: string;
   company?: string;
   /** What the last conversation was about. */
   topic: string;
@@ -160,29 +158,29 @@ export type FollowUpData = {
 
 export function followUpEmail(d: FollowUpData): Email {
   const body = [
-    h1(`Still worth a conversation, ${firstName(d.toName)}?`),
+    h1(`Still worth a conversation${d.company ? `, ${d.company}` : ""}?`),
     sub(`Following up on ${d.topic}`),
-    p(`I reached out a little while ago about ${d.topic}${d.company ? ` for ${d.company}` : ""} and never heard back — which usually means one of three things.`),
+    p(`I reached out a little while ago about ${d.topic}${d.company ? ` for ${d.company}` : ""} and never heard back. That usually means one of three things.`),
 
     bullets([
       "The timing is wrong. Tell me when to come back and I will.",
-      "It's not a priority right now. Fair — I'll stop here.",
+      "It's not a priority right now. Fair enough, I'll stop here.",
       "It got buried. It happens; this is the nudge.",
     ]),
 
     ...(d.newAngle ? [section("One more thing"), p(d.newAngle)] : []),
 
-    p("A one-line reply is genuinely enough. If the answer is no, that's useful too — I'd rather know than keep guessing."),
-    button("Reply in one line", waLink(`Hi Amr, about ${d.topic} —`)),
+    p("A one-line reply is genuinely enough. If the answer is no, that's useful too. I'd rather know than keep guessing."),
+    button("Reply in one line", waLink(`Hi Amr, about ${d.topic}`)),
   ].join("");
 
   return pack(
-    `Following up — ${d.topic}`,
+    `Following up on ${d.topic}`,
     emailShell({
       preheader: `A short follow-up about ${d.topic}. One line is enough.`,
       badge: "Follow Up",
       body,
-      footerNote: "This is the last follow-up — I won't chase a third time.",
+      footerNote: "This is the last follow-up. I won't chase a third time.",
     })
   );
 }
@@ -191,8 +189,7 @@ export function followUpEmail(d: FollowUpData): Email {
    Marketing: tell past clients and contacts something shipped. */
 
 export type LaunchData = {
-  toName: string;
-  /** Their company — keeps each send distinct rather than one identical blast. */
+  /** Their company, keeps each send distinct rather than one identical blast. */
   company?: string;
   projectName: string;
   projectUrl: string;
@@ -206,14 +203,14 @@ export function launchEmail(d: LaunchData): Email {
   const body = [
     h1(`${d.projectName} is live.`),
     sub(`New from ${SITE.brand} · ${SITE.city}`),
-    p(`${firstName(d.toName)}${d.company ? ` at ${d.company}` : ""} —`),
+    p(`${d.company ? `Hi ${d.company},` : "Hi,"}`),
     p(d.story),
     button("See it live", d.projectUrl),
     linkRow("Direct link:", d.projectUrl),
 
     section("What went into it"),
     bullets([
-      "Motion choreographed end to end — every transition earns its place.",
+      "Motion choreographed end to end, every transition earns its place.",
       "Tuned to 60fps on a five-year-old laptop; frame rate treated as a feature.",
       "Production-grade from the first commit, not a prototype dressed up.",
     ]),
@@ -254,7 +251,7 @@ export function proposalEmail(d: ProposalEmailData): Email {
   const body = [
     h1(`Your proposal, ${firstName(d.clientName)}.`),
     sub(`${d.projectTitle} · Ref ${d.ref} · Valid until ${d.validUntil}`),
-    p(`Attached is the full written proposal for ${d.companyName || "your project"} — fixed scope, fixed price, no hourly surprises. The short version is below.`),
+    p(`Attached is the full written proposal for ${d.companyName || "your project"}, fixed scope, fixed price, no hourly surprises. The short version is below.`),
 
     section("The engagement"),
     hero(d.investment, "Total project investment · fixed price"),
@@ -268,17 +265,17 @@ export function proposalEmail(d: ProposalEmailData): Email {
     bullets(d.highlights),
 
     section("To move forward"),
-    step("01", "Read the attached PDF", "Full scope, deliverables, timeline, and terms — everything in writing."),
+    step("01", "Read the attached PDF", "Full scope, deliverables, timeline, and terms, everything in writing."),
     step("02", "Send questions or changes", "Scope adjustments are normal at this stage. Tell me what to change."),
     step("03", "Approve and we start", "On approval you get the service agreement and the upfront invoice; development is scheduled the moment it clears."),
 
     panel("Note on validity.", `This pricing holds until ${d.validUntil}. After that the scope stays valid but the numbers may need a second look.`),
 
-    button("Discuss the proposal", waLink(`Hi Amr, about proposal ${d.ref} —`)),
+    button("Discuss the proposal", waLink(`Hi Amr, about proposal ${d.ref}`)),
   ].join("");
 
   return pack(
-    `Proposal — ${d.projectTitle} (${d.ref})`,
+    `Proposal, ${d.projectTitle} (${d.ref})`,
     emailShell({
       preheader: `${d.projectTitle} · ${d.investment} · valid until ${d.validUntil}`,
       badge: "Proposal",
@@ -307,7 +304,7 @@ export function invoiceEmail(d: InvoiceEmailData): Email {
   const body = [
     h1(`Invoice ${d.invoiceNo}`),
     sub(`${d.kindLabel} · Due ${d.dueDate}${d.contractRef ? ` · Against contract ${d.contractRef}` : ""}`),
-    p(`${firstName(d.clientName)} — the invoice for ${d.companyName || "your project"} is attached as a PDF. The summary is below.`),
+    p(`${firstName(d.clientName)}, the invoice for ${d.companyName || "your project"} is attached as a PDF. The summary is below.`),
 
     section("Amount due"),
     hero(d.amount, `Payable by ${d.dueDate}`),
@@ -317,13 +314,13 @@ export function invoiceEmail(d: InvoiceEmailData): Email {
 
     ...(d.paymentDetails ? [section("How to pay"), panel("Payment details.", d.paymentDetails)] : []),
 
-    panel("Scheduling.", "Work against this invoice is scheduled as soon as payment clears. If anything on it looks wrong, reply and I'll reissue it — no awkwardness."),
+    panel("Scheduling.", "Work against this invoice is scheduled as soon as payment clears. If anything on it looks wrong, reply and I'll reissue it, no awkwardness."),
 
-    button("Ask about this invoice", waLink(`Hi Amr, about invoice ${d.invoiceNo} —`)),
+    button("Ask about this invoice", waLink(`Hi Amr, about invoice ${d.invoiceNo}`)),
   ].join("");
 
   return pack(
-    `Invoice ${d.invoiceNo} — ${d.amount} due ${d.dueDate}`,
+    `Invoice ${d.invoiceNo}, ${d.amount} due ${d.dueDate}`,
     emailShell({
       preheader: `${d.kindLabel} · ${d.amount} · due ${d.dueDate}`,
       badge: "Invoice",

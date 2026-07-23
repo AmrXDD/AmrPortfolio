@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_RECIPIENTS = 25;
 
-type Recipient = { email: string; name: string; company: string };
+type Recipient = { email: string; company: string };
 
 export async function POST(req: Request) {
   if (!(await isAuthed())) {
@@ -29,6 +29,11 @@ export async function POST(req: Request) {
   }
 
   const str = (k: string, max = 2000) => String(body[k] ?? "").trim().slice(0, max);
+  const arr = (k: string, max = 12) =>
+    (Array.isArray(body[k]) ? (body[k] as unknown[]) : [])
+      .map((v) => String(v ?? "").trim())
+      .filter(Boolean)
+      .slice(0, max);
   const template = str("template", 40);
 
   const recipients: Recipient[] = (Array.isArray(body.recipients) ? body.recipients : [])
@@ -36,7 +41,6 @@ export async function POST(req: Request) {
       const o = (r ?? {}) as Record<string, unknown>;
       return {
         email: String(o.email ?? "").trim(),
-        name: String(o.name ?? "").trim(),
         company: String(o.company ?? "").trim().slice(0, 160),
       };
     })
@@ -54,28 +58,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Resend is not configured (RESEND_API_KEY missing)" }, { status: 503 });
   }
 
-  // Built per recipient, so each send carries that person's own company —
+  // Built per recipient, so each send carries that recipient's own company —
   // different subject line and body every time, not one duplicated blast.
-  const build = ({ name, company }: { name: string; company: string }) => {
+  const build = ({ company }: { company: string }) => {
     switch (template) {
       case "pitch":
         return coldPitchEmail({
-          toName: name,
-          company,
+          company: company || undefined,
+          hook: str("hook", 120),
           observation: str("observation"),
           angle: str("angle"),
+          offer: arr("offer"),
+          proof: arr("proof"),
           proofUrl: str("proofUrl", 300) || undefined,
         });
       case "followup":
         return followUpEmail({
-          toName: name,
           company: company || undefined,
           topic: str("topic", 200),
           newAngle: str("newAngle") || undefined,
         });
       case "launch":
         return launchEmail({
-          toName: name,
           company: company || undefined,
           projectName: str("projectName", 160),
           projectUrl: str("projectUrl", 300),
@@ -87,7 +91,7 @@ export async function POST(req: Request) {
     }
   };
 
-  if (!build({ name: "test", company: "test" })) {
+  if (!build({ company: "test" })) {
     return NextResponse.json({ error: `Unknown template "${template}"` }, { status: 422 });
   }
 
@@ -97,7 +101,7 @@ export async function POST(req: Request) {
 
   // Sequential, one personalised send per recipient.
   for (const r of recipients) {
-    const mail = build({ name: r.name || "there", company: r.company })!;
+    const mail = build({ company: r.company })!;
     try {
       const { error } = await resend.emails.send({
         from,

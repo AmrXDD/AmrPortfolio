@@ -1,0 +1,1649 @@
+{
+  "meta": {
+    "generator": "graphify-style structural fallback (Node import extractor)",
+    "native": false,
+    "scope": "src/",
+    "generatedAt": "2026-07-22T22:21:29.891Z",
+    "nodeCount": 83,
+    "edgeCount": 161,
+    "note": "Edges are real static+dynamic import relationships. Not native graphify semantic extraction (no Python/graphifyy in env)."
+  },
+  "nodes": [
+    {
+      "id": "src/app/(site)/layout.tsx",
+      "group": "route:site",
+      "kind": "layout",
+      "label": "layout.tsx",
+      "in": 0,
+      "out": 9,
+      "deg": 9
+    },
+    {
+      "id": "src/app/(site)/page.tsx",
+      "group": "route:site",
+      "kind": "page",
+      "label": "page.tsx",
+      "in": 0,
+      "out": 18,
+      "deg": 18
+    },
+    {
+      "id": "src/app/admin/contract/contract-tool.tsx",
+      "group": "route:admin",
+      "kind": "client-component",
+      "label": "contract-tool.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/app/admin/contract/doc-builders.ts",
+      "group": "route:admin",
+      "kind": "module",
+      "label": "doc-builders.ts",
+      "in": 2,
+      "out": 0,
+      "deg": 2
+    },
+    {
+      "id": "src/app/admin/contract/page.tsx",
+      "group": "route:admin",
+      "kind": "page",
+      "label": "page.tsx",
+      "in": 0,
+      "out": 2,
+      "deg": 2
+    },
+    {
+      "id": "src/app/admin/contract/pdf-builders.ts",
+      "group": "route:admin",
+      "kind": "module",
+      "label": "pdf-builders.ts",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/app/admin/login-form.tsx",
+      "group": "route:admin",
+      "kind": "client-component",
+      "label": "login-form.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/app/admin/page.tsx",
+      "group": "route:admin",
+      "kind": "page",
+      "label": "page.tsx",
+      "in": 0,
+      "out": 4,
+      "deg": 4
+    },
+    {
+      "id": "src/app/api/admin/login/route.ts",
+      "group": "api",
+      "kind": "route-handler",
+      "label": "route.ts",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/app/api/admin/logout/route.ts",
+      "group": "api",
+      "kind": "route-handler",
+      "label": "route.ts",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/app/api/contact/route.ts",
+      "group": "api",
+      "kind": "route-handler",
+      "label": "route.ts",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/app/layout.tsx",
+      "group": "app-root",
+      "kind": "layout",
+      "label": "layout.tsx",
+      "in": 0,
+      "out": 3,
+      "deg": 3
+    },
+    {
+      "id": "src/app/manifest.ts",
+      "group": "app-root",
+      "kind": "module",
+      "label": "manifest.ts",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/app/opengraph-image.tsx",
+      "group": "app-root",
+      "kind": "component",
+      "label": "opengraph-image.tsx",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/app/robots.ts",
+      "group": "app-root",
+      "kind": "module",
+      "label": "robots.ts",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/app/sitemap.ts",
+      "group": "app-root",
+      "kind": "module",
+      "label": "sitemap.ts",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/components/nav.tsx",
+      "group": "components",
+      "kind": "client-component",
+      "label": "nav.tsx",
+      "in": 0,
+      "out": 5,
+      "deg": 5
+    },
+    {
+      "id": "src/components/preloader.tsx",
+      "group": "components",
+      "kind": "client-component",
+      "label": "preloader.tsx",
+      "in": 1,
+      "out": 2,
+      "deg": 3
+    },
+    {
+      "id": "src/components/providers/smooth-scroll.tsx",
+      "group": "providers",
+      "kind": "client-component",
+      "label": "smooth-scroll.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/providers/theme-provider.tsx",
+      "group": "providers",
+      "kind": "client-component",
+      "label": "theme-provider.tsx",
+      "in": 6,
+      "out": 0,
+      "deg": 6
+    },
+    {
+      "id": "src/components/sections/about.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "about.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/components/sections/case-study.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "case-study.tsx",
+      "in": 1,
+      "out": 4,
+      "deg": 5
+    },
+    {
+      "id": "src/components/sections/contact-form.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "contact-form.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/sections/cta.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "cta.tsx",
+      "in": 1,
+      "out": 8,
+      "deg": 9
+    },
+    {
+      "id": "src/components/sections/expertise.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "expertise.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/components/sections/footer.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "footer.tsx",
+      "in": 1,
+      "out": 2,
+      "deg": 3
+    },
+    {
+      "id": "src/components/sections/fullstack.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "fullstack.tsx",
+      "in": 1,
+      "out": 2,
+      "deg": 3
+    },
+    {
+      "id": "src/components/sections/guarantees.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "guarantees.tsx",
+      "in": 1,
+      "out": 4,
+      "deg": 5
+    },
+    {
+      "id": "src/components/sections/hero/hero.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "hero.tsx",
+      "in": 1,
+      "out": 7,
+      "deg": 8
+    },
+    {
+      "id": "src/components/sections/hero/orbital.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "orbital.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/sections/index-marquee.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "index-marquee.tsx",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/components/sections/motion-showcase.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "motion-showcase.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/components/sections/parallax-grid.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "parallax-grid.tsx",
+      "in": 0,
+      "out": 2,
+      "deg": 2
+    },
+    {
+      "id": "src/components/sections/philosophy.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "philosophy.tsx",
+      "in": 1,
+      "out": 2,
+      "deg": 3
+    },
+    {
+      "id": "src/components/sections/process.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "process.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/components/sections/showcase/browser-code-scene.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "browser-code-scene.tsx",
+      "in": 1,
+      "out": 2,
+      "deg": 3
+    },
+    {
+      "id": "src/components/sections/showcase/code-matrix-draw.ts",
+      "group": "sections",
+      "kind": "module",
+      "label": "code-matrix-draw.ts",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/sections/showcase/floating-carousel.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "floating-carousel.tsx",
+      "in": 0,
+      "out": 2,
+      "deg": 2
+    },
+    {
+      "id": "src/components/sections/showcase/laptop-3d.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "laptop-3d.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/sections/showcase/laptop-scene.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "laptop-scene.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/components/sections/showcase/phone-3d.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "phone-3d.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/sections/showcase/phone-scene.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "phone-scene.tsx",
+      "in": 0,
+      "out": 4,
+      "deg": 4
+    },
+    {
+      "id": "src/components/sections/sound-studio.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "sound-studio.tsx",
+      "in": 1,
+      "out": 6,
+      "deg": 7
+    },
+    {
+      "id": "src/components/sections/tech-loop.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "tech-loop.tsx",
+      "in": 1,
+      "out": 2,
+      "deg": 3
+    },
+    {
+      "id": "src/components/sections/testimonials.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "testimonials.tsx",
+      "in": 1,
+      "out": 5,
+      "deg": 6
+    },
+    {
+      "id": "src/components/sections/work-grid.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "work-grid.tsx",
+      "in": 1,
+      "out": 5,
+      "deg": 6
+    },
+    {
+      "id": "src/components/sections/work-marquee.tsx",
+      "group": "sections",
+      "kind": "client-component",
+      "label": "work-marquee.tsx",
+      "in": 0,
+      "out": 0,
+      "deg": 0
+    },
+    {
+      "id": "src/components/site-dock.tsx",
+      "group": "components",
+      "kind": "client-component",
+      "label": "site-dock.tsx",
+      "in": 1,
+      "out": 3,
+      "deg": 4
+    },
+    {
+      "id": "src/components/top-controls.tsx",
+      "group": "components",
+      "kind": "client-component",
+      "label": "top-controls.tsx",
+      "in": 1,
+      "out": 6,
+      "deg": 7
+    },
+    {
+      "id": "src/components/ui/ambient-player.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "ambient-player.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/animated-chars.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "animated-chars.tsx",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/border-glow.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "border-glow.tsx",
+      "in": 3,
+      "out": 1,
+      "deg": 4
+    },
+    {
+      "id": "src/components/ui/cursor.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "cursor.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/dock.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "dock.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/ui/eyebrow.tsx",
+      "group": "ui",
+      "kind": "component",
+      "label": "eyebrow.tsx",
+      "in": 17,
+      "out": 1,
+      "deg": 18
+    },
+    {
+      "id": "src/components/ui/gradual-blur.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "gradual-blur.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/language-toggle.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "language-toggle.tsx",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/line-sidebar.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "line-sidebar.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/logo-loop.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "logo-loop.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/ui/logo.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "logo.tsx",
+      "in": 6,
+      "out": 1,
+      "deg": 7
+    },
+    {
+      "id": "src/components/ui/magnetic.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "magnetic.tsx",
+      "in": 5,
+      "out": 1,
+      "deg": 6
+    },
+    {
+      "id": "src/components/ui/marquee.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "marquee.tsx",
+      "in": 2,
+      "out": 1,
+      "deg": 3
+    },
+    {
+      "id": "src/components/ui/option-wheel.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "option-wheel.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/reveal.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "reveal.tsx",
+      "in": 14,
+      "out": 1,
+      "deg": 15
+    },
+    {
+      "id": "src/components/ui/sandstorm.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "sandstorm.tsx",
+      "in": 0,
+      "out": 0,
+      "deg": 0
+    },
+    {
+      "id": "src/components/ui/scroll-progress.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "scroll-progress.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/scroll-reveal.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "scroll-reveal.tsx",
+      "in": 4,
+      "out": 1,
+      "deg": 5
+    },
+    {
+      "id": "src/components/ui/scroll-stack.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "scroll-stack.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/ui/side-rays.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "side-rays.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/ui/sound-fx.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "sound-fx.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/ui/sticky-whatsapp.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "sticky-whatsapp.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/ui/theme-toggle.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "theme-toggle.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/components/ui/wa-cta.tsx",
+      "group": "ui",
+      "kind": "client-component",
+      "label": "wa-cta.tsx",
+      "in": 3,
+      "out": 3,
+      "deg": 6
+    },
+    {
+      "id": "src/components/webgl/cosmic-field-mount.tsx",
+      "group": "webgl",
+      "kind": "client-component",
+      "label": "cosmic-field-mount.tsx",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/components/webgl/cosmic-field.tsx",
+      "group": "webgl",
+      "kind": "client-component",
+      "label": "cosmic-field.tsx",
+      "in": 1,
+      "out": 0,
+      "deg": 1
+    },
+    {
+      "id": "src/components/webgl/space-field-mount.tsx",
+      "group": "webgl",
+      "kind": "client-component",
+      "label": "space-field-mount.tsx",
+      "in": 0,
+      "out": 1,
+      "deg": 1
+    },
+    {
+      "id": "src/components/webgl/space-field.tsx",
+      "group": "webgl",
+      "kind": "client-component",
+      "label": "space-field.tsx",
+      "in": 1,
+      "out": 1,
+      "deg": 2
+    },
+    {
+      "id": "src/lib/admin-auth.ts",
+      "group": "lib",
+      "kind": "lib",
+      "label": "admin-auth.ts",
+      "in": 4,
+      "out": 1,
+      "deg": 5
+    },
+    {
+      "id": "src/lib/cn.ts",
+      "group": "lib",
+      "kind": "lib",
+      "label": "cn.ts",
+      "in": 14,
+      "out": 0,
+      "deg": 14
+    },
+    {
+      "id": "src/lib/constants.ts",
+      "group": "lib",
+      "kind": "lib",
+      "label": "constants.ts",
+      "in": 22,
+      "out": 0,
+      "deg": 22
+    },
+    {
+      "id": "src/lib/i18n.tsx",
+      "group": "lib",
+      "kind": "lib",
+      "label": "i18n.tsx",
+      "in": 8,
+      "out": 0,
+      "deg": 8
+    },
+    {
+      "id": "src/lib/supabase.ts",
+      "group": "lib",
+      "kind": "lib",
+      "label": "supabase.ts",
+      "in": 3,
+      "out": 0,
+      "deg": 3
+    },
+    {
+      "id": "src/lib/use-mobile.ts",
+      "group": "lib",
+      "kind": "lib",
+      "label": "use-mobile.ts",
+      "in": 4,
+      "out": 0,
+      "deg": 4
+    }
+  ],
+  "edges": [
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/providers/smooth-scroll.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/ui/cursor.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/top-controls.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/site-dock.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/ui/sticky-whatsapp.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/preloader.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/ui/ambient-player.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/ui/scroll-progress.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/layout.tsx",
+      "target": "src/components/ui/sound-fx.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/hero/hero.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/fullstack.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/about.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/work-grid.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/case-study.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/showcase/laptop-scene.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/guarantees.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/showcase/browser-code-scene.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/tech-loop.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/sound-studio.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/process.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/expertise.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/motion-showcase.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/philosophy.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/testimonials.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/cta.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/components/sections/footer.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/(site)/page.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/contract/contract-tool.tsx",
+      "target": "src/components/ui/logo.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/contract/contract-tool.tsx",
+      "target": "src/app/admin/contract/doc-builders.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/contract/contract-tool.tsx",
+      "target": "src/app/admin/contract/pdf-builders.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/contract/page.tsx",
+      "target": "src/lib/admin-auth.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/contract/page.tsx",
+      "target": "src/app/admin/contract/contract-tool.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/contract/pdf-builders.ts",
+      "target": "src/app/admin/contract/doc-builders.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/page.tsx",
+      "target": "src/lib/admin-auth.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/page.tsx",
+      "target": "src/lib/supabase.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/page.tsx",
+      "target": "src/components/ui/logo.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/admin/page.tsx",
+      "target": "src/app/admin/login-form.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/api/admin/login/route.ts",
+      "target": "src/lib/admin-auth.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/api/admin/logout/route.ts",
+      "target": "src/lib/admin-auth.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/api/contact/route.ts",
+      "target": "src/lib/supabase.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/layout.tsx",
+      "target": "src/components/providers/theme-provider.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/layout.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/layout.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/manifest.ts",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/opengraph-image.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/robots.ts",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/app/sitemap.ts",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/nav.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/nav.tsx",
+      "target": "src/components/ui/magnetic.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/nav.tsx",
+      "target": "src/components/ui/logo.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/nav.tsx",
+      "target": "src/components/ui/theme-toggle.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/nav.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/preloader.tsx",
+      "target": "src/components/ui/logo.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/preloader.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/about.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/about.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/about.tsx",
+      "target": "src/components/ui/scroll-reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/case-study.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/case-study.tsx",
+      "target": "src/components/ui/magnetic.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/case-study.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/case-study.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/contact-form.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/components/ui/scroll-reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/components/ui/border-glow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/components/ui/wa-cta.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/components/sections/contact-form.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/cta.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/expertise.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/expertise.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/expertise.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/footer.tsx",
+      "target": "src/components/ui/wa-cta.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/footer.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/fullstack.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/fullstack.tsx",
+      "target": "src/lib/use-mobile.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/guarantees.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/guarantees.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/guarantees.tsx",
+      "target": "src/components/ui/scroll-stack.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/guarantees.tsx",
+      "target": "src/components/ui/border-glow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/components/ui/magnetic.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/components/ui/wa-cta.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/components/sections/hero/orbital.tsx",
+      "dynamic": true
+    },
+    {
+      "source": "src/components/sections/hero/hero.tsx",
+      "target": "src/components/ui/side-rays.tsx",
+      "dynamic": true
+    },
+    {
+      "source": "src/components/sections/hero/orbital.tsx",
+      "target": "src/components/providers/theme-provider.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/index-marquee.tsx",
+      "target": "src/components/ui/marquee.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/motion-showcase.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/motion-showcase.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/motion-showcase.tsx",
+      "target": "src/components/ui/scroll-reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/parallax-grid.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/parallax-grid.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/philosophy.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/philosophy.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/process.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/process.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/process.tsx",
+      "target": "src/components/ui/scroll-reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/browser-code-scene.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/browser-code-scene.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/floating-carousel.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/floating-carousel.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/laptop-3d.tsx",
+      "target": "src/components/sections/showcase/code-matrix-draw.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/laptop-scene.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/laptop-scene.tsx",
+      "target": "src/lib/use-mobile.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/laptop-scene.tsx",
+      "target": "src/components/sections/showcase/laptop-3d.tsx",
+      "dynamic": true
+    },
+    {
+      "source": "src/components/sections/showcase/phone-scene.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/phone-scene.tsx",
+      "target": "src/components/ui/logo.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/phone-scene.tsx",
+      "target": "src/lib/use-mobile.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/showcase/phone-scene.tsx",
+      "target": "src/components/sections/showcase/phone-3d.tsx",
+      "dynamic": true
+    },
+    {
+      "source": "src/components/sections/sound-studio.tsx",
+      "target": "src/components/ui/option-wheel.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/sound-studio.tsx",
+      "target": "src/components/ui/gradual-blur.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/sound-studio.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/sound-studio.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/sound-studio.tsx",
+      "target": "src/components/providers/theme-provider.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/sound-studio.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/tech-loop.tsx",
+      "target": "src/components/ui/logo-loop.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/tech-loop.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/testimonials.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/testimonials.tsx",
+      "target": "src/components/ui/marquee.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/testimonials.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/testimonials.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/testimonials.tsx",
+      "target": "src/components/ui/border-glow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/work-grid.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/work-grid.tsx",
+      "target": "src/components/ui/eyebrow.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/work-grid.tsx",
+      "target": "src/components/ui/reveal.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/work-grid.tsx",
+      "target": "src/components/ui/line-sidebar.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/sections/work-grid.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/site-dock.tsx",
+      "target": "src/components/ui/dock.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/site-dock.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/site-dock.tsx",
+      "target": "src/lib/use-mobile.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/top-controls.tsx",
+      "target": "src/components/ui/logo.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/top-controls.tsx",
+      "target": "src/components/ui/magnetic.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/top-controls.tsx",
+      "target": "src/components/providers/theme-provider.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/top-controls.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/top-controls.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/top-controls.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/animated-chars.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/border-glow.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/dock.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/eyebrow.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/language-toggle.tsx",
+      "target": "src/lib/i18n.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/logo-loop.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/logo.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/magnetic.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/marquee.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/reveal.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/scroll-reveal.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/scroll-stack.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/sound-fx.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/sticky-whatsapp.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/theme-toggle.tsx",
+      "target": "src/components/providers/theme-provider.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/wa-cta.tsx",
+      "target": "src/components/ui/magnetic.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/wa-cta.tsx",
+      "target": "src/lib/constants.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/ui/wa-cta.tsx",
+      "target": "src/lib/cn.ts",
+      "dynamic": false
+    },
+    {
+      "source": "src/components/webgl/cosmic-field-mount.tsx",
+      "target": "src/components/webgl/cosmic-field.tsx",
+      "dynamic": true
+    },
+    {
+      "source": "src/components/webgl/space-field-mount.tsx",
+      "target": "src/components/webgl/space-field.tsx",
+      "dynamic": true
+    },
+    {
+      "source": "src/components/webgl/space-field.tsx",
+      "target": "src/components/providers/theme-provider.tsx",
+      "dynamic": false
+    },
+    {
+      "source": "src/lib/admin-auth.ts",
+      "target": "src/lib/supabase.ts",
+      "dynamic": false
+    }
+  ],
+  "externalDeps": [
+    {
+      "name": "react",
+      "uses": 48
+    },
+    {
+      "name": "next",
+      "uses": 27
+    },
+    {
+      "name": "framer-motion",
+      "uses": 25
+    },
+    {
+      "name": "lucide-react",
+      "uses": 6
+    },
+    {
+      "name": "three",
+      "uses": 5
+    },
+    {
+      "name": "@react-three/fiber",
+      "uses": 4
+    },
+    {
+      "name": "gsap",
+      "uses": 3
+    },
+    {
+      "name": "lenis",
+      "uses": 2
+    },
+    {
+      "name": "@gsap/react",
+      "uses": 2
+    },
+    {
+      "name": "@react-three/drei",
+      "uses": 2
+    },
+    {
+      "name": "react-icons",
+      "uses": 2
+    },
+    {
+      "name": "pdf-lib",
+      "uses": 1
+    },
+    {
+      "name": "@pdf-lib/fontkit",
+      "uses": 1
+    },
+    {
+      "name": "resend",
+      "uses": 1
+    },
+    {
+      "name": "ogl",
+      "uses": 1
+    },
+    {
+      "name": "server-only",
+      "uses": 1
+    },
+    {
+      "name": "crypto",
+      "uses": 1
+    },
+    {
+      "name": "clsx",
+      "uses": 1
+    },
+    {
+      "name": "tailwind-merge",
+      "uses": 1
+    },
+    {
+      "name": "@supabase/supabase-js",
+      "uses": 1
+    }
+  ]
+}

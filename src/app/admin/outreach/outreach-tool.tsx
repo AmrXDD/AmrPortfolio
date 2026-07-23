@@ -25,8 +25,15 @@ export function OutreachTool() {
   // shared
   const [recipients, setRecipients] = useState("");
   // pitch
+  const [hook, setHook] = useState("An outside read on");
   const [observation, setObservation] = useState("");
   const [angle, setAngle] = useState("");
+  const [offer, setOffer] = useState(
+    "Cinematic, motion-first websites that people actually finish scrolling\nProduct engineering in Next.js and TypeScript, production-grade on day one\nBilingual EN/AR builds with correct RTL from the first commit"
+  );
+  const [proof, setProof] = useState(
+    "Scenarios: moved a contracting studio into creative-house positioning; first international RFP within a month\nQuipmed: a medical distributor site clinicians trust; bounce down 38%\nLivFunctional: bilingual wellness converting cold traffic at 4.1%"
+  );
   const [proofUrl, setProofUrl] = useState("");
   // followup
   const [topic, setTopic] = useState("");
@@ -51,38 +58,44 @@ export function OutreachTool() {
         .map((l) => l.trim())
         .filter(Boolean)
         .map((l) => {
-          const [email, name = "", company = ""] = l.split("|").map((s) => s.trim());
-          return { email, name, company };
+          // Split on the FIRST pipe only, so a multi-word company (or one that
+          // itself contains a name) survives intact after "email |".
+          const i = l.indexOf("|");
+          const email = (i === -1 ? l : l.slice(0, i)).trim();
+          const company = (i === -1 ? "" : l.slice(i + 1)).trim();
+          return { email, company };
         })
         .filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)),
     [recipients]
   );
 
+  const offerLines = useMemo(() => offer.split("\n").map((s) => s.trim()).filter(Boolean), [offer]);
+  const proofLines = useMemo(() => proof.split("\n").map((s) => s.trim()).filter(Boolean), [proof]);
+
   // Live preview uses the very same builders the server sends with.
   // Previews the FIRST recipient's copy, so what you see is one real send.
   const preview = useMemo(() => {
-    const name = parsed[0]?.name || "Sara";
     const company = parsed[0]?.company || "";
     try {
       switch (tab) {
         case "pitch":
           return coldPitchEmail({
-            toName: name,
-            company: company || "your studio",
+            company: company || "your company",
+            hook: hook || "An outside read on",
             observation: observation || "I came across your site and the work is strong, but the way it's presented undersells it.",
-            angle: angle || "I build motion-first sites that make studio work land the way it deserves to.",
+            angle: angle || "I'd sharpen the positioning so the work lands the way it deserves to.",
+            offer: offerLines,
+            proof: proofLines,
             proofUrl: proofUrl || undefined,
           });
         case "followup":
           return followUpEmail({
-            toName: name,
             company: company || undefined,
             topic: topic || "your website",
             newAngle: newAngle || undefined,
           });
         case "launch":
           return launchEmail({
-            toName: name,
             company: company || undefined,
             projectName: projectName || "A new project",
             projectUrl: projectUrl || SITE.url,
@@ -91,7 +104,7 @@ export function OutreachTool() {
           });
         case "confirmation":
           return inquiryConfirmationEmail({
-            name: name,
+            name: company || "there",
             email: parsed[0]?.email || "client@company.com",
             service_label: "Website Development",
             budget: "1,500 - 3,000 USD",
@@ -101,12 +114,12 @@ export function OutreachTool() {
     } catch {
       return null;
     }
-  }, [tab, parsed, observation, angle, proofUrl, topic, newAngle, projectName, projectUrl, story, availability]);
+  }, [tab, parsed, hook, observation, angle, offerLines, proofLines, proofUrl, topic, newAngle, projectName, projectUrl, story, availability]);
 
   async function send() {
     if (tab === "confirmation") return;
     if (!parsed.length) {
-      setError("Add at least one recipient as  email | Name");
+      setError("Add at least one recipient as  email | Company");
       return;
     }
     setError("");
@@ -120,7 +133,7 @@ export function OutreachTool() {
           template: tab,
           // company travels per recipient inside `parsed`
           recipients: parsed,
-          observation, angle, proofUrl,
+          hook, observation, angle, offer: offerLines, proof: proofLines, proofUrl,
           topic, newAngle,
           projectName, projectUrl, story, availability,
         }),
@@ -185,13 +198,13 @@ export function OutreachTool() {
 
           {tab !== "confirmation" ? (
             <label className="grid gap-2">
-              <span className={lab}>Recipients · one per line, email | Name | Company</span>
+              <span className={lab}>Recipients · one per line, email | Company</span>
               <textarea
                 className={`${field} resize-none`}
                 rows={5}
                 value={recipients}
                 onChange={(e) => setRecipients(e.target.value)}
-                placeholder={"sara@studio.com | Sara | Mirror Studio\nfounder@brand.co | Yousef | Brand Co"}
+                placeholder={"sara@studio.com | Mirror Studio\nfounder@brand.co | Al Otaibi Group"}
               />
               <span className="text-xs text-bone/35">
                 {parsed.length} valid recipient{parsed.length === 1 ? "" : "s"} · max 25 per send.
@@ -211,12 +224,27 @@ export function OutreachTool() {
           {tab === "pitch" ? (
             <>
               <label className="grid gap-2">
+                <span className={lab}>Opening hook · reads as “[hook] [company].”</span>
+                <input className={field} value={hook} onChange={(e) => setHook(e.target.value)} placeholder="An outside read on" />
+                <span className="text-xs text-bone/35">
+                  Preview: “{(hook || "An outside read on")} {parsed[0]?.company || "your company"}.”
+                </span>
+              </label>
+              <label className="grid gap-2">
                 <span className={lab}>What you noticed · makes it not a mass mail</span>
                 <textarea className={`${field} resize-none`} rows={3} value={observation} onChange={(e) => setObservation(e.target.value)} placeholder="Your project photography is excellent but the site presents it as a flat grid…" />
               </label>
               <label className="grid gap-2">
                 <span className={lab}>Your angle · what you would do</span>
                 <textarea className={`${field} resize-none`} rows={3} value={angle} onChange={(e) => setAngle(e.target.value)} placeholder="I'd rebuild it as an editorial, motion-led experience…" />
+              </label>
+              <label className="grid gap-2">
+                <span className={lab}>What I do · one bullet per line — edit this to switch niche</span>
+                <textarea className={`${field} resize-none`} rows={4} value={offer} onChange={(e) => setOffer(e.target.value)} />
+              </label>
+              <label className="grid gap-2">
+                <span className={lab}>Recent work · one bullet per line</span>
+                <textarea className={`${field} resize-none`} rows={4} value={proof} onChange={(e) => setProof(e.target.value)} />
               </label>
               <label className="grid gap-2">
                 <span className={lab}>Proof link · optional</span>
