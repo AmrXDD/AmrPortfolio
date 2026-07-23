@@ -12,8 +12,7 @@ export const SITE = {
   email: "info@amrstudio.dev",
   // E.164 format, digits only, used for wa.me links
   whatsapp: "96560318366",
-  // Production URL, swap for your custom domain when you have one
-  url: "https://amrstudio.vercel.app",
+  url: "https://amrstudio.dev",
   twitter: "@amrstudio",
   keywords: [
     "creative developer",

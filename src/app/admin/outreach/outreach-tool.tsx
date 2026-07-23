@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Logo } from "@/components/ui/logo";
 import { coldPitchEmail, followUpEmail, launchEmail } from "@/lib/emails/templates";
 import { inquiryConfirmationEmail } from "@/lib/emails/templates";
+import { SITE } from "@/lib/constants";
 
 const field =
   "w-full rounded-xl border border-line bg-white/[0.03] px-4 py-3 text-sm text-bone placeholder:text-bone/30 outline-none transition-colors focus:border-bone/40";
@@ -24,7 +25,6 @@ export function OutreachTool() {
   // shared
   const [recipients, setRecipients] = useState("");
   // pitch
-  const [company, setCompany] = useState("");
   const [observation, setObservation] = useState("");
   const [angle, setAngle] = useState("");
   const [proofUrl, setProofUrl] = useState("");
@@ -41,6 +41,9 @@ export function OutreachTool() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
+  // Each line carries its own company, so every recipient gets genuinely
+  // different copy (and a different subject line) rather than one blast with
+  // identical bodies — which is what trips spam filters.
   const parsed = useMemo(
     () =>
       recipients
@@ -48,16 +51,18 @@ export function OutreachTool() {
         .map((l) => l.trim())
         .filter(Boolean)
         .map((l) => {
-          const [email, name = ""] = l.split("|").map((s) => s.trim());
-          return { email, name };
+          const [email, name = "", company = ""] = l.split("|").map((s) => s.trim());
+          return { email, name, company };
         })
         .filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)),
     [recipients]
   );
 
   // Live preview uses the very same builders the server sends with.
+  // Previews the FIRST recipient's copy, so what you see is one real send.
   const preview = useMemo(() => {
     const name = parsed[0]?.name || "Sara";
+    const company = parsed[0]?.company || "";
     try {
       switch (tab) {
         case "pitch":
@@ -78,8 +83,9 @@ export function OutreachTool() {
         case "launch":
           return launchEmail({
             toName: name,
+            company: company || undefined,
             projectName: projectName || "A new project",
-            projectUrl: projectUrl || "https://amrstudio.vercel.app",
+            projectUrl: projectUrl || SITE.url,
             story: story || "Six weeks of work, live today.",
             availability: availability || undefined,
           });
@@ -95,7 +101,7 @@ export function OutreachTool() {
     } catch {
       return null;
     }
-  }, [tab, parsed, company, observation, angle, proofUrl, topic, newAngle, projectName, projectUrl, story, availability]);
+  }, [tab, parsed, observation, angle, proofUrl, topic, newAngle, projectName, projectUrl, story, availability]);
 
   async function send() {
     if (tab === "confirmation") return;
@@ -112,8 +118,9 @@ export function OutreachTool() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           template: tab,
+          // company travels per recipient inside `parsed`
           recipients: parsed,
-          company, observation, angle, proofUrl,
+          observation, angle, proofUrl,
           topic, newAngle,
           projectName, projectUrl, story, availability,
         }),
@@ -177,15 +184,18 @@ export function OutreachTool() {
 
           {tab !== "confirmation" ? (
             <label className="grid gap-2">
-              <span className={lab}>Recipients · one per line, email | Name</span>
+              <span className={lab}>Recipients · one per line, email | Name | Company</span>
               <textarea
                 className={`${field} resize-none`}
-                rows={4}
+                rows={5}
                 value={recipients}
                 onChange={(e) => setRecipients(e.target.value)}
-                placeholder={"sara@studio.com | Sara\nfounder@brand.co | Yousef"}
+                placeholder={"sara@studio.com | Sara | Mirror Studio\nfounder@brand.co | Yousef | Brand Co"}
               />
-              <span className="text-xs text-bone/35">{parsed.length} valid recipient{parsed.length === 1 ? "" : "s"} · max 25 per send</span>
+              <span className="text-xs text-bone/35">
+                {parsed.length} valid recipient{parsed.length === 1 ? "" : "s"} · max 25 per send.
+                Each company is written into that person&apos;s own subject line and body.
+              </span>
             </label>
           ) : (
             <div className="rounded-xl border border-line bg-white/[0.02] p-4">
@@ -199,10 +209,6 @@ export function OutreachTool() {
 
           {tab === "pitch" ? (
             <>
-              <label className="grid gap-2">
-                <span className={lab}>Their company</span>
-                <input className={field} value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Studio or brand name" />
-              </label>
               <label className="grid gap-2">
                 <span className={lab}>What you noticed · makes it not a mass mail</span>
                 <textarea className={`${field} resize-none`} rows={3} value={observation} onChange={(e) => setObservation(e.target.value)} placeholder="Your project photography is excellent but the site presents it as a flat grid…" />
@@ -220,10 +226,6 @@ export function OutreachTool() {
 
           {tab === "followup" ? (
             <>
-              <label className="grid gap-2">
-                <span className={lab}>Their company · optional</span>
-                <input className={field} value={company} onChange={(e) => setCompany(e.target.value)} />
-              </label>
               <label className="grid gap-2">
                 <span className={lab}>Topic · what the last conversation was about</span>
                 <input className={field} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="rebuilding your studio site" />

@@ -192,6 +192,8 @@ export function followUpEmail(d: FollowUpData): Email {
 
 export type LaunchData = {
   toName: string;
+  /** Their company — keeps each send distinct rather than one identical blast. */
+  company?: string;
   projectName: string;
   projectUrl: string;
   /** One paragraph on what it is and why it matters. */
@@ -204,7 +206,7 @@ export function launchEmail(d: LaunchData): Email {
   const body = [
     h1(`${d.projectName} is live.`),
     sub(`New from ${SITE.brand} · ${SITE.city}`),
-    p(`${firstName(d.toName)} —`),
+    p(`${firstName(d.toName)}${d.company ? ` at ${d.company}` : ""} —`),
     p(d.story),
     button("See it live", d.projectUrl),
     linkRow("Direct link:", d.projectUrl),
