@@ -39,6 +39,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Proposal PDF is too large to email (8MB limit)" }, { status: 413 });
   }
 
+  // Verify the payload really decodes to a PDF before mailing it, so a bad
+  // attachment surfaces as an error in the UI instead of landing in the
+  // client's inbox as an unopenable file.
+  let pdf: Buffer | null = null;
+  if (pdfBase64) {
+    pdf = Buffer.from(pdfBase64, "base64");
+    if (pdf.subarray(0, 5).toString("latin1") !== "%PDF-") {
+      return NextResponse.json(
+        { error: "Attachment did not decode to a valid PDF — nothing was sent." },
+        { status: 422 }
+      );
+    }
+  }
+
   const resendKey = process.env.RESEND_API_KEY;
   // Proposals go out on their own sender; replies still land in the main inbox.
   const from = FROM_PROPOSALS;
@@ -68,8 +82,17 @@ export async function POST(req: Request) {
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
-      attachments: pdfBase64
-        ? [{ filename: str("filename", 120) || "Proposal.pdf", content: pdfBase64 }]
+      // Decode to a real Buffer rather than handing Resend the base64 string.
+      // Both are documented as valid, but the string form leaves the encoding
+      // ambiguous end-to-end; a Buffer is unambiguously the file's bytes.
+      attachments: pdf
+        ? [
+            {
+              filename: str("filename", 120) || "Proposal.pdf",
+              content: pdf,
+              contentType: "application/pdf",
+            },
+          ]
         : undefined,
     });
     if (error) {
