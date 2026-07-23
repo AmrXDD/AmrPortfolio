@@ -84,7 +84,11 @@ class Doc {
     this.label = label;
     this.pdf = await PDFDocument.create();
     this.pdf.registerFontkit(fontkit);
-    this.font = await this.pdf.embedFont(await fontBytes(), { subset: true });
+    // NOT subset. Subsetting this OTF emits a CIDFontType0C (CFF) font that
+    // viewers render with gaps after narrow glyphs — "Brand site" comes out as
+    // "Br and sit e". Embedding whole yields a CIDFontType2 that renders
+    // correctly, and the face is only ~28KB, so the size cost is irrelevant.
+    this.font = await this.pdf.embedFont(await fontBytes(), { subset: false });
     this.font.getCharacterSet().forEach((c) => this.chars.add(c));
     this.logo = await this.pdf.embedPng(await logoPng());
     this.newPage();

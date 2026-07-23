@@ -95,7 +95,10 @@ class Doc {
     this.label = label;
     this.pdf = await PDFDocument.create();
     this.pdf.registerFontkit(fontkit);
-    this.font = await this.pdf.embedFont(await fontBytes(), { subset: true });
+    // NOT subset — see proposal-pdf.ts. Subsetting this OTF produces a CFF
+    // font that viewers space wrongly ("Br and sit e"); the whole face is
+    // ~28KB, so embedding it entirely costs nothing and renders correctly.
+    this.font = await this.pdf.embedFont(await fontBytes(), { subset: false });
     this.font.getCharacterSet().forEach((c) => this.chars.add(c));
     this.logo = await this.pdf.embedPng(await logoPng());
     this.newPage();
