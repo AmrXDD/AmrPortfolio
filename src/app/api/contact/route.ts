@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabaseAdmin, isSupabaseConfigured, CONTACT_TABLE } from "@/lib/supabase";
 import { inquiryConfirmationEmail, inquiryNotificationEmail } from "@/lib/emails/templates";
+import { INBOX, FROM_DEFAULT } from "@/lib/emails/addresses";
 
 export const runtime = "nodejs";
 
@@ -51,10 +52,10 @@ export async function POST(req: Request) {
 
   // 2) Email via Resend (if configured): notify me, and auto-confirm to them.
   const resendKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_TO_EMAIL;
-  const from = process.env.RESEND_FROM_EMAIL || "Amr Studio <onboarding@resend.dev>";
+  const to = INBOX;
+  const from = FROM_DEFAULT;
   let confirmed = false;
-  if (resendKey && to) {
+  if (resendKey) {
     const resend = new Resend(resendKey);
 
     // 2a) Lead notification to me — branded, readable on a phone.
@@ -73,10 +74,9 @@ export async function POST(req: Request) {
       console.error("[contact] notification send failed:", e);
     }
 
-    // 2b) Automatic confirmation to the person who inquired.
-    // NOTE: this only reaches arbitrary recipients once RESEND_FROM_EMAIL uses a
-    // domain verified in Resend. On the default onboarding@resend.dev sender,
-    // Resend refuses anything but your own address — the catch keeps that quiet.
+    // 2b) Automatic confirmation to the person who inquired. Sends from the
+    // verified amrstudio.dev domain, so it reaches any recipient; the catch is
+    // kept so a mail failure never costs us the saved inquiry.
     try {
       const mail = inquiryConfirmationEmail(record);
       await resend.emails.send({
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
     console.warn("[contact] Resend not configured — skipping email.");
   }
 
-  if (!db && !(resendKey && to)) {
+  if (!db && !resendKey) {
     // Nothing was actually delivered anywhere — surface a clear error.
     return NextResponse.json(
       { error: "Contact backend not configured", configured: false },

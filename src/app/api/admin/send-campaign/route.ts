@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { isAuthed } from "@/lib/admin-auth";
 import { coldPitchEmail, followUpEmail, launchEmail } from "@/lib/emails/templates";
+import { INBOX, FROM_DEFAULT } from "@/lib/emails/addresses";
 
 export const runtime = "nodejs";
 
@@ -43,8 +44,8 @@ export async function POST(req: Request) {
   }
 
   const resendKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || "Amr Studio <onboarding@resend.dev>";
-  const replyTo = process.env.CONTACT_TO_EMAIL || undefined;
+  const from = FROM_DEFAULT;
+  const replyTo = INBOX;
   if (!resendKey) {
     return NextResponse.json({ error: "Resend is not configured (RESEND_API_KEY missing)" }, { status: 503 });
   }

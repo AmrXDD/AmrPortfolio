@@ -8,7 +8,8 @@ export const SITE = {
     "Designing cinematic interfaces and shipping software that feels inevitable.",
   city: "Salmiya, Kuwait",
   region: "KW",
-  email: "lowmoch@gmail.com",
+  // Public contact address: shown on the site and in the schema.org JSON-LD.
+  email: "info@amrstudio.dev",
   // E.164 format, digits only, used for wa.me links
   whatsapp: "96560318366",
   // Production URL, swap for your custom domain when you have one
