@@ -34,7 +34,7 @@ export const fmtDate = (iso: string) => {
 
 const money = (d: ContractData) => `${esc(d.price)} ${esc(d.currency)}`.trim();
 
-const refId = (d: ContractData) =>
+export const refId = (d: ContractData) =>
   `AS-${(d.dateOfIssue || "").replace(/-/g, "")}-${(d.clientName || "X").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "CLT"}`;
 
 /* Shared shell: page chrome, logo, typography. */

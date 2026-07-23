@@ -10,6 +10,8 @@ export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 export const CONTACT_TABLE = "contact_submissions";
+export const CONTRACTS_TABLE = "contracts";
+export const INVOICES_TABLE = "invoices";
 
 export function isSupabaseConfigured(): boolean {
   return Boolean(SUPABASE_URL && SERVICE_ROLE);
@@ -27,6 +29,43 @@ export function supabaseAdmin(): SupabaseClient | null {
   }
   return cached;
 }
+
+/** A saved contract — the source the invoice generator autofills from. */
+export type ContractRow = {
+  id: string;
+  created_at: string;
+  ref: string;
+  client_name: string;
+  company_name: string | null;
+  client_email: string | null;
+  project_type: string | null;
+  website_type: string | null;
+  price: string | null;
+  currency: string;
+  upfront_percent: string;
+  payment_timeline: string[];
+  scope: string[];
+  date_of_issue: string | null;
+  notes: string | null;
+};
+
+export type InvoiceRow = {
+  id: string;
+  created_at: string;
+  invoice_no: string;
+  contract_id: string | null;
+  client_name: string;
+  company_name: string | null;
+  client_email: string | null;
+  kind: "deposit" | "final" | "full" | "custom";
+  amount: string;
+  currency: string;
+  issue_date: string | null;
+  due_date: string | null;
+  status: "unpaid" | "paid";
+  line_items: string[];
+  notes: string | null;
+};
 
 export type ContactSubmission = {
   id: string;

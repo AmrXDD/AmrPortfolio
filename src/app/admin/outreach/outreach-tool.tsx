@@ -149,6 +149,7 @@ export function OutreachTool() {
           <span className="text-mono text-[11px] uppercase tracking-[0.24em] text-bone/45">Outreach</span>
         </div>
         <nav className="flex items-center gap-5">
+          <a href="/admin/invoice" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Invoices</a>
           <a href="/admin/proposal" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Proposals</a>
           <a href="/admin/contract" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Contracts</a>
           <a href="/admin" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Inquiries</a>

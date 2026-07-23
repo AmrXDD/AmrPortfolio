@@ -288,6 +288,51 @@ export function proposalEmail(d: ProposalEmailData): Email {
   );
 }
 
+/* ───────────────────────── 7. Invoice delivery ─────────────────────────
+   Sent by the invoice generator, with the PDF attached. */
+
+export type InvoiceEmailData = {
+  clientName: string;
+  companyName?: string;
+  invoiceNo: string;
+  amount: string;
+  dueDate: string;
+  kindLabel: string;
+  contractRef?: string;
+  lines: string[];
+  paymentDetails?: string;
+};
+
+export function invoiceEmail(d: InvoiceEmailData): Email {
+  const body = [
+    h1(`Invoice ${d.invoiceNo}`),
+    sub(`${d.kindLabel} · Due ${d.dueDate}${d.contractRef ? ` · Against contract ${d.contractRef}` : ""}`),
+    p(`${firstName(d.clientName)} — the invoice for ${d.companyName || "your project"} is attached as a PDF. The summary is below.`),
+
+    section("Amount due"),
+    hero(d.amount, `Payable by ${d.dueDate}`),
+
+    section("What this covers"),
+    bullets(d.lines),
+
+    ...(d.paymentDetails ? [section("How to pay"), panel("Payment details.", d.paymentDetails)] : []),
+
+    panel("Scheduling.", "Work against this invoice is scheduled as soon as payment clears. If anything on it looks wrong, reply and I'll reissue it — no awkwardness."),
+
+    button("Ask about this invoice", waLink(`Hi Amr, about invoice ${d.invoiceNo} —`)),
+  ].join("");
+
+  return pack(
+    `Invoice ${d.invoiceNo} — ${d.amount} due ${d.dueDate}`,
+    emailShell({
+      preheader: `${d.kindLabel} · ${d.amount} · due ${d.dueDate}`,
+      badge: "Invoice",
+      body,
+      footerNote: `Invoice ${d.invoiceNo} for ${d.companyName || d.clientName}. Amr Hassan, independent developer, not a licensed company.`,
+    })
+  );
+}
+
 /* ── registry used by the admin outreach console ── */
 export const MARKETING_TEMPLATES = {
   pitch: { label: "Cold outreach", build: coldPitchEmail },

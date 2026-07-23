@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Logo } from "@/components/ui/logo";
-import { buildContract, type ContractData } from "./doc-builders";
+import { buildContract, refId, type ContractData } from "./doc-builders";
 import { buildContractPdf, buildWelcomePdf, buildWhatsNextPdf } from "./pdf-builders";
 
 const CURRENCIES = ["USD", "KWD", "EUR", "GBP", "AED", "SAR", "EGP"];
@@ -37,6 +37,8 @@ function download(filename: string, bytes: Uint8Array) {
 export function ContractTool() {
   const [clientName, setClientName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [savedNote, setSavedNote] = useState("");
   const [projectType, setProjectType] = useState(PROJECT_TYPES[0]);
   const [websiteType, setWebsiteType] = useState("");
   const [price, setPrice] = useState("");
@@ -84,6 +86,20 @@ export function ContractTool() {
       download(`Contract-${base}-${d.dateOfIssue}.pdf`, await buildContractPdf(d));
       download(`Welcome-${base}.pdf`, await buildWelcomePdf(d));
       download(`Whats-Next-${base}.pdf`, await buildWhatsNextPdf(d));
+
+      // Save it so the invoice generator can bill against it later. A storage
+      // failure must not lose the documents you just generated, so it only
+      // surfaces as a note.
+      try {
+        const res = await fetch("/api/admin/contracts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...d, ref: refId(d), clientEmail: clientEmail.trim() }),
+        });
+        setSavedNote(res.ok ? "Saved — you can now invoice against this contract." : "");
+      } catch {
+        setSavedNote("");
+      }
     } catch (e) {
       console.error(e);
       setError("PDF generation failed. Check the console and try again.");
@@ -111,12 +127,12 @@ export function ContractTool() {
           <span className="text-bone/25">/</span>
           <span className="text-mono text-[11px] uppercase tracking-[0.24em] text-bone/45">Contracts</span>
         </div>
-        <a
-          href="/admin"
-          className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent"
-        >
-          Inquiries
-        </a>
+        <nav className="flex items-center gap-5">
+          <a href="/admin/invoice" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Invoices</a>
+          <a href="/admin/proposal" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Proposals</a>
+          <a href="/admin/outreach" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Outreach</a>
+          <a href="/admin" className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone/60 transition-colors hover:text-accent">Inquiries</a>
+        </nav>
       </header>
 
       <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-10 md:px-10 lg:grid-cols-[420px_1fr]">
@@ -140,6 +156,11 @@ export function ContractTool() {
               <input className={field} value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Optional" />
             </label>
           </div>
+
+          <label className="grid gap-2">
+            <span className={lab}>Client email · carried through to invoices</span>
+            <input className={field} value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="client@company.com" inputMode="email" />
+          </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2">
@@ -202,6 +223,7 @@ export function ContractTool() {
           </label>
 
           {error ? <p className="text-sm text-accent">{error}</p> : null}
+          {savedNote ? <p className="text-sm text-emerald-400">{savedNote}</p> : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <button type="button" onClick={generate} disabled={busy} className="btn-solid !px-6 disabled:opacity-60">
