@@ -7,7 +7,7 @@
 
 import { SITE, waLink } from "@/lib/constants";
 import {
-  emailShell, toText, esc, h1, sub, section, p, bullets, kv, panel, step, button, linkRow,
+  emailShell, toText, esc, h1, sub, section, p, bullets, kv, panel, step, button, linkRow, hero,
 } from "./shell";
 
 export type Email = { subject: string; html: string; text: string };
@@ -255,9 +255,9 @@ export function proposalEmail(d: ProposalEmailData): Email {
     p(`Attached is the full written proposal for ${d.companyName || "your project"} — fixed scope, fixed price, no hourly surprises. The short version is below.`),
 
     section("The engagement"),
+    hero(d.investment, "Total project investment · fixed price"),
     kv([
       ["Project", d.projectTitle],
-      ["Investment", d.investment],
       ["Valid until", d.validUntil],
       ["Reference", d.ref],
     ]),
