@@ -69,12 +69,23 @@ export function SideRays({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const meshRef = useRef<any>(null);
   const cleanupFunctionRef = useRef<(() => void) | null>(null);
+  // Build the renderer once, on first sight, then only pause/resume the
+  // loop. (Tearing the WebGL context down whenever the hero scrolled away,
+  // and rebuilding it on the way back, was a visible hitch each time.)
   const [isVisible, setIsVisible] = useState(false);
+  const visibleRef = useRef(false);
+  const resumeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const obs = new IntersectionObserver(
-      ([entry]) => setIsVisible(entry.isIntersecting),
+      ([entry]) => {
+        visibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          resumeRef.current?.();
+        }
+      },
       { threshold: 0.1 }
     );
     obs.observe(containerRef.current);
@@ -171,7 +182,9 @@ void main(){
       };
 
       const loop = (t: number) => {
+        animationIdRef.current = null;
         if (!rendererRef.current || !uniformsRef.current || !meshRef.current) return;
+        if (!visibleRef.current) return; // paused off-screen; resumeRef restarts it
         uniforms.iTime.value = t * 0.001;
         try {
           renderer.render({ scene: mesh });
@@ -179,6 +192,9 @@ void main(){
         } catch {
           return;
         }
+      };
+      resumeRef.current = () => {
+        if (animationIdRef.current == null) animationIdRef.current = requestAnimationFrame(loop);
       };
 
       window.addEventListener("resize", updateSize);
@@ -188,6 +204,7 @@ void main(){
       cleanupFunctionRef.current = () => {
         if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
         animationIdRef.current = null;
+        resumeRef.current = null;
         window.removeEventListener("resize", updateSize);
         try {
           const loseCtx = renderer.gl.getExtension("WEBGL_lose_context");

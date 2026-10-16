@@ -2,7 +2,7 @@ import { Hero } from "@/components/sections/hero/hero";
 import { FullStack } from "@/components/sections/fullstack";
 import { About } from "@/components/sections/about";
 import { WorkGrid } from "@/components/sections/work-grid";
-import { CaseStudy } from "@/components/sections/case-study";
+import { CaseStudies } from "@/components/sections/case-studies";
 import { LaptopScene } from "@/components/sections/showcase/laptop-scene";
 import { Guarantees } from "@/components/sections/guarantees";
 import { BrowserCodeScene } from "@/components/sections/showcase/browser-code-scene";
@@ -15,10 +15,8 @@ import { Philosophy } from "@/components/sections/philosophy";
 import { Testimonials } from "@/components/sections/testimonials";
 import { CTA } from "@/components/sections/cta";
 import { Footer } from "@/components/sections/footer";
-import { PROJECTS } from "@/lib/constants";
 
 export default function Home() {
-  const [scenarios, quipmed, livfunc, smartee] = PROJECTS;
   return (
     <>
       <Hero />
@@ -26,10 +24,8 @@ export default function Home() {
       <FullStack />
       <About />
       <WorkGrid />
-      <CaseStudy project={scenarios} flagship />
-      <CaseStudy project={quipmed} />
-      <CaseStudy project={livfunc} />
-      <CaseStudy project={smartee} />
+      {/* Featured case studies: a sideways gallery, each room in its client's colours */}
+      <CaseStudies />
 
       {/* ── Craft showcase: cinematic device sequences ── */}
       <LaptopScene />

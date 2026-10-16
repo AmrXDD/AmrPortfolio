@@ -20,7 +20,6 @@ const COPY = {
     waMsg: "Hey Amr, saw your portfolio. Let's talk.",
     rights: `© ${new Date().getFullYear()} ${SITE.name} Studio. All work hand coded.`,
     built: "Built with Next.js 16 · TS · Tailwind · R3F · Framer Motion",
-    devices: "3D devices:",
     version: "v.05",
   },
   ar: {
@@ -36,7 +35,6 @@ const COPY = {
     waMsg: "مرحبًا عمرو، شاهدت أعمالك. لنتحدّث.",
     rights: `© ${new Date().getFullYear()} ${SITE.name} Studio. كل الأعمال مبرمجة يدويًا.`,
     built: "مبني بـ Next.js 16 · TS · Tailwind · R3F · Framer Motion",
-    devices: "نماذج الأجهزة ثلاثية الأبعاد:",
     version: "v.05",
   },
 };
@@ -148,13 +146,6 @@ export function Footer() {
             <Link href="/terms" data-cursor="link" className="link-underline">{t("legal.terms")}</Link>
           </span>
           <span>{c.built}</span>
-          <span>
-            {c.devices}{" "}
-            <a href="https://sketchfab.com/3d-models/macbook-pro-m3-16-inch-2024-8e34fc2b303144f78490007d91ff57c4" target="_blank" rel="noreferrer" className="link-underline">jackbaeten</a>
-            {" · "}
-            <a href="https://sketchfab.com/3d-models/iphone-15-pro-max-5b7b35513a154ac69619dc2b2fe15686" target="_blank" rel="noreferrer" className="link-underline">MpPower™</a>
-            {" "}(CC BY 4.0)
-          </span>
           <span>{c.version}</span>
         </div>
       </div>

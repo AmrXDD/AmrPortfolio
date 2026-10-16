@@ -1,19 +1,15 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { motion, useScroll, useTransform, useReducedMotion, type MotionValue } from "framer-motion";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { useIsMobile } from "@/lib/use-mobile";
 import { useCopy } from "@/lib/i18n";
+import { drawStudioReel, CANVAS_W, CANVAS_H } from "./studio-reel-draw";
 
 const COPY = {
   en: {
-    eyebrow: "The Craft · Desktop",
-    mobileH: "Built for the big screen.",
-    mobileP: "On desktop this opens into a live 3D MacBook that builds a project in front of you: brand, then design, then code. Here's the headline frame.",
-    introA: "Scroll to open",
+    eyebrow: "The Craft · Studio",
+    introA: "Scroll to switch on",
     introB: "the studio.",
     insideEyebrow: "Inside · brand → design → build",
     insideA: "One idea, three crafts,",
@@ -21,10 +17,8 @@ const COPY = {
     keep: "Keep scrolling",
   },
   ar: {
-    eyebrow: "الحِرفة · سطح المكتب",
-    mobileH: "مصمّم للشاشة الكبيرة.",
-    mobileP: "على الكمبيوتر يتحوّل هذا القسم إلى لابتوب ثلاثي الأبعاد يبني مشروعًا أمامك: الهوية، ثم التصميم، ثم البرمجة. هذا هو الإطار الرئيسي.",
-    introA: "مرّر لتفتح",
+    eyebrow: "الحِرفة · الاستوديو",
+    introA: "مرّر لتشغيل",
     introB: "الاستوديو.",
     insideEyebrow: "في الداخل · هوية ← تصميم ← بناء",
     insideA: "فكرة واحدة، ثلاث حِرف،",
@@ -33,109 +27,136 @@ const COPY = {
   },
 };
 
-const LaptopCanvas = dynamic(() => import("./laptop-3d"), { ssr: false });
+const smooth = (e0: number, e1: number, x: number) => {
+  const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+};
+
+/*
+ * The live "brand → design → build" reel on a flat studio monitor. No WebGL
+ * and no 3D model: a 2D canvas painted at ~30fps only while on screen, and
+ * pure CSS transforms for the tilt, so nothing compiles or uploads to the GPU
+ * when the visitor enters the site.
+ */
+function ReelScreen({ progress, still }: { progress: MotionValue<number>; still: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    // Back the canvas at the displayed size × DPR so the reel stays crisp.
+    let k = 1;
+    const fit = () => {
+      const w = canvas.getBoundingClientRect().width || CANVAS_W;
+      k = Math.min(2, Math.max(0.5, (w * Math.min(2, window.devicePixelRatio || 1)) / CANVAS_W));
+      canvas.width = Math.round(CANVAS_W * k);
+      canvas.height = Math.round(CANVAS_H * k);
+    };
+    const paint = (p: number, time: number) => {
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      drawStudioReel(ctx, p, time);
+    };
+    fit();
+
+    if (still) {
+      paint(1, 0);
+      return;
+    }
+
+    let raf = 0;
+    let visible = false;
+    let frame = 0;
+    const t0 = performance.now();
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      // ~30fps is plenty for the reel and halves the canvas cost
+      frame = (frame + 1) % 2;
+      if (frame) return;
+      paint(smooth(0.18, 0.9, progress.get()), (now - t0) / 1000);
+    };
+    const io = new IntersectionObserver(
+      ([e]) => {
+        visible = e.isIntersecting;
+        cancelAnimationFrame(raf);
+        if (visible) raf = requestAnimationFrame(loop);
+      },
+      { rootMargin: "20% 0px" }
+    );
+    io.observe(canvas);
+    const ro = new ResizeObserver(() => {
+      fit();
+      if (!visible) paint(smooth(0.18, 0.9, progress.get()), 0);
+    });
+    ro.observe(canvas);
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+      ro.disconnect();
+    };
+  }, [progress, still]);
+
+  return <canvas ref={ref} aria-hidden className="block h-full w-full" />;
+}
 
 export function LaptopScene() {
   const c = useCopy(COPY);
   const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-  const isMobile = useIsMobile();
+  const reduce = !!useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
 
-  // Mount eagerly + keep mounted (no context churn). Off-screen the canvas
-  // frameloop is fully STOPPED (not just our updates) — zero GPU cost.
-  const [mounted, setMounted] = useState(false);
-  const [active, setActive] = useState(false);
-  // Warm-up window: right after mount we render the scene OFF-screen for a
-  // couple of seconds so the GLTF, environment map, textures and shaders all
-  // compile/upload during page-load idle time — that first compile is the
-  // 1–1.5s stutter, so doing it early (while the user is at the top) removes it.
-  const [warm, setWarm] = useState(false);
-  // Wait for the visitor to leave the loader before we touch WebGL — mounting
-  // the canvas / warming it up while the loader is on screen is what janked it.
-  const [entered, setEntered] = useState(false);
-  const activeRef = useRef(false);
-
-  useEffect(() => {
-    const on = () => setEntered(true);
-    window.addEventListener("ambient:start", on);
-    // No loader running (e.g. client-side nav)? Proceed right away.
-    if (!document.documentElement.classList.contains("preloading")) setEntered(true);
-    return () => window.removeEventListener("ambient:start", on);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        activeRef.current = e.isIntersecting;
-        setActive(e.isIntersecting);
-      },
-      { rootMargin: "80% 0px 80% 0px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  // Mount the canvas only once we're past the loader AND its exit glide has
-  // finished (~1.3s), so its WebGL init never janks the loader or the handoff.
-  useEffect(() => {
-    if (!entered) return;
-    const t = setTimeout(() => setMounted(true), 1400);
-    return () => clearTimeout(t);
-  }, [entered]);
-
-  // Warm-up window once the canvas is mounted: render off-screen for a couple of
-  // seconds so the GLTF, env map, textures and shaders compile ahead of the
-  // section arriving — killing the on-approach stutter.
-  useEffect(() => {
-    if (!mounted) return;
-    setWarm(true);
-    const t = setTimeout(() => setWarm(false), 2800);
-    return () => clearTimeout(t);
-  }, [mounted]);
+  // The monitor rises from a laid-back tilt to face you, then the camera
+  // leans in for the reel and eases back out.
+  const tilt = useTransform(scrollYProgress, [0, 0.2], [32, 0]);
+  const lift = useTransform(scrollYProgress, [0, 0.2], ["14%", "0%"]);
+  const scale = useTransform(scrollYProgress, [0, 0.2, 0.42, 0.78, 0.92], [0.78, 0.92, 1.04, 1.04, 0.94]);
+  const glow = useTransform(scrollYProgress, [0, 0.2, 0.9, 1], [0.15, 0.6, 0.6, 0.2]);
 
   const introOpacity = useTransform(scrollYProgress, [0, 0.08, 0.16], [1, 1, 0]);
   const insideOpacity = useTransform(scrollYProgress, [0.42, 0.5, 0.74, 0.82], [0, 1, 1, 0]);
-  const outroOpacity = useTransform(scrollYProgress, [0.86, 0.94], [0, 1]);
+  const outroOpacity = useTransform(scrollYProgress, [0.88, 0.95], [0, 1]);
 
-  // Mobile / reduced-motion: the 3D MacBook doesn't fit — clean static frame.
-  if (reduce || isMobile) {
+  const monitor = (
+    <div className="relative mx-auto w-full overflow-hidden rounded-[18px] border border-bone/15 bg-[#07080c] p-[6px] shadow-[0_60px_140px_-50px_rgba(0,0,0,0.95)] md:rounded-[24px] md:p-[10px]">
+      {/* glass sheen across the bezel */}
+      <span className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-[linear-gradient(115deg,rgba(255,255,255,0.08)_0%,transparent_32%,transparent_70%,rgba(255,255,255,0.04)_100%)]" />
+      <div className="relative overflow-hidden rounded-[12px] md:rounded-[16px]" style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}>
+        <ReelScreen progress={scrollYProgress} still={reduce} />
+      </div>
+    </div>
+  );
+
+  if (reduce) {
     return (
-      <section id="craft" className="border-b border-line px-5 py-24">
-        <div className="mx-auto max-w-[640px]">
+      <section id="craft" className="border-b border-line px-5 py-24 md:px-10">
+        <div className="mx-auto max-w-[1100px]">
           <Eyebrow index="A1">{c.eyebrow}</Eyebrow>
-          <h2 className="mt-5 text-display size-h2 text-bone">{c.mobileH}</h2>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-bone/60">{c.mobileP}</p>
-          <div className="mt-8 overflow-hidden rounded-xl border border-line bg-ash">
-            <div dir="ltr" className="flex items-center gap-2 border-b border-line px-4 py-2.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-              <span className="ml-2 text-mono text-[10px] tracking-wide text-bone/50">scenariosd.vercel.app</span>
-            </div>
-            <div className="relative aspect-[16/10]">
-              <Image src="/projects/scenarios-mac.png" alt="Scenarios desktop build" fill className="object-cover object-top" />
-            </div>
-          </div>
+          <h2 className="mt-5 text-display size-h2 text-bone">
+            {c.insideA} <span className="italic text-accent">{c.insideB}</span>
+          </h2>
+          <div className="mt-10">{monitor}</div>
         </div>
       </section>
     );
   }
 
   return (
-    <section id="craft" ref={ref} className="relative" style={{ height: "560vh" }}>
-      <div className="sticky top-0 h-screen overflow-hidden">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[80vh] w-[80vh] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-[120px]" />
+    <section id="craft" ref={ref} className="relative" style={{ height: "380vh" }}>
+      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden px-4 md:px-10">
+        <motion.div
+          style={{ opacity: glow }}
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[70vh] w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,77,31,0.28),rgba(124,58,237,0.14)_55%,transparent)] blur-2xl"
+        />
 
-        {/* The real MacBook Pro M3 — renders during the warm-up window and when
-            on screen; fully stops otherwise. */}
-        <div className="absolute inset-0">
-          {mounted ? <LaptopCanvas progress={scrollYProgress} activeRef={activeRef} frameloop={warm || active ? "always" : "never"} /> : null}
+        <div className="w-full max-w-[1120px]" style={{ perspective: 1600 }}>
+          <motion.div style={{ rotateX: tilt, y: lift, scale, transformOrigin: "50% 100%" }} className="will-change-transform">
+            {monitor}
+            {/* floor reflection */}
+            <div className="mx-auto mt-3 h-10 w-[70%] rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,77,31,0.22),transparent)] blur-xl" />
+          </motion.div>
         </div>
 
-        {/* Intro caption */}
         <motion.div style={{ opacity: introOpacity }} className="pointer-events-none absolute start-5 top-24 z-20 md:start-10 md:top-28">
           <Eyebrow index="A1">{c.eyebrow}</Eyebrow>
           <h2 className="mt-4 max-w-md text-display text-[clamp(1.75rem,4vw,3.25rem)] leading-[1.02] text-bone">
@@ -143,16 +164,14 @@ export function LaptopScene() {
           </h2>
         </motion.div>
 
-        {/* Inside label */}
-        <motion.div style={{ opacity: insideOpacity }} className="pointer-events-none absolute bottom-20 start-5 z-20 md:start-10">
+        <motion.div style={{ opacity: insideOpacity }} className="pointer-events-none absolute bottom-10 start-5 z-20 hidden md:block md:start-10">
           <Eyebrow index="LIVE">{c.insideEyebrow}</Eyebrow>
           <p className="mt-3 max-w-xs text-display text-[clamp(1.5rem,3vw,2.5rem)] leading-[1.02] text-bone">
             {c.insideA} <span className="italic text-accent">{c.insideB}</span>
           </p>
         </motion.div>
 
-        {/* Outro */}
-        <motion.div style={{ opacity: outroOpacity }} className="pointer-events-none absolute bottom-16 left-1/2 z-20 -translate-x-1/2 text-center">
+        <motion.div style={{ opacity: outroOpacity }} className="pointer-events-none absolute bottom-10 left-1/2 z-20 -translate-x-1/2 text-center">
           <p className="text-mono text-[10px] uppercase tracking-[0.3em] text-bone/45">{c.keep}</p>
         </motion.div>
       </div>

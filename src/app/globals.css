@@ -301,8 +301,8 @@ html[dir="rtl"] .lucide-arrow-right { scale: -1 1; }
    edge. Wide content containers that reach that edge get a gutter on the
    rail's side so text never runs underneath it. */
 @media (min-width: 768px) and (max-width: 1780px) {
-  main .max-w-\[1600px\] { padding-inline-end: 3rem; }
+  main .max-w-\[1600px\] { padding-inline-end: 6rem; }
 }
 @media (min-width: 768px) and (max-width: 1580px) {
-  main .max-w-\[1400px\] { padding-inline-end: 3rem; }
+  main .max-w-\[1400px\] { padding-inline-end: 6rem; }
 }

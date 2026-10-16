@@ -39,7 +39,6 @@ export const TERMS: { en: LegalDoc; ar: LegalDoc } = {
         body: [
           `The Site's design, code, text, graphics, animations and the ${SITE.brand} name and logo belong to me or are used under licence. You may view and share links to the Site, but you may not copy, reproduce or reuse its design, code or content without written permission.`,
           "Client names, logos, screenshots and trademarks shown in case studies belong to their respective owners and are shown to describe work I carried out. Their appearance doesn't mean those owners endorse anything beyond that work.",
-          "The 3D device models are third-party works used under the Creative Commons Attribution 4.0 licence, credited in the footer.",
         ],
       },
       {
@@ -134,7 +133,6 @@ export const TERMS: { en: LegalDoc; ar: LegalDoc } = {
         body: [
           `تصميم الموقع وشيفرته ونصوصه ورسوماته وحركاته واسم ${SITE.brand} وشعاره مملوكة لي أو مستخدمة بترخيص. يمكنك تصفّح الموقع ومشاركة روابطه، لكن لا يجوز نسخ تصميمه أو شيفرته أو محتواه أو إعادة استخدامها دون إذن كتابي.`,
           "أسماء العملاء وشعاراتهم ولقطات مواقعهم وعلاماتهم التجارية الظاهرة في دراسات الحالة مملوكة لأصحابها، وتُعرض لوصف العمل الذي نفّذته. ولا يعني ظهورها أن أصحابها يؤيّدون أي شيء يتجاوز ذلك العمل.",
-          "نماذج الأجهزة ثلاثية الأبعاد أعمال لأطراف ثالثة مستخدمة بموجب ترخيص المشاع الإبداعي (نسب المصنَّف 4.0)، وأصحابها مذكورون في تذييل الموقع.",
         ],
       },
       {

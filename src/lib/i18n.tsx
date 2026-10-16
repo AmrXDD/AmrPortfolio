@@ -62,6 +62,11 @@ export const STRINGS: Dict = {
     ar: "أربعة مشاريع حديثة — واحد رئيسي، اثنان مُطلقان، وواحد قيد التطوير. تتراكم البطاقات أثناء التمرير، وكل منها يفتح الموقع المباشر.",
   },
 
+  "work.introMobile": {
+    en: "Four recent engagements. Each card opens the live site.",
+    ar: "أربعة مشاريع حديثة. كل بطاقة تفتح الموقع المباشر.",
+  },
+
   "contact.eyebrow": { en: "Contact", ar: "تواصل" },
   "contact.h1": { en: "Let's build", ar: "لنبنِ" },
   "contact.h2": { en: "something", ar: "شيئًا" },

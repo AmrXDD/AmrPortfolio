@@ -28,7 +28,7 @@ export function Process() {
   });
   return (
     <section id="process" className="relative">
-      <div className="rounded-t-[40px] bg-[#F4F3EF] px-5 py-20 text-[#0C0C0C] sm:rounded-t-[50px] sm:px-8 sm:py-24 md:rounded-t-[60px] md:px-10 md:py-32">
+      <div data-surface="light" className="rounded-t-[40px] bg-[#F4F3EF] px-5 py-20 text-[#0C0C0C] sm:rounded-t-[50px] sm:px-8 sm:py-24 md:rounded-t-[60px] md:px-10 md:py-32">
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center sm:mb-20 md:mb-28">
             <p className="text-mono text-[11px] uppercase tracking-[0.3em] text-[#0C0C0C]/45">

@@ -116,7 +116,7 @@ export const PRIVACY: { en: LegalDoc; ar: LegalDoc } = {
               "amr_admin (cookie, 7 days, admin area only): keeps the site owner signed in. Visitors never receive it.",
             ],
           },
-          "Fonts, images and 3D models are served from the Site itself; your browser doesn't contact Google Fonts or other third parties to load them.",
+          "Fonts and images are served from the Site itself; your browser doesn't contact Google Fonts or other third parties to load them.",
         ],
       },
       {
@@ -265,7 +265,7 @@ export const PRIVACY: { en: LegalDoc; ar: LegalDoc } = {
               "amr_admin (ملف تعريف ارتباط، 7 أيام، لوحة الإدارة فقط): يُبقي مالك الموقع مسجّلًا للدخول. لا يتلقّاه الزوّار أبدًا.",
             ],
           },
-          "تُقدَّم الخطوط والصور والنماذج ثلاثية الأبعاد من الموقع نفسه؛ ولا يتّصل متصفحك بخطوط Google أو أي طرف ثالث لتحميلها.",
+          "تُقدَّم الخطوط والصور من الموقع نفسه؛ ولا يتّصل متصفحك بخطوط Google أو أي طرف ثالث لتحميلها.",
         ],
       },
       {

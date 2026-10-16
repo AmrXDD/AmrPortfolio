@@ -38,22 +38,28 @@ export function TopControls() {
     };
   }, []);
 
-  // While the header sits over the white Process sheet, flip its token scope to
-  // "light" so the (otherwise white) wordmark and controls stay legible.
+  // While the header sits over a light surface (the white Process sheet, a
+  // light client room in the case studies), flip its token scope to "light" so
+  // the (otherwise white) wordmark and controls stay legible.
   const [onLight, setOnLight] = useState(false);
   useEffect(() => {
-    const onScroll = () => {
-      const proc = document.getElementById("process");
-      if (!proc) return setOnLight(false);
-      const r = proc.getBoundingClientRect();
-      const nextTop =
-        (proc.nextElementSibling as HTMLElement | null)?.getBoundingClientRect().top ?? Infinity;
-      setOnLight(r.top < 76 && r.bottom > 76 && nextTop > 76);
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      // sample a point under the header that no header control covers
+      const hit = document
+        .elementsFromPoint(window.innerWidth * 0.3, 40)
+        .find((el) => !el.closest("header"));
+      setOnLight(Boolean(hit?.closest('[data-surface="light"]')));
     };
-    onScroll();
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(check);
+    };
+    check();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
