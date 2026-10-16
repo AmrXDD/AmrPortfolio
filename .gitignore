@@ -9,3 +9,6 @@ next-env.d.ts
 
 # TS incremental build cache
 *.tsbuildinfo
+
+# Local council reports (private notes, not for the public repo)
+.claude/council-cache/
