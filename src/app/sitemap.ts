@@ -3,7 +3,7 @@ import { SITE, PROJECTS } from "@/lib/constants";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const sections = ["index", "work", "process", "studio", "contact"];
+  const sections = ["work", "process", "studio", "contact"];
 
   return [
     {
@@ -17,6 +17,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.8,
+    })),
+    ...["privacy", "terms"].map((path) => ({
+      url: `${SITE.url}/${path}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
     })),
     ...PROJECTS.map((p) => ({
       url: `${SITE.url}/#case-${p.slug}`,

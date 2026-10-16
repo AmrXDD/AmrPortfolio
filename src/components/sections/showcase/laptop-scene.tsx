@@ -6,10 +6,37 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { useIsMobile } from "@/lib/use-mobile";
+import { useCopy } from "@/lib/i18n";
+
+const COPY = {
+  en: {
+    eyebrow: "The Craft · Desktop",
+    mobileH: "Built for the big screen.",
+    mobileP: "On desktop this opens into a live 3D MacBook that builds a project in front of you: brand, then design, then code. Here's the headline frame.",
+    introA: "Scroll to open",
+    introB: "the studio.",
+    insideEyebrow: "Inside · brand → design → build",
+    insideA: "One idea, three crafts,",
+    insideB: "shipped live.",
+    keep: "Keep scrolling",
+  },
+  ar: {
+    eyebrow: "الحِرفة · سطح المكتب",
+    mobileH: "مصمّم للشاشة الكبيرة.",
+    mobileP: "على الكمبيوتر يتحوّل هذا القسم إلى لابتوب ثلاثي الأبعاد يبني مشروعًا أمامك: الهوية، ثم التصميم، ثم البرمجة. هذا هو الإطار الرئيسي.",
+    introA: "مرّر لتفتح",
+    introB: "الاستوديو.",
+    insideEyebrow: "في الداخل · هوية ← تصميم ← بناء",
+    insideA: "فكرة واحدة، ثلاث حِرف،",
+    insideB: "تُطلق مباشرة.",
+    keep: "تابع التمرير",
+  },
+};
 
 const LaptopCanvas = dynamic(() => import("./laptop-3d"), { ssr: false });
 
 export function LaptopScene() {
+  const c = useCopy(COPY);
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const isMobile = useIsMobile();
@@ -78,14 +105,11 @@ export function LaptopScene() {
     return (
       <section id="craft" className="border-b border-line px-5 py-24">
         <div className="mx-auto max-w-[640px]">
-          <Eyebrow index="A1">The Craft · Desktop</Eyebrow>
-          <h2 className="mt-5 text-display size-h2 text-bone">Built for the big screen.</h2>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-bone/60">
-            On desktop this opens into a live 3D MacBook playing a reel of recent builds.
-            Here&apos;s the headline frame.
-          </p>
+          <Eyebrow index="A1">{c.eyebrow}</Eyebrow>
+          <h2 className="mt-5 text-display size-h2 text-bone">{c.mobileH}</h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-bone/60">{c.mobileP}</p>
           <div className="mt-8 overflow-hidden rounded-xl border border-line bg-ash">
-            <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
+            <div dir="ltr" className="flex items-center gap-2 border-b border-line px-4 py-2.5">
               <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
@@ -112,24 +136,24 @@ export function LaptopScene() {
         </div>
 
         {/* Intro caption */}
-        <motion.div style={{ opacity: introOpacity }} className="pointer-events-none absolute left-5 top-24 z-20 md:left-10 md:top-28">
-          <Eyebrow index="A1">The Craft · Desktop</Eyebrow>
+        <motion.div style={{ opacity: introOpacity }} className="pointer-events-none absolute start-5 top-24 z-20 md:start-10 md:top-28">
+          <Eyebrow index="A1">{c.eyebrow}</Eyebrow>
           <h2 className="mt-4 max-w-md text-display text-[clamp(1.75rem,4vw,3.25rem)] leading-[1.02] text-bone">
-            Scroll to open <span className="italic text-bone/70">the build.</span>
+            {c.introA} <span className="italic text-bone/70">{c.introB}</span>
           </h2>
         </motion.div>
 
         {/* Inside label */}
-        <motion.div style={{ opacity: insideOpacity }} className="pointer-events-none absolute bottom-20 left-5 z-20 md:left-10">
-          <Eyebrow index="LIVE">Inside · a reel of recent work</Eyebrow>
+        <motion.div style={{ opacity: insideOpacity }} className="pointer-events-none absolute bottom-20 start-5 z-20 md:start-10">
+          <Eyebrow index="LIVE">{c.insideEyebrow}</Eyebrow>
           <p className="mt-3 max-w-xs text-display text-[clamp(1.5rem,3vw,2.5rem)] leading-[1.02] text-bone">
-            Real builds, <span className="italic text-accent">playing live.</span>
+            {c.insideA} <span className="italic text-accent">{c.insideB}</span>
           </p>
         </motion.div>
 
         {/* Outro */}
         <motion.div style={{ opacity: outroOpacity }} className="pointer-events-none absolute bottom-16 left-1/2 z-20 -translate-x-1/2 text-center">
-          <p className="text-mono text-[10px] uppercase tracking-[0.3em] text-bone/45">Keep scrolling</p>
+          <p className="text-mono text-[10px] uppercase tracking-[0.3em] text-bone/45">{c.keep}</p>
         </motion.div>
       </div>
     </section>

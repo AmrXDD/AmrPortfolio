@@ -20,9 +20,10 @@ export default async function AdminPage() {
             <h1 className="text-lg font-semibold text-bone">Admin not configured</h1>
             <p className="mt-3 text-sm leading-relaxed text-bone/60">
               Add your Supabase keys (<code className="text-accent">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-              <code className="text-accent">SUPABASE_SERVICE_ROLE_KEY</code>) to{" "}
+              <code className="text-accent">SUPABASE_SECRET_KEY</code>) to{" "}
               <code className="text-accent">.env.local</code>, run{" "}
-              <code className="text-accent">supabase/schema.sql</code>, then restart the dev server.
+              <code className="text-accent">supabase/setup.sql</code> and{" "}
+              <code className="text-accent">supabase/admin-users.sql</code>, then restart the dev server.
               Admin users live in the database, not env vars.
             </p>
           </div>
@@ -82,7 +83,7 @@ export default async function AdminPage() {
         {!isSupabaseConfigured() ? (
           <Notice>Supabase isn&apos;t configured yet — add your keys to <code className="text-accent">.env.local</code> and restart.</Notice>
         ) : dbError ? (
-          <Notice tone="error">Database error: {dbError}. Did you run <code>supabase/schema.sql</code>?</Notice>
+          <Notice tone="error">Database error: {dbError}. Did you run <code>supabase/setup.sql</code>?</Notice>
         ) : rows.length === 0 ? (
           <Notice>No inquiries yet. They&apos;ll appear here the moment someone submits the contact form.</Notice>
         ) : (

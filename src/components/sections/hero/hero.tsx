@@ -6,7 +6,7 @@ import { useRef, useEffect, useState } from "react";
 import { Magnetic } from "@/components/ui/magnetic";
 import { WhatsAppCTA } from "@/components/ui/wa-cta";
 import { RevealWords } from "@/components/ui/reveal";
-import { SITE } from "@/lib/constants";
+import { SITE, SITE_AR } from "@/lib/constants";
 import { useLang } from "@/lib/i18n";
 
 const OrbitalCanvas = dynamic(() => import("./orbital"), { ssr: false });
@@ -51,7 +51,7 @@ export function Hero() {
             rayColor2="#ffb066"
             intensity={1.5}
             spread={2.2}
-            origin="top-right"
+            origin={lang === "ar" ? "top-left" : "top-right"}
             tilt={0}
             saturation={1.4}
             blend={0.62}
@@ -66,18 +66,19 @@ export function Hero() {
       <motion.div
         style={{
           opacity,
-          WebkitMaskImage: "linear-gradient(to right, transparent 0%, #000 40%)",
-          maskImage: "linear-gradient(to right, transparent 0%, #000 40%)",
+          // In RTL the text track is on the right, so the orb moves left.
+          WebkitMaskImage: `linear-gradient(to ${lang === "ar" ? "left" : "right"}, transparent 0%, #000 40%)`,
+          maskImage: `linear-gradient(to ${lang === "ar" ? "left" : "right"}, transparent 0%, #000 40%)`,
         }}
-        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-full md:w-[74%]"
+        className="pointer-events-none absolute inset-y-0 end-0 z-0 w-full md:w-[74%]"
       >
         {heroGL ? <OrbitalCanvas /> : null}
       </motion.div>
 
       {/* Telemetry frame markers */}
       <div className="pointer-events-none absolute inset-x-5 top-24 z-10 hidden items-center justify-between text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50 md:flex md:inset-x-10">
-        <span>N 29°20&apos;21&quot; · E 48°04&apos;34&quot;</span>
-        <span>ORBITAL · TELEMETRY · v.05</span>
+        <span dir="ltr">N 29°20&apos;21&quot; · E 48°04&apos;34&quot;</span>
+        <span>{lang === "ar" ? "مدار · قياس عن بُعد · v.05" : "ORBITAL · TELEMETRY · v.05"}</span>
       </div>
 
       {/* Content grid — typography confined to the LEFT track */}
@@ -106,14 +107,14 @@ export function Hero() {
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ delay: 1.0, duration: 1.1, ease: [0.19, 1, 0.22, 1] }}
-                  className="absolute -bottom-2 left-0 right-0 h-[3px] origin-left bg-accent md:h-[4px]"
+                  className="absolute -bottom-2 left-0 right-0 h-[3px] origin-left bg-accent rtl:origin-right md:h-[4px]"
                 />
               </span>
             </span>
           </h1>
 
           <p className="mt-7 max-w-md text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
-            {SITE.role}
+            {lang === "ar" ? SITE_AR.role : SITE.role}
           </p>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-bone/80">
             {t("hero.subtitle")}
@@ -121,7 +122,7 @@ export function Hero() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Magnetic strength={0.2}>
-              <a href="#work" data-cursor="link" data-cursor-label="View" className="btn-ghost">
+              <a href="#work" data-cursor="link" data-cursor-label={lang === "ar" ? "عرض" : "View"} className="btn-ghost">
                 <span className="relative flex h-1.5 w-1.5 items-center justify-center">
                   <span className="absolute inset-0 animate-ping rounded-full bg-bone" />
                   <span className="relative h-1 w-1 rounded-full bg-bone" />
@@ -129,14 +130,17 @@ export function Hero() {
                 {t("cta.selectedWork")}
               </a>
             </Magnetic>
-            <WhatsAppCTA label={t("cta.startProject")} />
+            <WhatsAppCTA
+              label={t("cta.startProject")}
+              message={lang === "ar" ? "مرحبًا عمرو، شاهدت أعمالك وأريد بدء مشروع." : undefined}
+            />
           </div>
         </div>
       </motion.div>
 
       {/* Scroll cue */}
-      <motion.div style={{ opacity }} className="absolute bottom-8 left-5 z-10 md:left-10">
-        <span className="text-mono text-[10px] uppercase tracking-[0.3em] text-bone/40">Scroll</span>
+      <motion.div style={{ opacity }} className="absolute bottom-8 start-5 z-10 md:start-10">
+        <span className="text-mono text-[10px] uppercase tracking-[0.3em] text-bone/40">{lang === "ar" ? "مرّر" : "Scroll"}</span>
         <div className="mt-3 h-10 w-px overflow-hidden bg-bone/10">
           <motion.div
             animate={{ y: ["-100%", "100%"] }}

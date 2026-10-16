@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState } from "react";
-import type { Project } from "@/lib/constants";
+import { STATUS_LABEL, localizeProject, type Project } from "@/lib/constants";
+import { useCopy, useLang } from "@/lib/i18n";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Reveal, RevealWords } from "@/components/ui/reveal";
@@ -17,7 +18,7 @@ function CaseFrame({ project }: { project: Project }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-[#0d0d0f] shadow-[0_50px_120px_-50px_rgba(0,0,0,0.95)]">
       {/* browser chrome */}
-      <div className="flex items-center gap-3 border-b border-line px-4 py-2.5" style={{ background: "#141417" }}>
+      <div dir="ltr" className="flex items-center gap-3 border-b border-line px-4 py-2.5" style={{ background: "#141417" }}>
         <div className="flex gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
           <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
@@ -25,7 +26,7 @@ function CaseFrame({ project }: { project: Project }) {
         </div>
         <div className="mx-1 flex flex-1 items-center gap-2 truncate rounded-full bg-black/50 px-3 py-1">
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-          <span className="truncate font-mono text-[10px] tracking-wide text-bone/55">
+          <span dir="ltr" className="truncate font-mono text-[10px] tracking-wide text-bone/55">
             {project.url.replace(/^https?:\/\//, "")}
           </span>
         </div>
@@ -57,13 +58,52 @@ function CaseFrame({ project }: { project: Project }) {
   );
 }
 
+const COPY = {
+  en: {
+    featured: "Featured Case Study",
+    case: "Case Study",
+    client: "Client",
+    role: "Role",
+    status: "Status",
+    premise: "Premise",
+    challenge: "Challenge",
+    approach: "Approach",
+    outcome: "Outcome",
+    stack: "Stack",
+    preview: "Preview build",
+    visit: "Visit live site",
+    cursorPreview: "Preview",
+    cursorLive: "Live",
+  },
+  ar: {
+    featured: "دراسة حالة مميّزة",
+    case: "دراسة حالة",
+    client: "العميل",
+    role: "الدور",
+    status: "الحالة",
+    premise: "الفكرة",
+    challenge: "التحدّي",
+    approach: "المنهج",
+    outcome: "النتيجة",
+    stack: "التقنيات",
+    preview: "معاينة النسخة",
+    visit: "زيارة الموقع",
+    cursorPreview: "معاينة",
+    cursorLive: "مباشر",
+  },
+};
+
 export function CaseStudy({
-  project,
+  project: base,
   flagship = false,
 }: {
   project: Project;
   flagship?: boolean;
 }) {
+  const { lang } = useLang();
+  const c = useCopy(COPY);
+  const project = localizeProject(base, lang);
+  const dev = project.status === "In Development";
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -83,9 +123,9 @@ export function CaseStudy({
         <div className="mb-10 grid grid-cols-12 items-end gap-y-8 border-b border-line pb-10 md:mb-12 md:pb-12">
           <div className="col-span-12 md:col-span-6">
             <Eyebrow index={project.index}>
-              {flagship ? "Featured Case Study" : "Case Study"}
+              {flagship ? c.featured : c.case}
             </Eyebrow>
-            <h2 className="mt-6 text-display size-h2 text-bone">
+            <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
               <RevealWords text={project.title.split("·")[0].trim()} />
               <br />
               <span className="italic text-bone/80">
@@ -95,15 +135,15 @@ export function CaseStudy({
           </div>
           <div className="col-span-12 grid grid-cols-3 gap-3 md:col-span-6 md:gap-6">
             <div>
-              <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">Client</p>
+              <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">{c.client}</p>
               <p className="mt-2 text-sm text-bone">{project.client}</p>
             </div>
             <div>
-              <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">Role</p>
+              <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">{c.role}</p>
               <p className="mt-2 text-sm text-bone">{project.role}</p>
             </div>
             <div>
-              <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">Status</p>
+              <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">{c.status}</p>
               <p className="mt-2 inline-flex items-center gap-2 text-sm text-bone">
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${
@@ -112,7 +152,7 @@ export function CaseStudy({
                       : "bg-emerald-400"
                   }`}
                 />
-                {project.status}
+                {STATUS_LABEL[project.status][lang]}
               </p>
             </div>
           </div>
@@ -129,22 +169,22 @@ export function CaseStudy({
         {/* Summary */}
         <div className="mt-12 grid grid-cols-12 gap-y-12 md:mt-16">
           <div className="col-span-12 md:col-span-5">
-            <p className="eyebrow">Premise</p>
+            <p className="eyebrow">{c.premise}</p>
             <p className="mt-6 text-display text-[clamp(1.5rem,2.6vw,2.5rem)] leading-[1.1] text-bone/90">
               {project.summary}
             </p>
           </div>
           <div className="col-span-12 grid grid-cols-1 gap-10 md:col-span-7 md:grid-cols-3">
             <Reveal>
-              <p className="eyebrow">Challenge</p>
+              <p className="eyebrow">{c.challenge}</p>
               <p className="mt-4 text-sm leading-relaxed text-bone/70">{project.challenge}</p>
             </Reveal>
             <Reveal delay={0.08}>
-              <p className="eyebrow">Approach</p>
+              <p className="eyebrow">{c.approach}</p>
               <p className="mt-4 text-sm leading-relaxed text-bone/70">{project.approach}</p>
             </Reveal>
             <Reveal delay={0.16}>
-              <p className="eyebrow">Outcome</p>
+              <p className="eyebrow">{c.outcome}</p>
               <p className="mt-4 text-sm leading-relaxed text-bone/70">{project.outcome}</p>
             </Reveal>
           </div>
@@ -167,7 +207,7 @@ export function CaseStudy({
             </div>
           ) : (
             <div className="col-span-12 md:col-span-6">
-              <p className="eyebrow">Stack</p>
+              <p className="eyebrow">{c.stack}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {project.stack.map((s) => (
                   <span
@@ -181,7 +221,7 @@ export function CaseStudy({
             </div>
           )}
 
-          <div className="col-span-12 md:col-span-6 md:text-right">
+          <div className="col-span-12 md:col-span-6 md:text-end">
             {project.metrics ? (
               <div className="mb-6 flex flex-wrap gap-2 md:justify-end">
                 {project.stack.map((s) => (
@@ -200,10 +240,10 @@ export function CaseStudy({
                 target="_blank"
                 rel="noreferrer"
                 data-cursor="link"
-                data-cursor-label={project.status === "In Development" ? "Preview" : "Live"}
+                data-cursor-label={dev ? c.cursorPreview : c.cursorLive}
                 className="btn-ghost"
               >
-                {project.status === "In Development" ? "Preview build" : "Visit live site"}
+                {dev ? c.preview : c.visit}
                 <ArrowUpRight size={14} />
               </a>
             </Magnetic>

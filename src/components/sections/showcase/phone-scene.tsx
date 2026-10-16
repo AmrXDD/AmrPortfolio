@@ -41,7 +41,7 @@ function MobileUI({ tall = false }: { tall?: boolean }) {
       <div className="px-5 pt-5">
         <div className="relative overflow-hidden rounded-2xl border border-line bg-ash p-5">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-accent/40 blur-2xl" />
-          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-bone/50">Now booking · Q3</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-bone/50">Now booking · Q4</p>
           <p className="mt-2 text-display text-[26px] italic leading-[0.95]">Cinematic<br />interfaces.</p>
           <button className="mt-4 rounded-full bg-bone px-4 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-ink">
             Start a project →

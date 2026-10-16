@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useReducedMotion, type MotionValue } from "framer-motion";
-import { PROJECTS, type Project } from "@/lib/constants";
+import { PROJECTS, STATUS_LABEL, localizeProject, type Project } from "@/lib/constants";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Reveal, RevealWords } from "@/components/ui/reveal";
 import { LineSidebar } from "@/components/ui/line-sidebar";
@@ -13,6 +13,7 @@ import { ArrowUpRight } from "lucide-react";
 /* Fixed left-edge navigator that appears only while the work deck is on screen,
    letting you jump straight to any recent-work card. */
 function ProjectNav() {
+  const { lang } = useLang();
   const [active, setActive] = useState(0);
   const [inView, setInView] = useState(false);
 
@@ -70,11 +71,14 @@ function ProjectNav() {
 
   return (
     <div
+      dir="ltr"
       className="pointer-events-none fixed left-6 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-500 lg:block"
       style={{ opacity: inView ? 1 : 0 }}
     >
       <div className="pointer-events-auto" style={{ pointerEvents: inView ? "auto" : "none" }}>
-        <p className="mb-4 text-mono text-[9px] uppercase tracking-[0.24em] text-bone/40">Recent Work</p>
+        <p className="mb-4 text-mono text-[9px] uppercase tracking-[0.24em] text-bone/40">
+          {lang === "ar" ? "أحدث الأعمال" : "Recent Work"}
+        </p>
         <LineSidebar
           items={PROJECTS.map((p) => p.title.split("·")[0].trim())}
           activeIndex={active}
@@ -101,6 +105,7 @@ function ProjectNav() {
 }
 
 function StatusPill({ status }: { status: Project["status"] }) {
+  const { lang } = useLang();
   return (
     <span
       className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-mono text-[9px] uppercase tracking-[0.18em] ${
@@ -116,7 +121,7 @@ function StatusPill({ status }: { status: Project["status"] }) {
           status === "In Development" ? "animate-pulse bg-amber-300" : status === "Featured" ? "bg-accent" : "bg-emerald-400"
         }`}
       />
-      {status}
+      {STATUS_LABEL[status][lang]}
     </span>
   );
 }
@@ -135,6 +140,8 @@ function StackCard({
   progress: MotionValue<number>;
   reduce: boolean;
 }) {
+  const { t, lang } = useLang();
+  const dev = p.status === "In Development";
   // cards already passed shrink slightly so the stack reads as layered sheets
   const targetScale = 1 - (total - 1 - i) * 0.04;
   const scale = useTransform(progress, [i / total, 1], [1, targetScale]);
@@ -158,7 +165,7 @@ function StackCard({
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <StatusPill status={p.status} />
-            <span className="text-mono text-[9px] tracking-wide text-bone/40">{p.url.replace(/^https?:\/\//, "")}</span>
+            <span dir="ltr" className="text-mono text-[9px] tracking-wide text-bone/40">{p.url.replace(/^https?:\/\//, "")}</span>
           </div>
         </div>
         <a
@@ -166,10 +173,10 @@ function StackCard({
           target="_blank"
           rel="noreferrer"
           data-cursor="link"
-          data-cursor-label={p.status === "In Development" ? "Preview" : "Visit"}
+          data-cursor-label={dev ? (lang === "ar" ? "معاينة" : "Preview") : lang === "ar" ? "زيارة" : "Visit"}
           className="inline-flex shrink-0 items-center gap-2 rounded-full border border-bone/40 px-5 py-2 text-mono text-[10px] uppercase tracking-[0.2em] text-bone transition-colors duration-300 hover:border-bone hover:bg-bone hover:text-ink sm:px-6"
         >
-          {p.status === "In Development" ? "Preview Build" : "Live Project"}
+          {dev ? t("cta.previewBuild") : t("cta.liveProject")}
           <ArrowUpRight size={13} />
         </a>
       </div>
@@ -185,7 +192,7 @@ function StackCard({
             <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-bone/40 to-transparent" />
             <div className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-accent" />
-              <p className="text-mono text-[9px] uppercase tracking-[0.26em] text-bone/45">Premise</p>
+              <p className="text-mono text-[9px] uppercase tracking-[0.26em] text-bone/45">{lang === "ar" ? "الفكرة" : "Premise"}</p>
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed text-bone/85">{p.summary}</p>
           </div>
@@ -212,10 +219,10 @@ function StackCard({
             {/* the panel is ALWAYS on the project's dark palette, so its text is
                 explicitly light in both themes (never token-based) */}
             <div className="relative flex items-center justify-between">
-              <p className="text-mono text-[9px] uppercase tracking-[0.26em] text-white/70">Stack</p>
+              <p className="text-mono text-[9px] uppercase tracking-[0.26em] text-white/70">{lang === "ar" ? "التقنيات" : "Stack"}</p>
               <span className="flex items-center gap-1.5 text-mono text-[8px] uppercase tracking-[0.2em] text-white/45">
                 <span className="h-1 w-1 rounded-full" style={{ background: p.palette.accent }} />
-                {p.stack.length} tools
+                {lang === "ar" ? `${p.stack.length} أدوات` : `${p.stack.length} tools`}
               </span>
             </div>
             <div className="relative mt-3 flex flex-wrap gap-1.5">
@@ -237,14 +244,14 @@ function StackCard({
           target="_blank"
           rel="noreferrer"
           data-cursor="view"
-          data-cursor-label="Visit"
+          data-cursor-label={lang === "ar" ? "زيارة" : "Visit"}
           className="group relative block aspect-[16/10] min-h-[160px] overflow-hidden rounded-[16px] border border-line sm:rounded-[20px] md:aspect-auto md:min-h-0 md:rounded-[24px]"
           style={{ background: p.palette.bg }}
         >
           {p.image ? (
             <Image
               src={p.image}
-              alt={`${p.client} — live site`}
+              alt={lang === "ar" ? `${p.client} — الموقع المباشر` : `${p.client} — live site`}
               fill
               sizes="(min-width: 768px) 55vw, 100vw"
               className="object-cover object-top transition-transform duration-[1100ms] ease-out group-hover:scale-[1.04]"
@@ -308,7 +315,7 @@ export function WorkGrid() {
         {/* sticky-stacking deck */}
         <div ref={stackRef}>
           {PROJECTS.map((p, i) => (
-            <StackCard key={p.slug} p={p} i={i} total={PROJECTS.length} progress={scrollYProgress} reduce={!!reduce} />
+            <StackCard key={p.slug} p={localizeProject(p, lang)} i={i} total={PROJECTS.length} progress={scrollYProgress} reduce={!!reduce} />
           ))}
         </div>
       </div>

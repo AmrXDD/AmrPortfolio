@@ -4,11 +4,30 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
 import { SITE } from "@/lib/constants";
+import { useCopy } from "@/lib/i18n";
+
+const COPY = {
+  en: {
+    hint: "Best experienced with sound",
+    withSound: "Enter with sound",
+    silent: "Enter silent",
+    recommended: "Recommended: sound on",
+    desktop: "For the best experience, visit on a laptop / desktop",
+  },
+  ar: {
+    hint: "التجربة أجمل مع الصوت",
+    withSound: "الدخول مع الصوت",
+    silent: "الدخول بدون صوت",
+    recommended: "يُنصح بتشغيل الصوت",
+    desktop: "للحصول على أفضل تجربة، تصفّح من جهاز لابتوب أو كمبيوتر",
+  },
+};
 
 const EASE = [0.76, 0, 0.24, 1] as const;
 const LOADER_SCALE = 2.6; // how much bigger the logo is on the loader vs its final size
 
 export function Preloader() {
+  const c = useCopy(COPY);
   const [count, setCount] = useState(0);
   const [phase, setPhase] = useState<"count" | "ready" | "exit">("count");
   const [mounted, setMounted] = useState(true);
@@ -106,6 +125,7 @@ export function Preloader() {
           loader and top-bar align horizontally and we only move vertically. */}
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
+          dir="ltr"
           className="flex items-center"
           animate={{ y: exiting ? targetY : 0, scale: exiting ? 1 : LOADER_SCALE }}
           transition={{ duration: 1.05, ease: EASE }}
@@ -137,7 +157,7 @@ export function Preloader() {
         style={{ pointerEvents: phase === "ready" ? "auto" : "none" }}
       >
         <span className="text-mono text-[10px] uppercase tracking-[0.34em] text-[#F5F5F5]/45">
-          Best experienced with sound
+          {c.hint}
         </span>
         <div className="flex items-center gap-3">
           <button
@@ -145,22 +165,22 @@ export function Preloader() {
             onClick={() => enter(true)}
             className="rounded-full bg-[#F5F5F5] px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#000] transition-transform duration-300 hover:scale-[1.04]"
           >
-            Enter with sound
-            <span className="ml-2 text-[#FF4D1F]">●</span>
+            {c.withSound}
+            <span className="ms-2 text-[#FF4D1F]">●</span>
           </button>
           <button
             type="button"
             onClick={() => enter(false)}
             className="rounded-full border border-[#F5F5F5]/25 px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F5F5]/70 transition-colors duration-300 hover:border-[#F5F5F5]/60 hover:text-[#F5F5F5]"
           >
-            Enter silent
+            {c.silent}
           </button>
         </div>
         <span className="text-mono text-[9px] uppercase tracking-[0.3em] text-[#F5F5F5]/30">
-          Recommended: sound on
+          {c.recommended}
         </span>
         <span className="mt-1 max-w-[280px] text-center text-mono text-[9px] uppercase leading-relaxed tracking-[0.22em] text-[#FF4D1F]/70">
-          For the best experience, visit on a laptop / desktop
+          {c.desktop}
         </span>
       </motion.div>
 

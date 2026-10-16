@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, Environment, Lightformer } from "@react-three/drei";
 import * as THREE from "three";
 import type { MotionValue } from "framer-motion";
-import { drawCodeMatrix, CANVAS_W, CANVAS_H } from "./code-matrix-draw";
+import { drawStudioReel, CANVAS_W, CANVAS_H } from "./studio-reel-draw";
 
 /*
  * Real MacBook Pro M3 16" model.
@@ -34,7 +34,7 @@ const smooth = (e0: number, e1: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
-/* The live "code-to-UI matrix" screen, projected exactly onto the display
+/* The live "brand → design → build" reel, projected exactly onto the display
    plate. A 2D canvas is painted every frame (typing bound to scroll) and used
    as the screen texture. It rides the lid: once the lid pivot exists, the mesh
    re-parents itself into it so it opens and closes with the screen. */
@@ -76,9 +76,9 @@ function ReelScreen({
     // part; the texture upload dominates, so halving it keeps the scene smooth
     frame.current = (frame.current + 1) % 2;
     if (frame.current !== 0) return;
-    // map the scroll window where the lid is open to 0..1 typing progress
+    // map the scroll window where the lid is open to 0..1 reel progress
     const local = smooth(0.16, 0.9, progress.get());
-    drawCodeMatrix(ctx, local, state.clock.elapsedTime);
+    drawStudioReel(ctx, local, state.clock.elapsedTime);
     texture.needsUpdate = true;
   });
 

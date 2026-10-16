@@ -2,6 +2,7 @@
 
 import { LogoLoop, type LogoItem } from "@/components/ui/logo-loop";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { useLang } from "@/lib/i18n";
 import {
   SiReact,
   SiNextdotjs,
@@ -27,11 +28,12 @@ const techLogos: LogoItem[] = [
 ];
 
 export function TechLoop() {
+  const { lang } = useLang();
   return (
     <section className="relative border-b border-line px-5 py-16 md:px-10 md:py-20">
       <div className="mx-auto max-w-[1400px]">
-        <Eyebrow index="✦">Built with</Eyebrow>
-        <div className="relative mt-8" style={{ height: 72 }}>
+        <Eyebrow index="✦">{lang === "ar" ? "مبني باستخدام" : "Built with"}</Eyebrow>
+        <div dir="ltr" className="relative mt-8" style={{ height: 72 }}>
           <LogoLoop
             logos={techLogos}
             speed={90}
@@ -41,7 +43,7 @@ export function TechLoop() {
             hoverSpeed={20}
             scaleOnHover
             fadeOut
-            ariaLabel="Technology stack"
+            ariaLabel={lang === "ar" ? "التقنيات المستخدمة" : "Technology stack"}
           />
         </div>
       </div>

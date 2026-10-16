@@ -11,8 +11,8 @@ const PROJECT_TYPES = [
   "Website Development",
   "Web App / Product",
   "Brand & Website",
-  "Social Media Marketing (SMMA)",
-  "Development + SMMA",
+  "Web Design & Consultation",
+  "Brand Identity Design",
   "Other",
 ];
 

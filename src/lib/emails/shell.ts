@@ -115,11 +115,32 @@ export type ShellOpts = {
   badge: string;
   body: string;
   footerNote?: string;
+  /** "ar" mirrors the layout right-to-left and drops tracking that breaks Arabic joins. */
+  lang?: "en" | "ar";
 };
 
-export function emailShell({ preheader, badge, body, footerNote }: ShellOpts): string {
+/* Arabic letters are joined, so letter-spacing pulls words apart and uppercase
+   means nothing; mirror the one asymmetric padding pair too. */
+function toRtl(html: string): string {
+  return html
+    .replace(/letter-spacing:[^;"]+;?/g, "letter-spacing:0;")
+    .replace(/text-transform:uppercase;?/g, "")
+    .replace(/padding:18px 0 18px 20px/g, "padding:__A__")
+    .replace(/padding:18px 20px 18px 0/g, "padding:18px 0 18px 20px")
+    .replace(/padding:__A__/g, "padding:18px 20px 18px 0")
+    .replace(/padding-left:12px/g, "padding-right:12px")
+    .replace(/align="right"/g, 'align="left"');
+}
+
+export function emailShell(opts: ShellOpts): string {
+  const html = renderShell(opts);
+  return opts.lang === "ar" ? toRtl(html) : html;
+}
+
+function renderShell({ preheader, badge, body, footerNote, lang = "en" }: ShellOpts): string {
+  const dir = lang === "ar" ? "rtl" : "ltr";
   return `<!doctype html>
-<html lang="en"><head>
+<html lang="${lang}" dir="${dir}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
@@ -135,11 +156,11 @@ export function emailShell({ preheader, badge, body, footerNote }: ShellOpts): s
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:${BRAND.ink};">
+<body dir="${dir}" style="margin:0;padding:0;background:${BRAND.ink};">
 <div style="display:none;font-size:1px;color:${BRAND.ink};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${esc(preheader)}</div>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${BRAND.ink}" style="background:${BRAND.ink};">
 <tr><td align="center" style="padding:40px 16px 56px;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="shell" style="width:600px;max-width:100%;">
+<table role="presentation" dir="${dir}" cellpadding="0" cellspacing="0" border="0" width="600" class="shell" style="width:600px;max-width:100%;text-align:${lang === "ar" ? "right" : "left"};">
 
   <!-- header: ring logo + wordmark, ember badge -->
   <tr><td style="padding:0 0 24px;border-bottom:1px solid ${BRAND.line};">
@@ -161,8 +182,8 @@ export function emailShell({ preheader, badge, body, footerNote }: ShellOpts): s
   <tr><td style="padding:64px 0 0;">
     ${footerNote ? `<p style="margin:0 0 18px;font-family:${FONT};font-size:12px;line-height:1.65;color:${BRAND.muted};">${esc(footerNote)}</p>` : ""}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid ${BRAND.line};"><tr>
-      <td style="padding:18px 0 0;font-family:${FONT};font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:${BRAND.muted};">Amr Hassan &middot; Independent Developer</td>
-      <td align="right" style="padding:18px 0 0;font-family:${FONT};font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:${BRAND.muted};">Salmiya, Kuwait &middot; GMT+3</td>
+      <td style="padding:18px 0 0;font-family:${FONT};font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:${BRAND.muted};">${lang === "ar" ? "عمرو حسن &middot; مطوّر مستقل" : "Amr Hassan &middot; Independent Developer"}</td>
+      <td align="right" style="padding:18px 0 0;font-family:${FONT};font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:${BRAND.muted};">${lang === "ar" ? "السالمية، الكويت &middot; GMT+3" : "Salmiya, Kuwait &middot; GMT+3"}</td>
     </tr></table>
   </td></tr>
 

@@ -25,9 +25,11 @@ export type InquiryData = {
   service_label: string;
   budget?: string;
   reason: string;
+  locale?: "en" | "ar";
 };
 
 export function inquiryConfirmationEmail(d: InquiryData): Email {
+  if (d.locale === "ar") return inquiryConfirmationEmailAr(d);
   const body = [
     h1(`Got it, ${firstName(d.name)}.`),
     sub(`Your inquiry landed, ${d.service_label}${d.budget ? ` · ${d.budget}` : ""}`),
@@ -65,6 +67,47 @@ export function inquiryConfirmationEmail(d: InquiryData): Email {
   );
 }
 
+/** Arabic confirmation, for visitors who used the Arabic site. */
+function inquiryConfirmationEmailAr(d: InquiryData): Email {
+  const name = firstName(d.name);
+  const body = [
+    h1(`وصلني طلبك يا ${name}.`),
+    sub(`تم استلام استفسارك: ${d.service_label}${d.budget ? ` · ${d.budget}` : ""}`),
+    p("شكرًا لتواصلك. هذه رسالة تأكيد تلقائية بأن رسالتك وصلت بأمان، وسيصلك ردّ شخصي مني عادةً خلال يوم عمل واحد (بتوقيت الكويت، GMT+3)."),
+
+    section("ما أرسلته"),
+    kv([
+      ["الخدمة", d.service_label],
+      ["الميزانية", d.budget || "غير محددة"],
+      ["بريدك الإلكتروني", d.email],
+    ]),
+    p(
+      `<span style="color:#8a8a8a;">تفاصيل طلبك:</span><br>${esc(d.reason).replace(/\n/g, "<br>")}`,
+      { html: true }
+    ),
+
+    section("الخطوات التالية"),
+    step("01", "أقرأ طلبك بعناية", "ليس ردًّا جاهزًا. أراجع ما أرسلته وأتأكد إن كنت الشخص المناسب فعلًا لهذا المشروع."),
+    step("02", "تصلك إجابة صريحة", "ردّ مباشر برأيي في المشروع، وتقدير مبدئي للنطاق والتكلفة، وأي أسئلة أحتاج إجابتها."),
+    step("03", "نحدّد النطاق معًا", "إن كان المشروع مناسبًا، يصلك عرض مكتوب بمخرجات وسعر ثابتين، بلا مفاجآت بالساعة."),
+
+    p("إن كان الأمر عاجلًا، فواتساب هو أسرع طريقة للوصول إليّ."),
+    button("راسلني على واتساب", waLink(`مرحبًا عمرو، أرسلت لك للتو استفسارًا عن ${d.service_label}.`)),
+    linkRow("أو تصفّح الأعمال:", SITE.url),
+  ].join("");
+
+  return pack(
+    `وصل استفسارك · ${SITE.brand}`,
+    emailShell({
+      lang: "ar",
+      preheader: `شكرًا ${name}، وصلني استفسارك وسأرد عليك خلال يوم عمل.`,
+      badge: "تم الاستلام",
+      body,
+      footerNote: "تصلك هذه الرسالة لأنك أرسلت نموذج التواصل على موقع Amr Studio. لا قوائم بريدية ولا نشرات، فقط هذا التأكيد.",
+    })
+  );
+}
+
 /* ───────────────────────── 2. Inquiry notification ─────────────────────────
    Auto-sent to Amr so the lead is readable on a phone. */
 
@@ -77,6 +120,7 @@ export function inquiryNotificationEmail(d: InquiryData): Email {
       ["Email", d.email],
       ["Service", d.service_label],
       ["Budget", d.budget || "Not specified"],
+      ["Site language", d.locale === "ar" ? "Arabic — reply in Arabic" : "English"],
       ["Received", new Date().toLocaleString("en-GB", { timeZone: "Asia/Kuwait", dateStyle: "medium", timeStyle: "short" }) + " (Kuwait)"],
     ]),
     section("Their brief"),

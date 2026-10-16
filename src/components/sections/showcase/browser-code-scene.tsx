@@ -10,12 +10,34 @@ import {
 } from "framer-motion";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { RevealWords } from "@/components/ui/reveal";
+import { useCopy, useLang } from "@/lib/i18n";
+
+const COPY = {
+  en: {
+    eyebrow: "From Scratch",
+    reduced: "Rendered & written by hand.",
+    hA: "The render and its",
+    hB: "source, hand built.",
+    tag: "We build from scratch.",
+    tagSub: "No templates · No page builders",
+    alt: "LivFunctional rendered",
+  },
+  ar: {
+    eyebrow: "من الصفر",
+    reduced: "مرسوم ومكتوب يدويًا.",
+    hA: "الواجهة وشيفرتها،",
+    hB: "مبنيّتان يدويًا.",
+    tag: "نبني من الصفر.",
+    tagSub: "بلا قوالب · بلا أدوات بناء جاهزة",
+    alt: "موقع LivFunctional كما يظهر",
+  },
+};
 
 const SITE_SHOT = "/projects/livfunctional.png";
 
 function ChromeBar() {
   return (
-    <div className="flex items-center gap-3 border-b border-line bg-[#16161a] px-4 py-2.5">
+    <div dir="ltr" className="flex items-center gap-3 border-b border-line bg-[#16161a] px-4 py-2.5">
       <div className="flex gap-1.5">
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
         <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
@@ -31,7 +53,7 @@ function ChromeBar() {
 
 function CodeEditor() {
   return (
-    <div className="code-editor flex h-full flex-col overflow-hidden text-[10px] leading-[1.5] md:text-[11px]">
+    <div dir="ltr" className="code-editor flex h-full flex-col overflow-hidden text-[10px] leading-[1.5] md:text-[11px]">
       <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
         <span className="h-2 w-2 rounded-full bg-accent" />
         <span className="font-mono text-[10px] tracking-wide text-bone/50">Hero.tsx</span>
@@ -63,19 +85,22 @@ function CodeEditor() {
 }
 
 function BrowserCard() {
+  const c = useCopy(COPY);
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-line bg-ash shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]">
       <ChromeBar />
       {/* fills the panel; the panel height is tuned so this matches the shot's
           ~1.93 aspect → the whole site shows with no crop */}
       <div className="relative flex-1 overflow-hidden" style={{ background: "#EFEAE2" }}>
-        <Image src={SITE_SHOT} alt="LivFunctional rendered" fill sizes="(min-width: 768px) 520px, 90vw" className="object-cover object-top" />
+        <Image src={SITE_SHOT} alt={c.alt} fill sizes="(min-width: 768px) 520px, 90vw" className="object-cover object-top" />
       </div>
     </div>
   );
 }
 
 export function BrowserCodeScene() {
+  const c = useCopy(COPY);
+  const { lang } = useLang();
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
 
@@ -97,8 +122,8 @@ export function BrowserCodeScene() {
     return (
       <section className="border-b border-line bg-ink px-5 py-24 md:px-10">
         <div className="mx-auto max-w-[1100px]">
-          <Eyebrow index="A4">From Scratch</Eyebrow>
-          <h2 className="mt-6 text-display size-h2 text-bone">Rendered &amp; written by hand.</h2>
+          <Eyebrow index="A4">{c.eyebrow}</Eyebrow>
+          <h2 className="mt-6 text-display size-h2 text-bone">{c.reduced}</h2>
           <div className="mt-10 grid items-stretch gap-6 md:grid-cols-2">
             <BrowserCard />
             <div className="overflow-hidden rounded-xl border border-line"><CodeEditor /></div>
@@ -113,10 +138,10 @@ export function BrowserCodeScene() {
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden scene-3d">
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[60vh] w-[60vh] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan/10 blur-[120px]" />
 
-        <motion.div style={{ opacity: headOpacity }} className="pointer-events-none absolute left-5 top-20 z-30 md:left-10 md:top-28">
-          <Eyebrow index="A4">From Scratch</Eyebrow>
+        <motion.div style={{ opacity: headOpacity }} className="pointer-events-none absolute start-5 top-20 z-30 md:start-10 md:top-28">
+          <Eyebrow index="A4">{c.eyebrow}</Eyebrow>
           <h2 className="mt-4 max-w-md text-display text-[clamp(1.75rem,4vw,3.25rem)] leading-[0.95] text-bone">
-            The render and its <span className="italic text-bone/70">source, hand built.</span>
+            {c.hA} <span className="italic text-bone/70">{c.hB}</span>
           </h2>
         </motion.div>
 
@@ -139,11 +164,9 @@ export function BrowserCodeScene() {
 
         <motion.div style={{ opacity: tagOpacity }} className="pointer-events-none absolute bottom-12 left-1/2 z-30 -translate-x-1/2 text-center">
           <p className="text-display text-[clamp(1.5rem,3vw,2.5rem)] italic leading-none text-bone">
-            <RevealWords text="We build from scratch." />
+            <RevealWords key={lang} text={c.tag} />
           </p>
-          <p className="mt-3 text-mono text-[10px] uppercase tracking-[0.28em] text-bone/45">
-            No templates · No page builders
-          </p>
+          <p className="mt-3 text-mono text-[10px] uppercase tracking-[0.28em] text-bone/45">{c.tagSub}</p>
         </motion.div>
       </div>
     </section>

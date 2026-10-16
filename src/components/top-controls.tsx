@@ -16,7 +16,7 @@ import { Sun, Moon } from "lucide-react";
  */
 export function TopControls() {
   const { theme, toggle: toggleTheme } = useTheme();
-  const { t } = useLang();
+  const { t, lang, toggle: toggleLang } = useLang();
 
   // The brand mark stays hidden until the loader logo has finished gliding into
   // place, so the handoff is seamless (no double logo during the transition).
@@ -68,10 +68,25 @@ export function TopControls() {
             type="button"
             onClick={toggleTheme}
             data-cursor="link"
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={
+              lang === "ar"
+                ? `التبديل إلى الوضع ${theme === "dark" ? "الفاتح" : "الداكن"}`
+                : `Switch to ${theme === "dark" ? "light" : "dark"} mode`
+            }
             className="flex h-9 w-9 items-center justify-center rounded-full text-bone/70 transition-colors hover:bg-bone/10 hover:text-bone"
           >
             {theme === "dark" ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
+          {/* Language: starts from the visitor's location, switchable any time */}
+          <button
+            type="button"
+            onClick={toggleLang}
+            data-cursor="link"
+            aria-label={t("lang.label")}
+            lang={lang === "ar" ? "en" : "ar"}
+            className="flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-[13px] leading-none text-bone/70 transition-colors hover:bg-bone/10 hover:text-bone"
+          >
+            {t("lang.toggle")}
           </button>
         </div>
 
@@ -81,6 +96,7 @@ export function TopControls() {
           data-cursor="link"
           data-cursor-label="Top"
           aria-label="Back to top"
+          dir="ltr"
           className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2.5"
           style={{ opacity: brandReady ? 1 : 0, pointerEvents: brandReady ? "auto" : "none" }}
         >
@@ -93,7 +109,11 @@ export function TopControls() {
         {/* Trailing: restored Hire button */}
         <Magnetic strength={0.2}>
           <a
-            href={waLink("Hey Amr, saw your portfolio. Want to hire you.")}
+            href={waLink(
+              lang === "ar"
+                ? "مرحبًا عمرو، شاهدت أعمالك وأرغب في العمل معك."
+                : "Hey Amr, saw your portfolio. Want to hire you."
+            )}
             target="_blank"
             rel="noreferrer"
             data-cursor="link"

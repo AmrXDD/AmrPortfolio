@@ -4,6 +4,24 @@ import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { useIsMobile } from "@/lib/use-mobile";
+import { useCopy, useLang } from "@/lib/i18n";
+
+const COPY = {
+  en: {
+    eyebrow: "Full Stack",
+    h1: "One developer,",
+    h2: "the whole stack.",
+    sub: "Every layer, end to end, shipped by one pair of hands.",
+    names: ["Frontend", "Motion & 3D", "API / Edge", "Backend", "Database", "Infra / DevOps"],
+  },
+  ar: {
+    eyebrow: "كامل الطبقات",
+    h1: "مطوّر واحد،",
+    h2: "لكل الطبقات.",
+    sub: "كل طبقة من البداية إلى النهاية، ينفّذها شخص واحد.",
+    names: ["الواجهة الأمامية", "الحركة والأبعاد الثلاثية", "الواجهات البرمجية / Edge", "الخادم", "قاعدة البيانات", "البنية التحتية / DevOps"],
+  },
+};
 
 type Layer = { name: string; tech: string; c: string; side: "left" | "right" };
 
@@ -25,10 +43,11 @@ const GAP = 74; // extra space between slices when exploded
 const PITCH = THICK + GAP; // exploded pitch
 const CENTER = (LAYERS.length - 1) / 2; // 2.5
 
-function Slice({ index, layer, exploded }: { index: number; layer: Layer; exploded: boolean }) {
+function Slice({ index, layer, exploded, name }: { index: number; layer: Layer; exploded: boolean; name: string }) {
   const togetherY = (index - CENTER) * THICK;
   const explodedY = (index - CENTER) * PITCH;
   const right = layer.side === "right";
+  const { lang } = useLang();
   const discT = { duration: 1, ease: [0.22, 1, 0.36, 1] as const, delay: 0.25 + index * 0.07 };
   const labelT = { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const, delay: 0.55 + index * 0.07 };
 
@@ -85,13 +104,14 @@ function Slice({ index, layer, exploded }: { index: number; layer: Layer; explod
         transition={labelT}
         className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
       >
-        <div className="relative" style={{ width: W, height: 1 }}>
+        {/* labels sit on fixed physical sides of the cylinder in both languages */}
+        <div dir="ltr" className="relative" style={{ width: W, height: 1 }}>
           {right ? (
             <div className="absolute left-full top-1/2 flex -translate-y-1/2 items-center gap-2 pl-1">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: layer.c }} />
               <span className="h-px w-12 shrink-0" style={{ background: "rgba(245,245,245,0.4)" }} />
-              <div>
-                <p className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone">{layer.name}</p>
+              <div dir={lang === "ar" ? "rtl" : undefined} className="whitespace-nowrap">
+                <p className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone">{name}</p>
                 <p className="mt-0.5 text-mono text-[9px] uppercase tracking-[0.14em] text-bone/45">{layer.tech}</p>
               </div>
             </div>
@@ -99,8 +119,8 @@ function Slice({ index, layer, exploded }: { index: number; layer: Layer; explod
             <div className="absolute right-full top-1/2 flex -translate-y-1/2 flex-row-reverse items-center gap-2 pr-1">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: layer.c }} />
               <span className="h-px w-12 shrink-0" style={{ background: "rgba(245,245,245,0.4)" }} />
-              <div className="text-right">
-                <p className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone">{layer.name}</p>
+              <div dir={lang === "ar" ? "rtl" : undefined} className="whitespace-nowrap text-right">
+                <p className="text-mono text-[11px] uppercase tracking-[0.2em] text-bone">{name}</p>
                 <p className="mt-0.5 text-mono text-[9px] uppercase tracking-[0.14em] text-bone/45">{layer.tech}</p>
               </div>
             </div>
@@ -119,22 +139,23 @@ export function FullStack() {
   // Explode when centered in view; collapse again when you leave, so it
   // re-assembles and re-explodes each time you return to the section.
   const inView = useInView(stageRef, { amount: 0.5 });
+  const c = useCopy(COPY);
 
   // Mobile / reduced-motion: a clean vertical stack (no exploding cylinder)
   if (reduce || isMobile) {
     return (
       <section id="stack" className="relative border-b border-line bg-ink px-5 py-24">
         <div className="mx-auto max-w-[560px]">
-          <Eyebrow index="01">Full Stack</Eyebrow>
+          <Eyebrow index="01">{c.eyebrow}</Eyebrow>
           <h2 className="mt-5 text-display size-h2 text-bone">
-            One developer, <span className="italic text-bone/70">the whole stack.</span>
+            {c.h1} <span className="italic text-bone/70">{c.h2}</span>
           </h2>
           <div className="mt-10 space-y-3">
-            {LAYERS.map((l) => (
+            {LAYERS.map((l, i) => (
               <div key={l.name} className="flex items-center gap-4 rounded-xl border border-line bg-ash/60 p-4">
                 <span className="h-10 w-10 shrink-0 rounded-full" style={{ background: `radial-gradient(circle at 38% 30%, #fff8, ${l.c} 55%, #0007)` }} />
                 <div>
-                  <p className="text-mono text-[12px] uppercase tracking-[0.2em] text-bone">{l.name}</p>
+                  <p className="text-mono text-[12px] uppercase tracking-[0.2em] text-bone">{c.names[i]}</p>
                   <p className="mt-1 text-mono text-[10px] uppercase tracking-[0.16em] text-bone/45">{l.tech}</p>
                 </div>
               </div>
@@ -153,21 +174,19 @@ export function FullStack() {
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none absolute left-5 top-24 z-10 md:left-10 md:top-28"
+          className="pointer-events-none absolute start-5 top-24 z-10 md:start-10 md:top-28"
         >
-          <Eyebrow index="01">Full Stack</Eyebrow>
+          <Eyebrow index="01">{c.eyebrow}</Eyebrow>
           <h2 className="mt-4 max-w-md text-display text-[clamp(1.75rem,4vw,3.25rem)] leading-[0.95] text-bone">
-            One developer, <span className="italic text-bone/70">the whole stack.</span>
+            {c.h1} <span className="italic text-bone/70">{c.h2}</span>
           </h2>
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-bone/55">
-            Every layer, end to end, shipped by one pair of hands.
-          </p>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-bone/55">{c.sub}</p>
         </motion.div>
 
         {/* the cylinder — splits itself apart on arrival */}
         <div className="relative" style={{ width: 720, height: 620 }}>
           {LAYERS.map((l, i) => (
-            <Slice key={l.name} index={i} layer={l} exploded={inView} />
+            <Slice key={l.name} index={i} layer={l} exploded={inView} name={c.names[i]} />
           ))}
         </div>
       </div>

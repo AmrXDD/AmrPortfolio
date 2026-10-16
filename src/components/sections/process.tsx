@@ -3,6 +3,7 @@
 import { PROCESS } from "@/lib/constants";
 import { Reveal, RevealWords } from "@/components/ui/reveal";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { useCopy, useLang } from "@/lib/i18n";
 
 /**
  * The "lights on" beat of the page: a warm-white sheet with rounded top
@@ -12,21 +13,31 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
  * mode, so the sheet's rounded corners reveal the cosmic field behind.)
  */
 export function Process() {
+  const { lang } = useLang();
+  const c = useCopy({
+    en: {
+      eyebrow: "06 · Process",
+      h: "Method",
+      p: "A five beat method for inevitable software, the same sequence, every engagement, no improvisation where it counts.",
+    },
+    ar: {
+      eyebrow: "06 · المنهجية",
+      h: "المنهج",
+      p: "منهج من خمس مراحل لبرمجيات تبدو حتمية؛ التسلسل نفسه في كل مشروع، ولا ارتجال حيث يهمّ الأمر.",
+    },
+  });
   return (
     <section id="process" className="relative">
       <div className="rounded-t-[40px] bg-[#F4F3EF] px-5 py-20 text-[#0C0C0C] sm:rounded-t-[50px] sm:px-8 sm:py-24 md:rounded-t-[60px] md:px-10 md:py-32">
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center sm:mb-20 md:mb-28">
             <p className="text-mono text-[11px] uppercase tracking-[0.3em] text-[#0C0C0C]/45">
-              06 · Process
+              {c.eyebrow}
             </p>
             <h2 className="mt-6 text-display uppercase leading-none text-[#0C0C0C]" style={{ fontSize: "clamp(2.6rem, 9.5vw, 9rem)" }}>
-              <RevealWords text="Method" />
+              <RevealWords key={lang} text={c.h} />
             </h2>
-            <ScrollReveal
-              className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-[#0C0C0C]/70"
-              text="A five beat method for inevitable software, the same sequence, every engagement, no improvisation where it counts."
-            />
+            <ScrollReveal key={lang} className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-[#0C0C0C]/70" text={c.p} />
           </div>
 
           <div>
@@ -44,10 +55,10 @@ export function Process() {
                   </span>
                   <div className="md:flex-1 md:pt-3">
                     <h3 className="text-display uppercase leading-tight text-[#0C0C0C]" style={{ fontSize: "clamp(1rem, 2.2vw, 2.1rem)" }}>
-                      {p.title}
+                      {lang === "ar" ? p.ar.title : p.title}
                     </h3>
                     <p className="mt-3 max-w-2xl font-light leading-relaxed text-[#0C0C0C]/60" style={{ fontSize: "clamp(0.85rem, 1.6vw, 1.25rem)" }}>
-                      {p.body}
+                      {lang === "ar" ? p.ar.body : p.body}
                     </p>
                   </div>
                 </div>

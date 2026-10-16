@@ -3,6 +3,24 @@
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { waLink } from "@/lib/constants";
+import { useCopy } from "@/lib/i18n";
+
+const COPY = {
+  en: {
+    label: "WhatsApp · Amr",
+    body: "Tell me what you're building. Every message gets a personal reply.",
+    open: "Open chat →",
+    msg: "Hey Amr, saw your portfolio. Want to talk about a project.",
+    aria: "Chat on WhatsApp",
+  },
+  ar: {
+    label: "واتساب · عمرو",
+    body: "أخبرني عمّا تبنيه. كل رسالة يصلها ردّ شخصي.",
+    open: "افتح المحادثة ←",
+    msg: "مرحبًا عمرو، شاهدت أعمالك وأرغب في الحديث عن مشروع.",
+    aria: "تواصل عبر واتساب",
+  },
+};
 
 function WhatsAppGlyph({ className }: { className?: string }) {
   return (
@@ -16,6 +34,7 @@ export function StickyWhatsApp() {
   const [show, setShow] = useState(false);
   const [open, setOpen] = useState(false);
   const { scrollY } = useScroll();
+  const c = useCopy(COPY);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     setShow(y > 600);
@@ -29,7 +48,7 @@ export function StickyWhatsApp() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.85 }}
           transition={{ duration: 0.45, ease: [0.19, 1, 0.22, 1] }}
-          className="fixed bottom-[76px] right-4 z-[60] flex flex-col items-end gap-2 md:bottom-7 md:right-7"
+          className="fixed bottom-[76px] end-4 z-[60] flex flex-col items-end gap-2 md:bottom-7 md:end-7"
         >
           <AnimatePresence>
             {open ? (
@@ -43,28 +62,28 @@ export function StickyWhatsApp() {
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                   <span className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">
-                    Online · Salmiya
+                    {c.label}
                   </span>
                 </div>
                 <p className="mt-3">
-                  Replying in minutes. Tell me what you&apos;re building.
+                  {c.body}
                 </p>
                 <a
-                  href={waLink("Hey Amr, saw your portfolio. Want to talk about a project.")}
+                  href={waLink(c.msg)}
                   target="_blank"
                   rel="noreferrer"
                   data-cursor="link"
                   data-cursor-label="WhatsApp"
                   className="mt-3 inline-flex items-center gap-2 text-mono text-[11px] uppercase tracking-[0.18em] text-accent"
                 >
-                  Open chat →
+                  {c.open}
                 </a>
               </motion.div>
             ) : null}
           </AnimatePresence>
 
           <a
-            href={waLink("Hey Amr, saw your portfolio. Want to talk about a project.")}
+            href={waLink(c.msg)}
             target="_blank"
             rel="noreferrer"
             data-cursor="link"
@@ -74,7 +93,7 @@ export function StickyWhatsApp() {
             onFocus={() => setOpen(true)}
             onBlur={() => setOpen(false)}
             className="group relative flex h-14 w-14 items-center justify-center rounded-full border border-bone/20 bg-ink/60 text-bone shadow-[0_20px_60px_-20px_rgba(0,0,0,0.85)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-bone hover:bg-bone hover:text-ink md:h-16 md:w-16"
-            aria-label="Chat on WhatsApp"
+            aria-label={c.aria}
           >
             <span className="absolute inset-0 animate-ping rounded-full bg-accent opacity-20" />
             <WhatsAppGlyph className="relative h-7 w-7 md:h-8 md:w-8" />

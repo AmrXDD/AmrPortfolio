@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { useLang } from "@/lib/i18n";
 
 const BARS = [0, 1, 2, 3];
 const VOLUME = 0.3; // ambient bed level — present but not intrusive
@@ -19,6 +20,7 @@ const LOOP_END = 105; // seconds — only use 0:00 → 1:45 of the track, then l
  *   paused, the loop is killed and the bars ease back to a flat resting state.
  */
 export function AmbientPlayer() {
+  const ar = useLang().lang === "ar";
   const audioRef = useRef<HTMLAudioElement>(null);
   const barsRef = useRef<HTMLSpanElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -117,9 +119,9 @@ export function AmbientPlayer() {
         onClick={toggle}
         data-cursor="link"
         aria-pressed={isPlaying}
-        aria-label={isPlaying ? "Mute ambient sound" : "Play ambient sound"}
+        aria-label={ar ? (isPlaying ? "كتم الصوت المحيط" : "تشغيل الصوت المحيط") : isPlaying ? "Mute ambient sound" : "Play ambient sound"}
         title={!ready ? "Add /audio/ambient-loop.mp3 to enable" : undefined}
-        className="group fixed bottom-[76px] left-4 z-[120] inline-flex items-center gap-3 rounded-full border border-line bg-ink/55 px-4 py-2.5 backdrop-blur-md transition-colors duration-300 hover:border-bone/40 md:bottom-7 md:left-7"
+        className="group fixed bottom-[76px] start-4 z-[120] inline-flex items-center gap-3 rounded-full border border-line bg-ink/55 px-4 py-2.5 backdrop-blur-md transition-colors duration-300 hover:border-bone/40 md:bottom-7 md:start-7"
       >
         {/* 4-line equalizer */}
         <span ref={barsRef} className="flex h-4 items-end gap-[3px]">
@@ -133,7 +135,7 @@ export function AmbientPlayer() {
         </span>
 
         <span className="text-mono text-[10px] uppercase tracking-[0.24em] text-bone/70 transition-colors group-hover:text-bone">
-          {isPlaying ? "Sound On" : "Sound Off"}
+          {ar ? (isPlaying ? "الصوت يعمل" : "الصوت مغلق") : isPlaying ? "Sound On" : "Sound Off"}
         </span>
       </button>
     </>

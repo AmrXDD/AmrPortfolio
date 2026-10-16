@@ -4,6 +4,22 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { RevealWords } from "@/components/ui/reveal";
 import { ScrollStack, ScrollStackItem } from "@/components/ui/scroll-stack";
 import { BorderGlow } from "@/components/ui/border-glow";
+import { useCopy, useLang } from "@/lib/i18n";
+
+const AR_CARDS = [
+  {
+    t: "شخص واحد من البداية للنهاية.",
+    b: "الاستراتيجية والتصميم والحركة والبرمجة، بلا تسليم بين أقسام ولا رسائل تضيع في الطريق. من تشرح له المشروع هو من يسلّمه، ولا شيء يضيع بين أقسام غير موجودة أصلًا.",
+  },
+  {
+    t: "حركة لها معنى.",
+    b: "لا شيء يتحرّك على الشاشة بلا سبب. كل انتقال يوضّح تسلسلًا أو علاقة سبب ونتيجة أو عناية، ولا يكون زينة لمجرد الزينة. الحركة التي لا تستحق إطاراتها لا تُطلق.",
+  },
+  {
+    t: "جاهز للإطلاق من اليوم الأول.",
+    b: "جودة إنتاج من أول سطر برمجي: ميزانيات أداء، وإتاحة، وتحسين لمحركات البحث، وتحليلات مدمجة لا مُلحقة. التسليم مفتاح نشر، لا مجلد من الاحتمالات.",
+  },
+];
 
 const CARDS = [
   {
@@ -27,22 +43,28 @@ const CARDS = [
 ];
 
 export function Guarantees() {
+  const { lang } = useLang();
+  const c = useCopy({
+    en: { eyebrow: "The Craft · In Writing", h1: "Three guarantees,", h2: "in writing." },
+    ar: { eyebrow: "الحِرفة · مكتوبة", h1: "ثلاثة التزامات،", h2: "مكتوبة." },
+  });
+  const cards = lang === "ar" ? CARDS.map((card, i) => ({ ...card, ...AR_CARDS[i] })) : CARDS;
   return (
     <section className="relative border-b border-line px-5 py-24 md:px-10 md:py-36">
       <div className="mx-auto max-w-[1100px]">
         <div className="mb-12 md:mb-16">
-          <Eyebrow index="A3">The Craft · In Writing</Eyebrow>
-          <h2 className="mt-6 text-display size-h2 text-bone">
-            <RevealWords text="Three guarantees," />
+          <Eyebrow index="A3">{c.eyebrow}</Eyebrow>
+          <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
+            <RevealWords text={c.h1} />
             <br />
             <span className="italic text-accent">
-              <RevealWords text="in writing." delay={0.1} />
+              <RevealWords text={c.h2} delay={0.1} />
             </span>
           </h2>
         </div>
 
         <ScrollStack>
-          {CARDS.map((card) => (
+          {cards.map((card) => (
             <ScrollStackItem key={card.no}>
               <BorderGlow radius={32} colors={[card.c, "#FFB38A", "#F5F5F5"]} className="h-full">
                 <div className="grid min-h-[48vh] grid-cols-1 items-start gap-6 p-8 md:grid-cols-[200px_1fr] md:gap-12 md:p-14">

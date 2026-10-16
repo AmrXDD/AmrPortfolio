@@ -116,7 +116,7 @@ function useMobileUITexture() {
     x.globalAlpha = 1;
     x.fillStyle = MUT;
     x.font = mono(20);
-    x.fillText("NOW BOOKING · Q3", 80, 256);
+    x.fillText("NOW BOOKING · Q4", 80, 256);
     x.fillStyle = BONE;
     x.font = sans(58, 700);
     x.fillText("Cinematic", 80, 330);
@@ -176,7 +176,7 @@ function useMobileUITexture() {
     });
 
     // stats
-    const stats: [string, string][] = [["07+", "YEARS"], ["40+", "BUILDS"], ["98", "PERF"]];
+    const stats: [string, string][] = [["04", "CASES"], ["EN/AR", "BILINGUAL"], ["03", "SERVICES"]];
     stats.forEach((s, i) => {
       const px = 40 + i * 192;
       card(px, 1546, 176, 130, 22);

@@ -1,14 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { WhatsAppCTA, EmailCTA } from "@/components/ui/wa-cta";
-import { SITE, NAV_LINKS, waLink } from "@/lib/constants";
+import { SITE, SITE_AR, NAV_LINKS, waLink } from "@/lib/constants";
+import { useCopy, useLang } from "@/lib/i18n";
 
-const SOCIAL = [
-  { l: "Instagram", h: "https://instagram.com/amrrstudios" },
-  { l: "Github", h: "https://github.com/AmrXDD" },
-  { l: "WhatsApp", h: waLink("Hey Amr, saw your portfolio. Let's talk.") },
-];
+const COPY = {
+  en: {
+    end: "The end of the page",
+    hA: "Most people stop scrolling before this.",
+    hB: "You didn't.",
+    hC: "Let's talk.",
+    index: "Index",
+    elsewhere: "Elsewhere",
+    coords: "Coordinates",
+    city: SITE.city as string,
+    available: "Selectively available",
+    waMsg: "Hey Amr, saw your portfolio. Let's talk.",
+    rights: `© ${new Date().getFullYear()} ${SITE.name} Studio. All work hand coded.`,
+    built: "Built with Next.js 16 · TS · Tailwind · R3F · Framer Motion",
+    devices: "3D devices:",
+    version: "v.05",
+  },
+  ar: {
+    end: "نهاية الصفحة",
+    hA: "معظم الناس يتوقّفون عن التمرير قبل هنا.",
+    hB: "أنت لم تتوقّف.",
+    hC: "لنتحدّث.",
+    index: "الفهرس",
+    elsewhere: "في أماكن أخرى",
+    coords: "الإحداثيات",
+    city: SITE_AR.city,
+    available: "متاح بعدد محدود",
+    waMsg: "مرحبًا عمرو، شاهدت أعمالك. لنتحدّث.",
+    rights: `© ${new Date().getFullYear()} ${SITE.name} Studio. كل الأعمال مبرمجة يدويًا.`,
+    built: "مبني بـ Next.js 16 · TS · Tailwind · R3F · Framer Motion",
+    devices: "نماذج الأجهزة ثلاثية الأبعاد:",
+    version: "v.05",
+  },
+};
 
 function useTime() {
   const [t, setT] = useState("--:--");
@@ -29,10 +60,17 @@ function useTime() {
 
 export function Footer() {
   const time = useTime();
+  const c = useCopy(COPY);
+  const { t, lang } = useLang();
+  const social = [
+    { l: "Instagram", h: "https://instagram.com/amrrstudios" },
+    { l: "Github", h: "https://github.com/AmrXDD" },
+    { l: lang === "ar" ? "واتساب" : "WhatsApp", h: waLink(c.waMsg) },
+  ];
   return (
     <footer className="relative bg-ink">
       {/* Giant signature — centred, single, no repetition */}
-      <div className="flex items-center justify-center gap-5 border-y border-line py-10 md:py-14">
+      <div dir="ltr" className="flex items-center justify-center gap-5 border-y border-line py-10 md:py-14">
         <span className="text-display text-[clamp(2.75rem,11vw,10rem)] leading-none text-bone">
           Amr <span className="text-bone/70">Studio</span>
         </span>
@@ -42,19 +80,19 @@ export function Footer() {
       <div className="mx-auto grid max-w-[1600px] grid-cols-12 gap-y-12 px-5 py-20 md:px-10">
         <div className="col-span-12 md:col-span-5">
           <p className="text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
-            The end of the page
+            {c.end}
           </p>
           <h3 className="mt-6 text-display text-[clamp(1.75rem,3vw,2.75rem)] leading-tight text-bone">
-            Most people stop scrolling before this. <span className="italic text-bone/70">You didn&apos;t.</span> Let&apos;s talk.
+            {c.hA} <span className="italic text-bone/70">{c.hB}</span> {c.hC}
           </h3>
           <div className="mt-8 flex items-center gap-4">
-            <WhatsAppCTA label="WhatsApp" />
+            <WhatsAppCTA label={lang === "ar" ? "واتساب" : "WhatsApp"} message={c.waMsg} />
             <EmailCTA />
           </div>
         </div>
 
         <div className="col-span-6 md:col-span-2 md:col-start-7">
-          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">Index</p>
+          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">{c.index}</p>
           <ul className="mt-5 space-y-3">
             {NAV_LINKS.map((l) => (
               <li key={l.href}>
@@ -63,7 +101,7 @@ export function Footer() {
                   data-cursor="link"
                   className="link-underline text-sm text-bone/85"
                 >
-                  {l.label}
+                  {t(l.key)}
                 </a>
               </li>
             ))}
@@ -71,9 +109,9 @@ export function Footer() {
         </div>
 
         <div className="col-span-6 md:col-span-2">
-          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">Elsewhere</p>
+          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">{c.elsewhere}</p>
           <ul className="mt-5 space-y-3">
-            {SOCIAL.map((s) => (
+            {social.map((s) => (
               <li key={s.l}>
                 <a
                   href={s.h}
@@ -90,13 +128,13 @@ export function Footer() {
         </div>
 
         <div className="col-span-12 md:col-span-3">
-          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">Coordinates</p>
+          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">{c.coords}</p>
           <ul className="mt-5 space-y-3 text-sm text-bone/85">
-            <li>{SITE.city}</li>
-            <li className="tabular-nums">{time} · GMT+3</li>
+            <li>{c.city}</li>
+            <li dir="ltr" className="tabular-nums rtl:text-right">{time} · GMT+3</li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-              Selectively available
+              {c.available}
             </li>
           </ul>
         </div>
@@ -104,16 +142,20 @@ export function Footer() {
 
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-[1600px] flex-col items-start justify-between gap-4 px-5 py-8 text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40 md:flex-row md:items-center md:px-10">
-          <span>© 2026 {SITE.name} Studio. All work hand coded.</span>
-          <span>Built with Next.js 15 · TS · Tailwind · R3F · Framer Motion</span>
+          <span>{c.rights}</span>
+          <span className="flex gap-4">
+            <Link href="/privacy" data-cursor="link" className="link-underline">{t("legal.privacy")}</Link>
+            <Link href="/terms" data-cursor="link" className="link-underline">{t("legal.terms")}</Link>
+          </span>
+          <span>{c.built}</span>
           <span>
-            3D devices:{" "}
+            {c.devices}{" "}
             <a href="https://sketchfab.com/3d-models/macbook-pro-m3-16-inch-2024-8e34fc2b303144f78490007d91ff57c4" target="_blank" rel="noreferrer" className="link-underline">jackbaeten</a>
             {" · "}
             <a href="https://sketchfab.com/3d-models/iphone-15-pro-max-5b7b35513a154ac69619dc2b2fe15686" target="_blank" rel="noreferrer" className="link-underline">MpPower™</a>
             {" "}(CC BY 4.0)
           </span>
-          <span>v.05 · Site of the day candidate</span>
+          <span>{c.version}</span>
         </div>
       </div>
     </footer>

@@ -8,11 +8,45 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { BorderGlow } from "@/components/ui/border-glow";
 import { WhatsAppCTA, EmailCTA } from "@/components/ui/wa-cta";
 import { ContactForm } from "@/components/sections/contact-form";
-import { useLang } from "@/lib/i18n";
-import { SITE } from "@/lib/constants";
+import { useCopy, useLang } from "@/lib/i18n";
+import { SITE, SITE_AR } from "@/lib/constants";
+
+const COPY = {
+  en: {
+    engagement: "Engagement",
+    engagementBody:
+      "Websites built from zero, web design and consultation, and brand identities, for founders and studios who want the one site that earns them their next client.",
+    workingFrom: "Working from",
+    city: SITE.city as string,
+    zone: "GMT+3 · Worldwide",
+    openWa: "Open WhatsApp",
+    waMsg: "Hey Amr, saw your portfolio. Want to talk about a project.",
+    rows: [
+      { label: "01 · Web development", title: "Build something from zero.", desc: "Marketing sites, product sites and web apps, designed and engineered by one pair of hands, from first commit to launch." },
+      { label: "02 · Design & consultation", title: "Get a second pair of eyes.", desc: "Design direction, UX and performance audits, and straight answers on stack and structure before you spend on a build." },
+      { label: "03 · Brand identity", title: "Give it a face.", desc: "Logo and mark systems, typography, colour and guidelines, made to carry from the website to everything else." },
+    ],
+  },
+  ar: {
+    engagement: "مجالات العمل",
+    engagementBody:
+      "مواقع تُبنى من الصفر، وتصميم مواقع واستشارات، وهويات بصرية، للمؤسسين والاستوديوهات الذين يريدون موقعًا يجلب لهم عميلهم القادم.",
+    workingFrom: "أعمل من",
+    city: SITE_AR.city,
+    zone: "GMT+3 · حول العالم",
+    openWa: "افتح واتساب",
+    waMsg: "مرحبًا عمرو، شاهدت أعمالك وأرغب في الحديث عن مشروع.",
+    rows: [
+      { label: "01 · تطوير المواقع", title: "ابنِ شيئًا من الصفر.", desc: "مواقع تعريفية ومواقع منتجات وتطبيقات ويب، يصمّمها ويبرمجها شخص واحد من أول سطر حتى الإطلاق." },
+      { label: "02 · التصميم والاستشارات", title: "عين خبيرة ثانية.", desc: "توجيه تصميمي، وتدقيق لتجربة المستخدم والأداء، وإجابات واضحة عن التقنيات والبنية قبل أن تنفق على التنفيذ." },
+      { label: "03 · الهوية البصرية", title: "امنحه وجهًا.", desc: "الشعار وأنظمة العلامة والخطوط والألوان ودليل الهوية، مصمّمة لتنتقل من الموقع إلى كل ما سواه." },
+    ],
+  },
+};
 
 export function CTA() {
   const { t, lang } = useLang();
+  const c = useCopy(COPY);
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const yA = useTransform(scrollYProgress, [0, 1], ["20%", "-20%"]);
@@ -49,17 +83,14 @@ export function CTA() {
             <Eyebrow index="11">{t("contact.eyebrow")}</Eyebrow>
             <Reveal delay={0.2}>
               <p className="mt-8 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
-                Engagement
+                {c.engagement}
               </p>
-              <ScrollReveal
-                className="mt-3 text-sm leading-relaxed text-bone/90"
-                text="Founding team work, flagship product launches, brand engineering, and the one off cinematic landing page that earns a studio its next client."
-              />
+              <ScrollReveal key={lang} className="mt-3 text-sm leading-relaxed text-bone/90" text={c.engagementBody} />
               <p className="mt-8 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
-                Working from
+                {c.workingFrom}
               </p>
-              <p className="mt-2 text-sm text-bone">{SITE.city}</p>
-              <p className="mt-1 text-mono text-[10px] text-bone/50">GMT+3 · Worldwide</p>
+              <p className="mt-2 text-sm text-bone">{c.city}</p>
+              <p className="mt-1 text-mono text-[10px] text-bone/50">{c.zone}</p>
             </Reveal>
           </div>
 
@@ -80,32 +111,20 @@ export function CTA() {
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <WhatsAppCTA
-                label="Open WhatsApp"
-                message="Hey Amr, saw your portfolio. Want to talk about a project."
+                label={c.openWa}
+                message={c.waMsg}
                 className="!py-4 !px-6 !text-sm"
               />
               <EmailCTA />
             </div>
 
-            {/* Inquiry form — budget · service (Dev/SMMA) · reason → Supabase + Resend */}
+            {/* Inquiry form — budget · service · reason → Supabase + Resend */}
             <div className="mt-14 grid grid-cols-1 gap-12 border-t border-line pt-12 lg:grid-cols-[1.1fr_0.9fr]">
               <ContactForm />
               <div className="grid gap-4 self-start">
-                <ContactRow
-                  label="01 · Founding work"
-                  title="Build something from zero."
-                  desc="Founder mode partnership for early stage product. Design, engineering, brand, one pair of hands."
-                />
-                <ContactRow
-                  label="02 · Flagship launches"
-                  title="Make the hero moment."
-                  desc="Marketing site, product launch, brand campaign. Cinematic execution, on a tight calendar."
-                />
-                <ContactRow
-                  label="03 · Social & growth (SMMA)"
-                  title="Own the feed."
-                  desc="Content strategy, paid social, and short form creative that compounds into pipeline."
-                />
+                {c.rows.map((r) => (
+                  <ContactRow key={r.label} label={r.label} title={r.title} desc={r.desc} />
+                ))}
               </div>
             </div>
           </div>

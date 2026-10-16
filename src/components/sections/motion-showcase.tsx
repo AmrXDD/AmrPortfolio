@@ -5,19 +5,42 @@ import { useRef } from "react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { RevealWords } from "@/components/ui/reveal";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { useCopy, useLang } from "@/lib/i18n";
 
-const PHRASES = [
-  "FRAME RATE IS A FEATURE.",
-  "EASING IS TASTE.",
-  "WHITESPACE IS CONFIDENCE.",
-  "MOTION IS LANGUAGE.",
-];
+const COPY = {
+  en: {
+    eyebrow: "Studio · Motion",
+    h1: "Motion is the",
+    h2: "invisible script.",
+    p: "Animations don't decorate the interface, they choreograph the user's attention. I treat every easing curve, stagger, and pause as a director treats a cut.",
+    phrases: ["FRAME RATE IS A FEATURE.", "EASING IS TASTE.", "WHITESPACE IS CONFIDENCE.", "MOTION IS LANGUAGE."],
+    tiles: [
+      { title: "Magnetic", subtitle: "Cursor aware interaction", word: "pull." },
+      { title: "Stagger", subtitle: "Sequenced reveal logic" },
+      { title: "Iridescence", subtitle: "GPU driven color" },
+    ],
+  },
+  ar: {
+    eyebrow: "الاستوديو · الحركة",
+    h1: "الحركة هي",
+    h2: "السيناريو الخفي.",
+    p: "الحركة لا تزيّن الواجهة، بل توجّه انتباه المستخدم. أتعامل مع كل منحنى تسارع وكل تتابع وكل توقّف كما يتعامل المخرج مع اللقطة.",
+    phrases: ["معدّل الإطارات ميزة.", "التسارع ذوق.", "الفراغ ثقة.", "الحركة لغة."],
+    tiles: [
+      { title: "مغناطيسي", subtitle: "تفاعل يستجيب للمؤشّر", word: "جذب." },
+      { title: "تتابع", subtitle: "منطق ظهور متسلسل" },
+      { title: "تلألؤ", subtitle: "ألوان يحرّكها المعالج الرسومي" },
+    ],
+  },
+};
 
 export function MotionShowcase() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const x = useTransform(scrollYProgress, [0, 1], ["6%", "-22%"]);
   const rot = useTransform(scrollYProgress, [0, 1], [-2.5, 2.5]);
+  const c = useCopy(COPY);
+  const { lang } = useLang();
 
   return (
     <section
@@ -28,32 +51,30 @@ export function MotionShowcase() {
       <div className="mx-auto mb-20 max-w-[1600px] px-5 md:px-10">
         <div className="grid grid-cols-12 items-end gap-y-8">
           <div className="col-span-12 md:col-span-6">
-            <Eyebrow index="08">Studio · Motion</Eyebrow>
-            <h2 className="mt-6 text-display size-h2 text-bone">
-              <RevealWords text="Motion is the" />
+            <Eyebrow index="08">{c.eyebrow}</Eyebrow>
+            <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
+              <RevealWords text={c.h1} />
               <br />
               <span className="italic text-accent">
-                <RevealWords text="invisible script." delay={0.1} />
+                <RevealWords text={c.h2} delay={0.1} />
               </span>
             </h2>
           </div>
           <div className="col-span-12 md:col-span-5 md:col-start-8">
-            <ScrollReveal
-              className="text-sm leading-relaxed text-bone/90"
-              text="Animations don't decorate the interface, they choreograph the user's attention. I treat every easing curve, stagger, and pause as a director treats a cut."
-            />
+            <ScrollReveal key={lang} className="text-sm leading-relaxed text-bone/90" text={c.p} />
           </div>
         </div>
       </div>
 
       {/* Horizontal-scroll style band — four unique phrases, no repetition */}
-      <motion.div style={{ x, rotate: rot }} className="flex w-max items-center gap-8 will-change-transform">
-        {PHRASES.map((p, i) => (
+      {/* the band always travels the same physical way, so it stays LTR-anchored */}
+      <motion.div dir="ltr" style={{ x, rotate: rot }} className="flex w-max items-center gap-8 will-change-transform">
+        {c.phrases.map((p, i) => (
           <span
             key={i}
             className="flex items-center gap-8 text-display text-[clamp(2rem,6vw,5.5rem)] leading-none text-bone"
           >
-            <span className={i % 2 ? "italic text-bone/80" : ""}>{p}</span>
+            <span dir={lang === "ar" ? "rtl" : undefined} className={i % 2 ? "italic text-bone/80" : ""}>{p}</span>
             <span className="inline-block h-3 w-3 rounded-full bg-accent" />
           </span>
         ))}
@@ -62,8 +83,8 @@ export function MotionShowcase() {
       {/* Demo tiles row */}
       <div className="mx-auto mt-24 grid max-w-[1600px] grid-cols-12 gap-4 px-5 md:gap-6 md:px-10">
         <DemoTile
-          title="Magnetic"
-          subtitle="Cursor aware interaction"
+          title={c.tiles[0].title}
+          subtitle={c.tiles[0].subtitle}
           className="col-span-12 md:col-span-4"
         >
           <div className="relative flex h-full items-center justify-center">
@@ -72,13 +93,13 @@ export function MotionShowcase() {
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               className="h-32 w-32 rounded-full bg-gradient-to-br from-accent to-plasma blur-2xl"
             />
-            <span className="absolute text-display text-[3.5rem] italic text-bone">pull.</span>
+            <span className="absolute text-display text-[3.5rem] italic text-bone">{c.tiles[0].word}</span>
           </div>
         </DemoTile>
 
         <DemoTile
-          title="Stagger"
-          subtitle="Sequenced reveal logic"
+          title={c.tiles[1].title}
+          subtitle={c.tiles[1].subtitle}
           className="col-span-12 md:col-span-4"
         >
           <div className="flex h-full items-end justify-center gap-2 pb-6">
@@ -100,8 +121,8 @@ export function MotionShowcase() {
         </DemoTile>
 
         <DemoTile
-          title="Iridescence"
-          subtitle="GPU driven color"
+          title={c.tiles[2].title}
+          subtitle={c.tiles[2].subtitle}
           className="col-span-12 md:col-span-4"
         >
           <motion.div
@@ -136,7 +157,7 @@ function DemoTile({
 }) {
   return (
     <div className={`relative overflow-hidden rounded-3xl border border-line bg-ash ${className}`}>
-      <div className="absolute left-6 top-6 z-10">
+      <div className="absolute start-6 top-6 z-10">
         <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/40">{subtitle}</p>
         <p className="mt-1 text-display text-2xl italic text-bone">{title}</p>
       </div>

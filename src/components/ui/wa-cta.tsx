@@ -52,6 +52,7 @@ export function EmailCTA({
       href={`mailto:${SITE.email}`}
       data-cursor="link"
       data-cursor-label="Email"
+      dir="ltr"
       className={cn("link-underline text-mono text-xs uppercase tracking-[0.18em]", className)}
     >
       {label}

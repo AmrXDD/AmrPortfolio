@@ -13,6 +13,8 @@ type Body = {
   service_label?: string;
   budget?: string;
   reason?: string;
+  locale?: string;
+  consent?: boolean;
 };
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,11 +31,16 @@ export async function POST(req: Request) {
   const email = (body.email || "").trim().slice(0, 200);
   const service = (body.service || "other").trim().slice(0, 50);
   const service_label = (body.service_label || service).trim().slice(0, 120);
-  const budget = (body.budget || "").trim().slice(0, 60);
+  const budget = (body.budget || "").trim().slice(0, 120);
   const reason = (body.reason || "").trim().slice(0, 5000);
+  const locale = body.locale === "ar" ? "ar" : "en";
 
   if (!name || !emailRe.test(email) || !reason) {
     return NextResponse.json({ error: "Missing or invalid fields" }, { status: 422 });
+  }
+  // Nothing is stored or emailed without the privacy-policy consent tick.
+  if (body.consent !== true) {
+    return NextResponse.json({ error: "Consent is required" }, { status: 422 });
   }
 
   const record = { name, email, service, service_label, budget, reason };
@@ -41,7 +48,15 @@ export async function POST(req: Request) {
   // 1) Persist to Supabase (if configured)
   const db = supabaseAdmin();
   if (db) {
-    const { error } = await db.from(CONTACT_TABLE).insert(record);
+    let { error } = await db
+      .from(CONTACT_TABLE)
+      .insert({ ...record, locale, consent_at: new Date().toISOString() });
+    // A database set up before setup.sql has no locale/consent_at columns yet
+    // (PostgREST PGRST204). Keep the lead rather than lose it.
+    if (error?.code === "PGRST204") {
+      console.warn("[contact] run supabase/setup.sql to add locale/consent_at columns.");
+      ({ error } = await db.from(CONTACT_TABLE).insert(record));
+    }
     if (error) {
       console.error("[contact] supabase insert failed:", error.message);
       return NextResponse.json({ error: "Could not save inquiry" }, { status: 500 });
@@ -60,7 +75,7 @@ export async function POST(req: Request) {
 
     // 2a) Lead notification to me — branded, readable on a phone.
     try {
-      const mail = inquiryNotificationEmail(record);
+      const mail = inquiryNotificationEmail({ ...record, locale });
       await resend.emails.send({
         from,
         to,
@@ -78,7 +93,7 @@ export async function POST(req: Request) {
     // verified amrstudio.dev domain, so it reaches any recipient; the catch is
     // kept so a mail failure never costs us the saved inquiry.
     try {
-      const mail = inquiryConfirmationEmail(record);
+      const mail = inquiryConfirmationEmail({ ...record, locale });
       await resend.emails.send({
         from,
         to: email,

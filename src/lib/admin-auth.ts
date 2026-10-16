@@ -7,7 +7,7 @@ import { supabaseAdmin, isSupabaseConfigured } from "./supabase";
  * Database-backed admin auth (no env credentials). Admin users live in the
  * `admin_users` table with bcrypt-hashed passwords; login is verified through
  * the `verify_admin` SQL function, and a random opaque token is stored in
- * `admin_sessions` and set as the session cookie. See supabase/schema.sql.
+ * `admin_sessions` and set as the session cookie. See supabase/setup.sql.
  */
 
 export const ADMIN_COOKIE = "amr_admin";
