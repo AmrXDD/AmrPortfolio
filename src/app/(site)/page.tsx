@@ -3,9 +3,9 @@ import { FullStack } from "@/components/sections/fullstack";
 import { About } from "@/components/sections/about";
 import { WorkGrid } from "@/components/sections/work-grid";
 import { CaseStudies } from "@/components/sections/case-studies";
-import { LaptopScene } from "@/components/sections/showcase/laptop-scene";
+import { CraftAnatomy } from "@/components/sections/showcase/craft-anatomy";
 import { Guarantees } from "@/components/sections/guarantees";
-import { BrowserCodeScene } from "@/components/sections/showcase/browser-code-scene";
+import { CodeToUI } from "@/components/sections/showcase/code-to-ui";
 import { TechLoop } from "@/components/sections/tech-loop";
 import { SoundStudio } from "@/components/sections/sound-studio";
 import { Process } from "@/components/sections/process";
@@ -28,10 +28,10 @@ export default function Home() {
       <CaseStudies />
 
       {/* ── Craft showcase: cinematic device sequences ── */}
-      <LaptopScene />
+      <CraftAnatomy />
       {/* sticky-stacking promise cards with edge-glow borders */}
       <Guarantees />
-      <BrowserCodeScene />
+      <CodeToUI />
 
       {/* Infinite marquee of the tech stack */}
       <TechLoop />
