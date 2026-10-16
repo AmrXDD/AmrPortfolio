@@ -7,6 +7,7 @@ import { Preloader } from "@/components/preloader";
 import { AmbientPlayer } from "@/components/ui/ambient-player";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SoundFX } from "@/components/ui/sound-fx";
+import { ScrollThread } from "@/components/ui/scroll-thread";
 
 /*
  * Layout for the marketing site only. All the cinematic chrome — preloader,
@@ -19,12 +20,14 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       {/* Film grain overlay (scoped to the site, not /admin) */}
       <div className="grain" aria-hidden />
       <Preloader />
+      {/* the comet thread, drawn down the page as you scroll (behind content) */}
+      <ScrollThread />
       <SmoothScroll>
         <Cursor />
         <TopControls />
         <ScrollProgress />
         <main className="relative z-10">{children}</main>
-        {/* Floating magnifying dock replaces the top navbar */}
+        {/* Sideways rail on desktop, magnifying dock on phones */}
         <SiteDock />
         <StickyWhatsApp />
       </SmoothScroll>

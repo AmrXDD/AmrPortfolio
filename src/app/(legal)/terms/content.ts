@@ -31,7 +31,7 @@ export const TERMS: { en: LegalDoc; ar: LegalDoc } = {
       {
         h: "3. Prices, budgets and currencies",
         body: [
-          "Budget brackets on the contact form are there to help you describe your project. They are not quotes or offers. Amounts are shown in a currency chosen from your approximate location and converted from US dollars at indicative rates, so they are approximate. The price of a project is only what is stated in a written proposal.",
+          "Budget brackets on the contact form are there to help you describe your project. They are not quotes or offers. Amounts are shown in a currency chosen from your approximate location (you can switch to any other) and converted from US dollars at a daily reference rate, then rounded, so they are approximate. The price of a project is only what is stated in a written proposal.",
         ],
       },
       {
@@ -126,7 +126,7 @@ export const TERMS: { en: LegalDoc; ar: LegalDoc } = {
       {
         h: "3. الأسعار والميزانيات والعملات",
         body: [
-          "فئات الميزانية في نموذج التواصل وُضعت لمساعدتك على وصف مشروعك، وليست عروض أسعار أو إيجابًا. تُعرض المبالغ بعملة تُختار بحسب موقعك التقريبي وتُحوَّل من الدولار الأمريكي بأسعار استرشادية، لذا فهي تقريبية. سعر المشروع هو فقط ما يرد في عرض مكتوب.",
+          "فئات الميزانية في نموذج التواصل وُضعت لمساعدتك على وصف مشروعك، وليست عروض أسعار أو إيجابًا. تُعرض المبالغ بعملة تُختار بحسب موقعك التقريبي (ويمكنك التبديل إلى أي عملة أخرى)، وتُحوَّل من الدولار الأمريكي بسعر صرف مرجعي يومي ثم تُقرَّب، لذا فهي تقريبية. سعر المشروع هو فقط ما يرد في عرض مكتوب.",
         ],
       },
       {

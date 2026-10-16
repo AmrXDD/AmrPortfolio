@@ -14,6 +14,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/lib/i18n";
 import { SITE, SITE_AR } from "@/lib/constants";
 import { visitorLocale } from "@/lib/locale-server";
+import { usdRates } from "@/lib/fx";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -245,7 +246,7 @@ const jsonLd = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { lang, currency } = await visitorLocale();
+  const [{ lang, currency }, rates] = await Promise.all([visitorLocale(), usdRates()]);
   return (
     <html
       lang={lang}
@@ -267,7 +268,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="antialiased">
         <ThemeProvider>
-          <LanguageProvider initialLang={lang} currency={currency}>
+          <LanguageProvider initialLang={lang} initialCurrency={rates[currency] ? currency : "USD"} rates={rates}>
             {children}
           </LanguageProvider>
         </ThemeProvider>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Dock, type DockItemData } from "@/components/ui/dock";
+import { SideNav } from "@/components/ui/side-nav";
 import { useLang } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/use-mobile";
 import {
@@ -12,7 +13,7 @@ import {
   VscMail,
 } from "react-icons/vsc";
 
-function scrollToId(id: string) {
+export function scrollToId(id: string) {
   const target = document.getElementById(id);
   if (!target) return;
   const w = window as unknown as {
@@ -43,23 +44,41 @@ function scrollToId(id: string) {
   history.pushState(null, "", `#${id}`);
 }
 
-export function SiteDock() {
-  const { t } = useLang();
-  const isMobile = useIsMobile();
-  const sz = isMobile ? 38 : 46;
+const SECTIONS = [
+  { id: "top", key: "nav.home", Icon: VscHome },
+  { id: "work", key: "nav.work", Icon: VscArchive },
+  { id: "craft", key: "nav.craft", Icon: VscTools },
+  { id: "process", key: "nav.process", Icon: VscListOrdered },
+  { id: "services", key: "nav.services", Icon: VscMegaphone },
+  { id: "contact", key: "nav.contact", Icon: VscMail },
+] as const;
 
-  const items: DockItemData[] = [
-    { icon: <VscHome size={18} />, label: t("nav.home"), onClick: () => scrollToId("top") },
-    { icon: <VscArchive size={18} />, label: t("nav.work"), onClick: () => scrollToId("work") },
-    { icon: <VscTools size={18} />, label: t("nav.craft"), onClick: () => scrollToId("craft") },
-    { icon: <VscMegaphone size={18} />, label: t("nav.services"), onClick: () => scrollToId("services") },
-    { icon: <VscListOrdered size={18} />, label: t("nav.process"), onClick: () => scrollToId("process") },
-    { icon: <VscMail size={18} />, label: t("nav.contact"), onClick: () => scrollToId("contact") },
-  ];
+/* Desktop: the sideways rail on the trailing edge. Phones keep the bottom
+   dock — a side rail would sit on top of the content at that width. */
+export function SiteDock() {
+  const { t, lang } = useLang();
+  const isMobile = useIsMobile();
+
+  if (!isMobile) {
+    return (
+      <SideNav
+        items={SECTIONS.map((s) => ({ id: s.id, label: t(s.key), icon: <s.Icon size={17} /> }))}
+        onNavigate={scrollToId}
+        ariaLabel={lang === "ar" ? "التنقّل في الموقع" : "Site navigation"}
+        topLabel={lang === "ar" ? "العودة إلى الأعلى" : "Back to top"}
+      />
+    );
+  }
+
+  const items: DockItemData[] = SECTIONS.map((s) => ({
+    icon: <s.Icon size={18} />,
+    label: t(s.key),
+    onClick: () => scrollToId(s.id),
+  }));
 
   return (
-    <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3 md:bottom-6">
-      <Dock items={items} panelHeight={isMobile ? 54 : 64} baseItemSize={sz} magnification={isMobile ? 52 : 68} distance={isMobile ? 110 : 160} />
+    <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3">
+      <Dock items={items} panelHeight={54} baseItemSize={38} magnification={52} distance={110} />
     </div>
   );
 }

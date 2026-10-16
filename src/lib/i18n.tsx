@@ -11,7 +11,15 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-import { LANG_COOKIE, budgetBrackets, type CurrencyCode, type Lang } from "./locale";
+import {
+  CURRENCY_COOKIE,
+  FALLBACK_RATES,
+  LANG_COOKIE,
+  budgetBrackets,
+  type CurrencyCode,
+  type Lang,
+  type Rates,
+} from "./locale";
 
 export type { Lang };
 type Dict = Record<string, { en: string; ar: string }>;
@@ -76,7 +84,7 @@ export const STRINGS: Dict = {
   "form.namePh": { en: "Your name", ar: "اسمك" },
   "form.emailPh": { en: "you@studio.com", ar: "you@studio.com" },
   "form.reasonPh": { en: "Tell me what you're building", ar: "أخبرني عمّا تبنيه" },
-  "form.budgetNote": { en: "Shown in your local currency. Approximate.", ar: "المبالغ بعملتك المحلية وهي تقريبية." },
+  "form.budgetNote": { en: "Converted at today's rate and rounded, so approximate.", ar: "محوّلة بسعر صرف اليوم ومقرّبة، لذا فهي تقريبية." },
   "form.consentPre": { en: "I agree that Amr Studio may store this inquiry to reply to me, as described in the", ar: "أوافق على أن يحتفظ Amr Studio بهذا الاستفسار للرد عليّ، كما هو موضح في" },
   "form.consentLink": { en: "Privacy Policy", ar: "سياسة الخصوصية" },
   "form.consentRequired": { en: "Please tick the consent box to send.", ar: "يُرجى الموافقة على سياسة الخصوصية للإرسال." },
@@ -95,6 +103,8 @@ type LangState = {
   lang: Lang;
   dir: "ltr" | "rtl";
   currency: CurrencyCode;
+  rates: Rates;
+  setCurrency: (code: CurrencyCode) => void;
   toggle: () => void;
   t: (key: string) => string;
 };
@@ -103,6 +113,8 @@ const LangContext = createContext<LangState>({
   lang: "en",
   dir: "ltr",
   currency: "USD",
+  rates: FALLBACK_RATES,
+  setCurrency: () => {},
   toggle: () => {},
   t: (k) => k,
 });
@@ -120,13 +132,28 @@ function apply(lang: Lang) {
 export function LanguageProvider({
   children,
   initialLang = "en",
-  currency = "USD",
+  initialCurrency = "USD",
+  rates = FALLBACK_RATES,
 }: {
   children: React.ReactNode;
   initialLang?: Lang;
-  currency?: CurrencyCode;
+  initialCurrency?: CurrencyCode;
+  rates?: Rates;
 }) {
   const [lang, setLang] = useState<Lang>(initialLang);
+  const [currency, setCurrencyState] = useState<CurrencyCode>(initialCurrency);
+
+  // The visitor's pick beats the country default from now on.
+  const setCurrency = useCallback(
+    (code: CurrencyCode) => {
+      if (!rates[code]) return;
+      setCurrencyState(code);
+      try {
+        document.cookie = `${CURRENCY_COOKIE}=${code}; path=/; max-age=31536000; samesite=lax`;
+      } catch {}
+    },
+    [rates]
+  );
 
   const toggle = useCallback(() => {
     setLang((prev) => {
@@ -137,8 +164,8 @@ export function LanguageProvider({
   }, []);
 
   const value = useMemo<LangState>(
-    () => ({ lang, dir: lang === "ar" ? "rtl" : "ltr", currency, toggle, t: (k) => t(k, lang) }),
-    [lang, currency, toggle]
+    () => ({ lang, dir: lang === "ar" ? "rtl" : "ltr", currency, rates, setCurrency, toggle, t: (k) => t(k, lang) }),
+    [lang, currency, rates, setCurrency, toggle]
   );
 
   return <LangContext.Provider value={value}>{children}</LangContext.Provider>;
@@ -153,6 +180,6 @@ export function useCopy<T>(copy: { en: T; ar: T }): T {
 
 /** Budget brackets in the visitor's currency and language. */
 export function useBudgets() {
-  const { currency, lang } = useLang();
-  return useMemo(() => budgetBrackets(currency, lang), [currency, lang]);
+  const { currency, lang, rates } = useLang();
+  return useMemo(() => budgetBrackets(currency, lang, rates), [currency, lang, rates]);
 }

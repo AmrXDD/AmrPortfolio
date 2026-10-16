@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useBudgets, useLang } from "@/lib/i18n";
 import { ArrowUpRight } from "lucide-react";
+import { CurrencyPicker } from "@/components/ui/currency-picker";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
@@ -105,7 +106,10 @@ export function ContactForm() {
 
       {/* Budget */}
       <div className="grid gap-2">
-        <span className="text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50">{t("form.budget")}</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50">{t("form.budget")}</span>
+          <CurrencyPicker />
+        </div>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("form.budget")}>
           {budgets.map((b) => (
             <button
@@ -121,7 +125,8 @@ export function ContactForm() {
                   : "border-line bg-ink/30 text-bone/70 hover:border-bone/40 hover:text-bone"
               }`}
             >
-              {b.label}
+              {/* server and browser ICU can differ on compact figures */}
+              <span suppressHydrationWarning>{b.label}</span>
             </button>
           ))}
         </div>

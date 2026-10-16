@@ -72,7 +72,7 @@ function ProjectNav() {
   return (
     <div
       dir="ltr"
-      className="pointer-events-none fixed left-6 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-500 lg:block"
+      className="pointer-events-none fixed left-6 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-500 rtl:left-auto rtl:right-6 lg:block"
       style={{ opacity: inView ? 1 : 0 }}
     >
       <div className="pointer-events-auto" style={{ pointerEvents: inView ? "auto" : "none" }}>
