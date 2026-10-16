@@ -32,7 +32,13 @@ export function TechLoop() {
   return (
     <section className="relative border-b border-line px-5 py-16 md:px-10 md:py-20">
       <div className="mx-auto max-w-[1400px]">
-        <Eyebrow index="✦">{lang === "ar" ? "مبني باستخدام" : "Built with"}</Eyebrow>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <Eyebrow index="✦">{lang === "ar" ? "مبني باستخدام" : "Built with"}</Eyebrow>
+          {/* the colophon that used to sit in the footer bar */}
+          <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-bone/45">
+            {lang === "ar" ? "هذا الموقع" : "This site"} · <span dir="ltr">Next.js 16 · TS · Tailwind · WebGL · Framer Motion</span>
+          </p>
+        </div>
         <div dir="ltr" className="relative mt-8" style={{ height: 72 }}>
           <LogoLoop
             logos={techLogos}

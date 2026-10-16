@@ -67,7 +67,10 @@ export function SoundFX() {
     const SEL = "a, button, [data-cursor], [data-tick]";
     let lastEl: Element | null = null;
     let lastAt = 0;
+    // [data-no-tick] areas make their own sound (the sequencer), so stay quiet there
+    const quiet = (t: EventTarget | null) => !!(t as HTMLElement)?.closest?.("[data-no-tick]");
     const onOver = (e: MouseEvent) => {
+      if (quiet(e.target)) return;
       const el = (e.target as HTMLElement)?.closest?.(SEL);
       if (!el || el === lastEl) return; // one tick per element
       const now = performance.now();
@@ -77,7 +80,7 @@ export function SoundFX() {
       play(0.35, 1.08);
     };
     const onClick = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement)?.closest?.(SEL)) return;
+      if (quiet(e.target) || !(e.target as HTMLElement)?.closest?.(SEL)) return;
       play(0.6, 0.92);
     };
 

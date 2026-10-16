@@ -17,10 +17,12 @@ function Word({
   end: number;
   blur: number;
 }) {
+  // Opacity + a small lift only. A per-word CSS blur looked similar but made
+  // every word its own filter layer, re-rasterised on every scroll frame.
   const opacity = useTransform(progress, [start, end], [0.12, 1]);
-  const filter = useTransform(progress, [start, end], [`blur(${blur}px)`, "blur(0px)"]);
+  const y = useTransform(progress, [start, end], [blur, 0]);
   return (
-    <motion.span style={{ opacity, filter }} className="inline-block">
+    <motion.span style={{ opacity, y }} className="inline-block">
       {word}&nbsp;
     </motion.span>
   );
@@ -28,7 +30,7 @@ function Word({
 
 /**
  * ScrollReveal — the paragraph eases from a faint tilt while each word
- * sharpens (opacity 0.12 → 1, blur → 0) in reading order, scrubbed by scroll.
+ * lights up (opacity 0.12 → 1, a small lift) in reading order, scrubbed by scroll.
  */
 export function ScrollReveal({
   text,

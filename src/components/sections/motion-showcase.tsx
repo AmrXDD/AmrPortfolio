@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, useVelocity } from "framer-motion";
+import { motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, useVelocity } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { RevealWords } from "@/components/ui/reveal";
@@ -45,6 +45,8 @@ const COPY = {
  */
 
 /* ── magnetic: a dot field + a word that leans toward you ─────────────── */
+// The field is drawn only while it is changing: on pointer movement and for
+// a short settle afterwards. At rest it is one static frame, not a loop.
 function MagneticTile({ word }: { word: string }) {
   const host = useRef<HTMLDivElement>(null);
   const cv = useRef<HTMLCanvasElement>(null);
@@ -57,6 +59,7 @@ function MagneticTile({ word }: { word: string }) {
   const skew = useTransform(sx, [0, 1], [10, -10]);
   const blobX = useTransform(sx, [0, 1], ["-30%", "30%"]);
   const blobY = useTransform(sy, [0, 1], ["-30%", "30%"]);
+  const kick = useRef<() => void>(() => {});
 
   useEffect(() => {
     const canvas = cv.current;
@@ -65,50 +68,66 @@ function MagneticTile({ word }: { word: string }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let raf = 0;
-    let on = false;
+    let until = 0;
+    let visible = false;
     let W = 0;
     let H = 0;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const size = () => {
-      W = el.clientWidth;
-      H = el.clientHeight;
-      canvas.width = W * dpr;
-      canvas.height = H * dpr;
-    };
-    size();
-    const ro = new ResizeObserver(size);
-    ro.observe(el);
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    const gap = 22;
     const draw = () => {
-      if (!on) return;
-      raf = requestAnimationFrame(draw);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       const mx = sx.get() * W;
       const my = sy.get() * H;
-      const gap = 22;
-      for (let y = gap / 2; y < H; y += gap) {
-        for (let x = gap / 2; x < W; x += gap) {
-          const dx = mx - x;
-          const dy = my - y;
-          const d = Math.hypot(dx, dy) || 1;
-          const pull = Math.max(0, 1 - d / 190);
-          const k = pull * pull * 16;
-          const r = 1 + pull * 2.2;
-          ctx.fillStyle = pull > 0.35 ? `rgba(255,77,31,${0.4 + pull * 0.6})` : `rgba(239,234,226,${0.12 + pull * 0.5})`;
-          ctx.beginPath();
-          ctx.arc(x + (dx / d) * k, y + (dy / d) * k, r, 0, Math.PI * 2);
-          ctx.fill();
+      // two passes, one fillStyle each: quiet dots, then the ember ones
+      for (let pass = 0; pass < 2; pass++) {
+        ctx.fillStyle = pass ? "rgba(255,77,31,0.85)" : "rgba(239,234,226,0.22)";
+        ctx.beginPath();
+        for (let y = gap / 2; y < H; y += gap) {
+          for (let x = gap / 2; x < W; x += gap) {
+            const dx = mx - x;
+            const dy = my - y;
+            const d = Math.hypot(dx, dy) || 1;
+            const pull = Math.max(0, 1 - d / 190);
+            if ((pull > 0.35) !== (pass === 1)) continue;
+            const k = pull * pull * 16;
+            const r = 1 + pull * 2.2;
+            const cx = x + (dx / d) * k;
+            const cy = y + (dy / d) * k;
+            ctx.moveTo(cx + r, cy);
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          }
         }
+        ctx.fill();
       }
     };
+    const loop = () => {
+      draw();
+      raf = performance.now() < until && visible ? requestAnimationFrame(loop) : 0;
+    };
+    kick.current = () => {
+      until = performance.now() + 900; // long enough for the springs to settle
+      if (!raf && visible) raf = requestAnimationFrame(loop);
+    };
+    const size = () => {
+      W = el.clientWidth;
+      H = el.clientHeight;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      draw();
+    };
+    size();
+    const ro = new ResizeObserver(size);
+    ro.observe(el);
     const io = new IntersectionObserver(([e]) => {
-      on = e.isIntersecting;
-      cancelAnimationFrame(raf);
-      if (on) draw();
+      visible = e.isIntersecting;
+      if (!visible) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
     });
     io.observe(el);
     return () => {
-      on = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
@@ -122,15 +141,21 @@ function MagneticTile({ word }: { word: string }) {
         const r = e.currentTarget.getBoundingClientRect();
         px.set((e.clientX - r.left) / r.width);
         py.set((e.clientY - r.top) / r.height);
+        kick.current();
       }}
       onPointerLeave={() => {
         px.set(0.5);
         py.set(0.5);
+        kick.current();
       }}
       className="relative flex h-full items-center justify-center overflow-hidden"
     >
       <canvas ref={cv} aria-hidden className="absolute inset-0 h-full w-full" />
-      <motion.div style={{ x: blobX, y: blobY }} className="absolute h-36 w-36 rounded-full bg-gradient-to-br from-accent to-plasma opacity-70 blur-2xl" />
+      {/* a pre-softened glow: a radial gradient, not a blur filter re-run on every move */}
+      <motion.div
+        style={{ x: blobX, y: blobY }}
+        className="absolute h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(255,77,31,0.55)_0%,rgba(124,58,237,0.35)_38%,transparent_68%)]"
+      />
       <motion.span style={{ x: wx, y: wy, skewX: skew }} className="relative text-display text-[3.5rem] italic text-bone">
         {word}
       </motion.span>
@@ -141,31 +166,30 @@ function MagneticTile({ word }: { word: string }) {
 /* ── stagger: bars ripple outward from the pointer ───────────────────── */
 const BARS = 16;
 function StaggerTile({ reduce }: { reduce: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { margin: "0px 0px -10% 0px" });
   const [origin, setOrigin] = useState(0);
-  const [pulse, setPulse] = useState(0);
   const auto = useRef(true);
 
+  // the demo plays itself only while it is on screen
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || !inView) return;
     const id = setInterval(() => {
       if (!auto.current) return;
       setOrigin((o) => (o + 5) % BARS);
-      setPulse((p) => p + 1);
     }, 1900);
     return () => clearInterval(id);
-  }, [reduce]);
+  }, [reduce, inView]);
 
   return (
     <div
+      ref={ref}
       dir="ltr"
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         const o = Math.max(0, Math.min(BARS - 1, Math.floor(((e.clientX - r.left) / r.width) * BARS)));
         auto.current = false;
-        if (o !== origin) {
-          setOrigin(o);
-          setPulse((p) => p + 1);
-        }
+        if (o !== origin) setOrigin(o);
       }}
       onPointerLeave={() => (auto.current = true)}
       className="flex h-full items-end justify-center gap-[6px] px-6 pb-8 pt-24"
@@ -174,7 +198,7 @@ function StaggerTile({ reduce }: { reduce: boolean }) {
         const d = Math.abs(i - origin);
         return (
           <motion.span
-            key={`${i}-${pulse}`}
+            key={i}
             initial={{ scaleY: 0.12 }}
             animate={reduce ? { scaleY: 0.5 } : { scaleY: [0.12, 1 - d * 0.045, 0.12] }}
             transition={{ duration: 1.1, delay: d * 0.055, ease: [0.19, 1, 0.22, 1] }}
@@ -187,16 +211,17 @@ function StaggerTile({ reduce }: { reduce: boolean }) {
 }
 
 /* ── iridescence: a film of colour that turns with the pointer ────────── */
+// Everything here moves by transform: an oversized gradient sheet drifts and
+// turns, a soft highlight follows the pointer. No per-frame repaint, no blend modes.
 function IridescenceTile() {
   const px = useMotionValue(0.5);
   const py = useMotionValue(0.5);
   const sx = useSpring(px, { stiffness: 90, damping: 18 });
   const sy = useSpring(py, { stiffness: 90, damping: 18 });
-  const bg = useTransform([sx, sy], ([x, y]: number[]) => {
-    const a = 90 + x * 120 + y * 60;
-    return `linear-gradient(${a}deg, #7c3aed 0%, #22d3ee ${20 + x * 10}%, #ff4d1f ${48 + y * 8}%, #efeae2 ${72 + x * 6}%, #7c3aed 100%)`;
-  });
-  const sheen = useTransform([sx, sy], ([x, y]: number[]) => `radial-gradient(circle at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.55), transparent 42%)`);
+  const rot = useTransform([sx, sy], ([x, y]: number[]) => (x - 0.5) * 70 + (y - 0.5) * 30);
+  const shift = useTransform(sx, [0, 1], ["-8%", "8%"]);
+  const hx = useTransform(sx, [0, 1], ["-50%", "50%"]);
+  const hy = useTransform(sy, [0, 1], ["-50%", "50%"]);
   return (
     <div
       onPointerMove={(e) => {
@@ -208,11 +233,19 @@ function IridescenceTile() {
         px.set(0.5);
         py.set(0.5);
       }}
-      className="relative h-full w-full"
+      className="relative h-full w-full overflow-hidden"
     >
-      <motion.div className="absolute inset-0" style={{ backgroundImage: bg }} animate={{ backgroundPositionX: ["0%", "100%", "0%"] }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }} />
-      <motion.div className="absolute inset-0 mix-blend-overlay" style={{ backgroundImage: sheen }} />
-      <div className="absolute inset-0 opacity-[0.18] mix-blend-overlay [background:repeating-linear-gradient(115deg,rgba(255,255,255,0.6)_0_2px,transparent_2px_9px)]" />
+      <motion.div className="absolute -inset-[60%]" style={{ rotate: rot, x: shift }}>
+        <div
+          className="h-full w-full animate-[iri-drift_14s_linear_infinite]"
+          style={{ backgroundImage: "linear-gradient(115deg, #7c3aed 0%, #22d3ee 18%, #ff4d1f 36%, #efeae2 52%, #7c3aed 68%, #22d3ee 84%, #ff4d1f 100%)" }}
+        />
+      </motion.div>
+      <motion.div
+        className="absolute left-1/2 top-1/2 -ml-[45%] -mt-[45%] h-[90%] w-[90%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.45),transparent_60%)]"
+        style={{ x: hx, y: hy }}
+      />
+      <div className="absolute inset-0 opacity-[0.12] [background:repeating-linear-gradient(115deg,rgba(255,255,255,0.7)_0_2px,transparent_2px_9px)]" />
     </div>
   );
 }

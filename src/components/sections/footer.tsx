@@ -22,7 +22,6 @@ const COPY = {
     available: "Selectively available",
     waMsg: "Hey Amr, saw your portfolio. Let's talk.",
     rights: `© ${new Date().getFullYear()} ${SITE.name} Studio. All work hand coded.`,
-    built: "Built with Next.js 16 · TS · Tailwind · WebGL · Framer Motion",
     version: "v.05",
     top: "Back to top",
   },
@@ -38,7 +37,6 @@ const COPY = {
     available: "متاح بعدد محدود",
     waMsg: "مرحبًا عمرو، شاهدت أعمالك. لنتحدّث.",
     rights: `© ${new Date().getFullYear()} ${SITE.name} Studio. كل الأعمال مبرمجة يدويًا.`,
-    built: "مبني بـ Next.js 16 · TS · Tailwind · WebGL · Framer Motion",
     version: "v.05",
     top: "إلى الأعلى",
   },
@@ -182,7 +180,6 @@ export function Footer() {
               {t("legal.terms")}
             </Link>
           </span>
-          <span>{c.built}</span>
           <span className="flex items-center gap-6">
             <span>{c.version}</span>
             <button

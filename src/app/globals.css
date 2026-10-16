@@ -211,6 +211,7 @@ section[id] { scroll-margin-top: 88px; }
 /* ---- 3D carousel ---- */
 @keyframes spinY { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+@keyframes iri-drift { 0%, 100% { transform: translateX(-12%); } 50% { transform: translateX(12%); } }
 .animate-spinY { animation: spinY 32s linear infinite; }
 .animate-floaty { animation: floaty 6.5s ease-in-out infinite; }
 .carousel-stage:hover .animate-spinY { animation-play-state: paused; }

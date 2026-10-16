@@ -108,12 +108,10 @@ export function Cursor() {
         transition={{ width: { duration: 0.25 }, height: { duration: 0.25 } }}
       >
         {/* rotating hairline ring */}
-        <motion.span
-          className="absolute inset-0 rounded-full border border-dashed border-bone/25"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          style={{ scale: down ? 0.86 : 1 }}
-        />
+        {/* the spin is a CSS animation (runs on the compositor, not a JS loop) */}
+        <motion.span className="absolute inset-0" style={{ scale: down ? 0.86 : 1 }}>
+          <span className="absolute inset-0 animate-[spin_8s_linear_infinite] rounded-full border border-dashed border-bone/25" />
+        </motion.span>
         {/* corner brackets */}
         <motion.span animate={{ x: -gap, y: -gap }} className={`${bracket} left-0 top-0 border-l-2 border-t-2`} />
         <motion.span animate={{ x: gap, y: -gap }} className={`${bracket} right-0 top-0 border-r-2 border-t-2`} />

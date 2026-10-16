@@ -33,9 +33,7 @@ export default function Home() {
       <Guarantees />
       <CodeToUI />
 
-      {/* Infinite marquee of the tech stack */}
-      <TechLoop />
-      {/* Interactive option wheel — its click is the site's global tick sound */}
+      {/* The site's UI tick, played as a step sequencer */}
       <SoundStudio />
 
       <Process />
@@ -43,6 +41,8 @@ export default function Home() {
       <MotionShowcase />
       <Philosophy />
       <Testimonials />
+      {/* "Built for these four" → built with: the stack, and what this site runs on */}
+      <TechLoop />
       <CTA />
       <Footer />
     </>

@@ -128,8 +128,13 @@ export function LogoLoop({
     const shouldPause = pauseOnHover && hovered;
 
     let velocity = 0;
+    let onScreen = true;
 
     const tick = (ts: number) => {
+      if (!onScreen) {
+        rafRef.current = null;
+        return;
+      }
       if (lastTsRef.current === null) lastTsRef.current = ts;
       const dt = Math.max(0, ts - lastTsRef.current) / 1000;
       lastTsRef.current = ts;
@@ -150,8 +155,19 @@ export function LogoLoop({
     };
 
     rafRef.current = requestAnimationFrame(tick);
+    // only run while the strip is on screen
+    const io = new IntersectionObserver(([e]) => {
+      onScreen = e.isIntersecting;
+      if (onScreen && rafRef.current === null) {
+        lastTsRef.current = null;
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    });
+    if (containerRef.current) io.observe(containerRef.current);
     return () => {
+      io.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       lastTsRef.current = null;
     };
   }, [seqWidth, speed, hoverSpeed, hovered, direction, pauseOnHover]);

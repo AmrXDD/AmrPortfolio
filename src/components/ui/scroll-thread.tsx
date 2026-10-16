@@ -62,7 +62,14 @@ export function ScrollThread() {
     const ro = new ResizeObserver(measureSections);
     ro.observe(document.body);
 
-    let smoothY = window.scrollY;
+    // Scroll position comes from scroll events, never read inside the frame:
+    // reading scrollY in rAF forces a full layout whenever anything on the
+    // page has touched styles that frame (the marquees do, every frame).
+    let scrollY = window.scrollY;
+    const onScroll = () => (scrollY = window.scrollY);
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    let smoothY = scrollY;
     let lastY = smoothY;
     let vel = 0; // px per frame, smoothed
     let amp = 1; // weave amplitude multiplier
@@ -94,7 +101,7 @@ export function ScrollThread() {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const ease = (rate: number) => 1 - Math.exp(-rate * dt);
-      const y = window.scrollY;
+      const y = scrollY;
       smoothY += (y - smoothY) * ease(7);
       const dy = smoothY - lastY;
       lastY = smoothY;
@@ -264,6 +271,7 @@ export function ScrollThread() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVis);
       ro.disconnect();
     };

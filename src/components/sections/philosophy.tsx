@@ -100,12 +100,25 @@ export function Philosophy() {
   return (
     <section ref={ref} className="relative overflow-hidden border-b border-line bg-ink px-5 py-32 md:px-10 md:py-40">
       {/* the word behind it all, drifting */}
-      <motion.div
-        style={{ y }}
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-1/3 select-none whitespace-nowrap text-center text-display italic leading-none text-bone/[0.04]"
-      >
-        <span style={{ fontSize: "clamp(5rem, 26vw, 26rem)" }}>{ar ? "قناعة." : "conviction."}</span>
+      {/* set in SVG and fitted to the viewBox, so the word spans the width at
+          any screen size without running off the edge */}
+      <motion.div style={{ y }} aria-hidden className="pointer-events-none absolute inset-x-0 top-1/3 select-none px-[3vw]">
+        <svg viewBox="0 0 1000 240" className="block h-auto w-full overflow-visible">
+          <text
+            x="500"
+            y="180"
+            textAnchor="middle"
+            {...(ar ? {} : { textLength: 980, lengthAdjust: "spacingAndGlyphs" })}
+            style={{
+              fontFamily: ar ? "var(--font-ar-serif), var(--font-ar-display), serif" : "var(--font-serif), serif",
+              fontStyle: ar ? "normal" : "italic",
+              fontSize: ar ? 230 : 210,
+              fill: "rgb(var(--bone-rgb) / 0.05)",
+            }}
+          >
+            {ar ? "قناعة." : "conviction."}
+          </text>
+        </svg>
       </motion.div>
 
       <div className="relative mx-auto max-w-[1600px]">
