@@ -265,7 +265,6 @@ export function Guarantees() {
           <motion.div style={{ scale: fit }} className="relative w-full max-w-[1040px]">
             <motion.div
               ref={sheet}
-              data-surface="light"
               style={{ ...paperStyle, rotateX: rotX, y: lift, scale, transformPerspective: 1600, transformOrigin: "50% 100%" }}
               className="relative overflow-hidden rounded-[10px] px-12 py-10 shadow-[0_60px_140px_-40px_rgba(0,0,0,0.85)]"
             >
@@ -282,7 +281,7 @@ export function Guarantees() {
         </div>
       ) : (
         <div className="px-4 py-20 md:px-10 md:py-28">
-          <div data-surface="light" className="relative mx-auto max-w-[1040px] overflow-hidden rounded-[10px] px-5 py-8 shadow-[0_50px_120px_-40px_rgba(0,0,0,0.8)] sm:px-10 sm:py-10" style={paperStyle}>
+          <div className="relative mx-auto max-w-[1040px] overflow-hidden rounded-[10px] px-5 py-8 shadow-[0_50px_120px_-40px_rgba(0,0,0,0.8)] sm:px-10 sm:py-10" style={paperStyle}>
             <span aria-hidden className="absolute inset-y-0 start-[5rem] w-px sm:start-[6.25rem]" style={{ background: `${EMBER}55` }} />
             <div className="relative">
               {header}

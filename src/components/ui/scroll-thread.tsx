@@ -3,65 +3,37 @@
 import { useEffect, useRef } from "react";
 
 /*
- * ScrollThread — a stream of light that runs down the page as you scroll,
- * made of the same stuff as the hero headline: thousands of small square
- * particles.
+ * ScrollThread — a comet that draws a glowing thread down the page as you
+ * scroll.
  *
- * The stream is defined in DOCUMENT space (two layered sine waves), so it is
- * stitched to the page, while its head rides at a fixed height in the
- * viewport. Particles flow along it from tail to head inside a ribbon that
- * thickens toward the head and widens with scroll speed.
+ * The thread is defined in DOCUMENT space (two layered sine waves), so it is
+ * stitched to the page and scrolls with it, while the comet's head rides at a
+ * fixed height in the viewport, drawing the newest stretch. Scroll speed bends
+ * it: fast flicks widen the weave and the head sheds sparks; at rest it
+ * breathes. Crossing into a new section drops an expanding ripple.
  *
- * When the head reaches a section title, part of the stream peels off and
- * writes that title in light, holds, then streams back into the head and
- * carries on. The real text is never hidden or moved: the light sits on
- * top of it and leaves. Each title is written once per visit.
- *
- * Nothing but particles: no stroke, halo or ring frames the stream.
- *
- * Two fixed canvases, pointer-events none: the stream behind the content
- * (z-1) and the writing above it (z-11, idle and blank when nothing is
- * being written). Scroll position comes from scroll events, never read in
- * the frame. Paused when the tab is hidden; skipped for reduced motion.
+ * One fixed 2D canvas behind the content (pointer-events: none), ~120 path
+ * points + ≤140 particles a frame, DPR capped at 1.5, paused when the tab is
+ * hidden, and skipped entirely for prefers-reduced-motion.
  */
 
 const HEAD_AT = 0.6; // head height, as a fraction of the viewport
-const TRAIL_VH = 1.35; // how much stream trails behind the head, in viewports
+const TRAIL_VH = 1.35; // how much thread trails behind the head, in viewports
+const POINTS = 120;
+const MAX_SPARKS = 140;
 
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number; hue: number };
-
-/** A title being written: particle homes in document space + live state. */
-type Writing = {
-  n: number;
-  hx: Float32Array; // home, document space
-  hy: Float32Array;
-  x: Float32Array; // live, document space
-  y: Float32Array;
-  vx: Float32Array;
-  vy: Float32Array;
-  seed: Float32Array;
-  c: Uint8Array; // colour bucket
-  t: number;
-  light: boolean; // written on a light surface
-  size: number;
-};
-
-const ARRIVE = 1.05;
-const HOLD = 0.75;
-const LEAVE = 1.25;
+type Ripple = { x: number; y: number; t: number };
 
 export function ScrollThread() {
-  const backRef = useRef<HTMLCanvasElement>(null);
-  const frontRef = useRef<HTMLCanvasElement>(null);
+  const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = backRef.current;
-    const fcanvas = frontRef.current;
-    if (!canvas || !fcanvas) return;
+    const canvas = ref.current;
+    if (!canvas) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = canvas.getContext("2d");
-    const fctx = fcanvas.getContext("2d");
-    if (!ctx || !fctx) return;
+    if (!ctx) return;
 
     const mobile = window.matchMedia("(max-width: 767px)").matches;
     let W = 0;
@@ -71,19 +43,28 @@ export function ScrollThread() {
       dpr = Math.min(1.5, window.devicePixelRatio || 1);
       W = window.innerWidth;
       H = window.innerHeight;
-      for (const c of [canvas, fcanvas]) {
-        c.width = Math.round(W * dpr);
-        c.height = Math.round(H * dpr);
-        c.style.width = `${W}px`;
-        c.style.height = `${H}px`;
-      }
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      canvas.style.width = `${W}px`;
+      canvas.style.height = `${H}px`;
     };
     resize();
     window.addEventListener("resize", resize);
 
+    // Section tops in document space, for the ripples.
+    let sectionTops: number[] = [];
+    const measureSections = () => {
+      sectionTops = Array.from(document.querySelectorAll("main > section, main > footer"))
+        .map((el) => (el as HTMLElement).getBoundingClientRect().top + window.scrollY)
+        .filter((y) => y > 40);
+    };
+    measureSections();
+    const ro = new ResizeObserver(measureSections);
+    ro.observe(document.body);
+
     // Scroll position comes from scroll events, never read inside the frame:
     // reading scrollY in rAF forces a full layout whenever anything on the
-    // page has touched styles that frame.
+    // page has touched styles that frame (the marquees do, every frame).
     let scrollY = window.scrollY;
     const onScroll = () => (scrollY = window.scrollY);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -92,275 +73,21 @@ export function ScrollThread() {
     let lastY = smoothY;
     let vel = 0; // px per frame, smoothed
     let amp = 1; // weave amplitude multiplier
+    let lastHeadDoc = smoothY + H * HEAD_AT;
+    const sparks: Spark[] = [];
+    const ripples: Ripple[] = [];
     let raf = 0;
     let t0 = performance.now();
     let last = t0;
 
-    // The stream: x as a function of document y.
+    // The thread: x as a function of document y.
     const xAt = (docY: number, time: number) => {
       const k1 = (Math.PI * 2) / (H * 1.7);
       const k2 = (Math.PI * 2) / (H * 0.55);
       const spread = (mobile ? 0.3 : 0.34) * amp;
+      // a slow, page-anchored breath (no per-frame wobble: that read as shimmer)
       const breath = 0.012 * Math.sin(time * 0.35);
       return W * (0.5 + spread * Math.sin(docY * k1 + 0.7) + (0.07 + breath) * Math.sin(docY * k2 + 1.9));
-    };
-
-    /* ── the ribbon's particles: each has a place along the stream (u), a
-       lane across it, a size and a colour. Positions are recomputed from
-       the analytic path every frame, so nothing accumulates or drifts. ── */
-    const N = mobile ? 900 : 2300;
-    const pu = new Float32Array(N);
-    const lane = new Float32Array(N);
-    const flow = new Float32Array(N);
-    const psz = new Float32Array(N);
-    const ph = new Float32Array(N);
-    for (let i = 0; i < N; i++) {
-      pu[i] = Math.random();
-      // lanes bunch toward the centre (sum of two uniforms ≈ triangular)
-      lane[i] = (Math.random() + Math.random() - 1) * 1.05;
-      flow[i] = 0.05 + Math.random() * 0.07;
-      psz[i] = (mobile ? 1.7 : 1.9) + Math.random() * (mobile ? 1.3 : 1.7);
-      ph[i] = Math.random() * Math.PI * 2;
-    }
-    // colour buckets along the stream, tail → head; the last is the hot core
-    const STREAM_RGB = ["124,58,237", "190,64,150", "235,72,80", "255,77,31", "255,138,76", "255,236,222"];
-    const bucketsX: number[][] = STREAM_RGB.map(() => []);
-    const bucketsY: number[][] = STREAM_RGB.map(() => []);
-    const bucketsS: number[][] = STREAM_RGB.map(() => []);
-
-    const sparks: Spark[] = [];
-    const MAX_SPARKS = mobile ? 60 : 120;
-
-    /* ── writing titles ── */
-    const writings: Writing[] = [];
-    const written = new WeakSet<Element>();
-    let frontDirty = false;
-
-    const sample = (el: HTMLElement): Writing | null => {
-      const r = el.getBoundingClientRect();
-      if (r.width < 20 || r.height < 12 || r.bottom < 0 || r.top > H) return null;
-      const pad = 6;
-      const w = Math.ceil(r.width) + pad * 2;
-      const h = Math.ceil(r.height) + pad * 2;
-      const off = document.createElement("canvas");
-      off.width = w;
-      off.height = h;
-      const o = off.getContext("2d", { willReadFrequently: true });
-      if (!o) return null;
-      o.fillStyle = "#fff";
-      // draw every word where the browser laid it out, in its own font
-      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      const range = document.createRange();
-      for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
-        const parent = node.parentElement;
-        if (!parent) continue;
-        const cs = getComputedStyle(parent);
-        if (cs.visibility === "hidden" || cs.opacity === "0") continue;
-        o.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        const oo = o as CanvasRenderingContext2D & { letterSpacing?: string };
-        if ("letterSpacing" in o) oo.letterSpacing = cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
-        const rtl = cs.direction === "rtl";
-        o.direction = rtl ? "rtl" : "ltr";
-        o.textAlign = rtl ? "right" : "left";
-        o.textBaseline = "alphabetic";
-        const text = node.data;
-        const re = /\S+/g;
-        let m: RegExpExecArray | null;
-        while ((m = re.exec(text))) {
-          range.setStart(node, m.index);
-          range.setEnd(node, m.index + m[0].length);
-          const wr = range.getBoundingClientRect();
-          if (!wr.width) continue;
-          let word = m[0];
-          if (cs.textTransform === "uppercase") word = word.toUpperCase();
-          const mt = o.measureText(word);
-          const asc = mt.fontBoundingBoxAscent ?? parseFloat(cs.fontSize) * 0.8;
-          const desc = mt.fontBoundingBoxDescent ?? parseFloat(cs.fontSize) * 0.2;
-          const y = wr.top - r.top + pad + (wr.height - (asc + desc)) / 2 + asc;
-          const x = (rtl ? wr.right : wr.left) - r.left + pad;
-          o.fillText(word, x, y);
-        }
-      }
-      const data = o.getImageData(0, 0, w, h).data;
-      let ink = 0;
-      for (let i = 3; i < data.length; i += 16) if (data[i] > 128) ink++;
-      if (!ink) return null;
-      const budget = mobile ? 650 : 1700;
-      const step = Math.max(2, Math.round(Math.sqrt((ink * 4) / budget)));
-      const hx: number[] = [];
-      const hy: number[] = [];
-      for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) if (data[(y * w + x) * 4 + 3] > 128) {
-        hx.push(r.left - pad + x);
-        hy.push(r.top - pad + y + scrollY);
-      }
-      const n = hx.length;
-      const out: Writing = {
-        n,
-        hx: Float32Array.from(hx),
-        hy: Float32Array.from(hy),
-        x: new Float32Array(n),
-        y: new Float32Array(n),
-        vx: new Float32Array(n),
-        vy: new Float32Array(n),
-        seed: new Float32Array(n),
-        c: new Uint8Array(n),
-        t: 0,
-        light: !!el.closest('[data-surface="light"]') || document.documentElement.classList.contains("light"),
-        size: Math.max(1.5, Math.min(2.6, step * 0.62)),
-      };
-      // they leave from the head of the stream
-      const hxv = xAt(smoothY + H * HEAD_AT, (performance.now() - t0) / 1000);
-      const hyd = H * HEAD_AT + scrollY;
-      for (let i = 0; i < n; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const rr = Math.random() * 26;
-        out.x[i] = hxv + Math.cos(a) * rr;
-        out.y[i] = hyd + Math.sin(a) * rr;
-        out.vx[i] = (Math.random() - 0.5) * 2;
-        out.vy[i] = (Math.random() - 0.5) * 2;
-        out.seed[i] = Math.random();
-        out.c[i] = (Math.random() * 3) | 0;
-      }
-      return out;
-    };
-
-    // Titles animate in on their own (words sliding up, lines gliding in).
-    // Only write a title once it has come to rest, or the light lands where
-    // the words were mid-flight; one still moving after ~1.5s is skipped.
-    const moved = (n: Element) => {
-      const tf = getComputedStyle(n).transform;
-      return !!tf && tf !== "none" && tf !== "matrix(1, 0, 0, 1, 0, 0)";
-    };
-    const settled = (el: HTMLElement) => {
-      // the title's own words…
-      for (const n of [el, ...Array.from(el.querySelectorAll("*"))]) if (moved(n)) return false;
-      // …and anything carrying it (a sheet still rising, a line gliding in)
-      for (let n = el.parentElement; n && n.tagName !== "MAIN"; n = n.parentElement) if (moved(n)) return false;
-      return true;
-    };
-    const tryWrite = (el: HTMLElement, tries: number) => {
-      if (!settled(el)) {
-        if (tries < 12) window.setTimeout(() => tryWrite(el, tries + 1), 130);
-        return;
-      }
-      const w = sample(el);
-      if (w) writings.push(w);
-    };
-
-    // a title is written when it crosses the head's height on the way down
-    const band = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting || written.has(e.target)) continue;
-          // only when the title arrives from below (scrolling down)
-          if (e.boundingClientRect.top < H * (HEAD_AT - 0.04)) continue;
-          if (writings.length >= 2) continue;
-          written.add(e.target);
-          tryWrite(e.target as HTMLElement, 0);
-        }
-      },
-      { rootMargin: `-${Math.round(HEAD_AT * 100)}% 0px -${Math.round((1 - HEAD_AT) * 100 - 3)}% 0px` }
-    );
-    const watched = new Set<Element>();
-    const scan = () => {
-      document.querySelectorAll("main section h2").forEach((h) => {
-        if (watched.has(h)) return;
-        const txt = (h.textContent || "").trim();
-        if (!txt || txt.length > 80) return;
-        watched.add(h);
-        band.observe(h);
-      });
-    };
-    scan();
-    // titles re-mount on a language switch: watch for new ones
-    let scanT = 0;
-    const mo = new MutationObserver(() => {
-      clearTimeout(scanT);
-      scanT = window.setTimeout(scan, 400);
-    });
-    const main = document.querySelector("main");
-    if (main) mo.observe(main, { childList: true, subtree: true });
-
-    const WRITE_RGB_DARK = ["255,77,31", "255,150,90", "255,236,222"];
-    const WRITE_RGB_LIGHT = ["255,77,31", "230,60,20", "255,120,60"];
-
-    const drawWritings = (dt: number, hx: number, hy: number) => {
-      if (!writings.length) {
-        if (frontDirty) {
-          fctx.setTransform(1, 0, 0, 1, 0, 0);
-          fctx.clearRect(0, 0, fcanvas.width, fcanvas.height);
-          frontDirty = false;
-        }
-        return;
-      }
-      frontDirty = true;
-      fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      fctx.clearRect(0, 0, W, H);
-      const f = dt * 60;
-      const headDocX = hx;
-      const headDocY = hy + scrollY;
-      for (let wi = writings.length - 1; wi >= 0; wi--) {
-        const w = writings[wi];
-        w.t += dt;
-        const t = w.t;
-        if (t > ARRIVE + HOLD + LEAVE + 0.4) {
-          writings.splice(wi, 1);
-          continue;
-        }
-        fctx.globalCompositeOperation = w.light ? "source-over" : "lighter";
-        const rgb = w.light ? WRITE_RGB_LIGHT : WRITE_RGB_DARK;
-        const s = w.size;
-        // phase constants
-        const a = Math.min(1, t / ARRIVE);
-        const ease = a * a * (3 - 2 * a);
-        const arriving = t < ARRIVE;
-        const leaving = t > ARRIVE + HOLD;
-        // a tight spiral from the head into the letters, not a wide cloud
-        const k = arriving ? 0.014 + ease ** 2 * 0.16 : 0.22;
-        const swirl = arriving ? (1 - ease) * 0.03 : 0;
-        const damp = Math.pow(arriving ? 0.9 - ease * 0.12 : 0.72, f);
-        const lt = leaving ? t - ARRIVE - HOLD : 0;
-        for (let b = 0; b < 3; b++) {
-          fctx.fillStyle = `rgba(${rgb[b]},1)`;
-          for (let i = 0; i < w.n; i++) {
-            if (w.c[i] !== b) continue;
-            let tx = w.hx[i];
-            let ty = w.hy[i];
-            let alpha = 1;
-            // staggered departure: each point lets go at its own moment
-            const go = leaving ? Math.max(0, lt - w.seed[i] * 0.45) : 0;
-            if (go > 0) {
-              tx = headDocX;
-              ty = headDocY;
-              alpha = Math.max(0, 1 - go / (LEAVE - 0.35));
-            }
-            const dx = tx - w.x[i];
-            const dy = ty - w.y[i];
-            if (go > 0) {
-              const pull = 0.02 + go * 0.05;
-              w.vx[i] += dx * pull * f;
-              w.vy[i] += dy * pull * f;
-              w.vx[i] *= Math.pow(0.86, f);
-              w.vy[i] *= Math.pow(0.86, f);
-            } else {
-              const sw = swirl * (0.6 + w.seed[i] * 0.8);
-              w.vx[i] += (dx * k - dy * sw) * f;
-              w.vy[i] += (dy * k + dx * sw) * f;
-              w.vx[i] *= damp;
-              w.vy[i] *= damp;
-            }
-            w.x[i] += w.vx[i] * f;
-            w.y[i] += w.vy[i] * f;
-            if (alpha <= 0.02) continue;
-            // the light is brightest while it is the title
-            const glow = arriving ? 0.55 + ease * 0.45 : leaving ? alpha : 1;
-            fctx.globalAlpha = glow * (w.light ? 0.95 : 0.9);
-            fctx.fillRect(w.x[i] - s / 2, w.y[i] - scrollY - s / 2, s, s);
-          }
-        }
-      }
-      fctx.globalAlpha = 1;
-      fctx.globalCompositeOperation = "source-over";
     };
 
     const frame = (now: number) => {
@@ -368,12 +95,14 @@ export function ScrollThread() {
       const time = (now - t0) / 1000;
       const light = document.documentElement.classList.contains("light");
 
-      // Glide toward the real scroll position (frame-rate independent).
-      // rAF timestamps can predate the setup time on the first frame: clamp
-      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
+      // Glide toward the real scroll position. Frame-rate independent
+      // (exponential smoothing on real elapsed time), so 60Hz and 120Hz
+      // screens follow at the same pace and nothing steps.
+      const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const ease = (rate: number) => 1 - Math.exp(-rate * dt);
-      smoothY += (scrollY - smoothY) * ease(7);
+      const y = scrollY;
+      smoothY += (y - smoothY) * ease(7);
       const dy = smoothY - lastY;
       lastY = smoothY;
       vel += (dy / Math.max(dt * 60, 0.001) - vel) * ease(6);
@@ -386,52 +115,73 @@ export function ScrollThread() {
 
       const headDoc = smoothY + H * HEAD_AT;
       const tailDoc = Math.max(0, headDoc - H * TRAIL_VH);
-      const span = headDoc - tailDoc;
-      const hx = xAt(headDoc, time);
-      const hy = headDoc - smoothY;
 
-      // the ribbon: particles flowing tail → head, thicker toward the head
-      for (const b of bucketsX) b.length = 0;
-      for (const b of bucketsY) b.length = 0;
-      for (const b of bucketsS) b.length = 0;
-      const eps = 2;
-      const flowBoost = 1 + speed * 2.5;
-      for (let i = 0; i < N; i++) {
-        let u = pu[i] + flow[i] * dt * flowBoost;
-        u -= Math.floor(u); // wrap into [0, 1)
-        pu[i] = u;
-        const d = tailDoc + span * u;
-        const x = xAt(d, time);
-        // unit normal of the curve (x(y), y)
-        const slope = (xAt(d + eps, time) - xAt(d - eps, time)) / (2 * eps);
-        const inv = 1 / Math.sqrt(1 + slope * slope);
-        const nx = inv;
-        const ny = -slope * inv;
-        const half = (2.5 + 18 * Math.pow(u, 1.35)) * (1 + speed * 0.7);
-        const wob = Math.sin(time * 1.7 + ph[i]) * 1.4;
-        const off = lane[i] * half + wob;
-        const px = x + nx * off;
-        const py = d - smoothY + ny * off;
-        if (py < -10 || py > H + 10) continue;
-        // colour by place along the stream; the centre near the head runs hot
-        let bkt = Math.min(4, Math.floor(u * 5));
-        if (u > 0.82 && Math.abs(lane[i]) < 0.28) bkt = 5;
-        bucketsX[bkt].push(px);
-        bucketsY[bkt].push(py);
-        bucketsS[bkt].push(psz[i] * (0.55 + u * 0.6));
+      // path points, tail → head, in viewport space
+      const pts: [number, number][] = [];
+      for (let i = 0; i <= POINTS; i++) {
+        const d = tailDoc + ((headDoc - tailDoc) * i) / POINTS;
+        pts.push([xAt(d, time), d - smoothY]);
       }
-      for (let b = 0; b < STREAM_RGB.length; b++) {
-        const xs = bucketsX[b];
-        if (!xs.length) continue;
-        const ys = bucketsY[b];
-        const ss = bucketsS[b];
-        // tail buckets are fainter
-        const alpha = [0.3, 0.5, 0.68, 0.85, 0.93, 0.96][b] * (light ? 0.9 : 1);
-        ctx.fillStyle = light && b === 5 ? `rgba(255,77,31,${alpha})` : `rgba(${STREAM_RGB[b]},${alpha})`;
-        for (let i = 0; i < xs.length; i++) {
-          const s = ss[i];
-          ctx.fillRect(xs[i] - s / 2, ys[i] - s / 2, s, s);
+
+      // Trail: one continuous curve (midpoint quadratics, no joints), drawn
+      // in a few passes that each start further along — wide soft glow,
+      // a mid body, a thin bright core — so it tapers without the bright
+      // beads that overlapping segment caps used to leave.
+      const trace = (from: number) => {
+        ctx.beginPath();
+        ctx.moveTo(pts[from][0], pts[from][1]);
+        for (let i = from + 1; i < POINTS; i++) {
+          const mx = (pts[i][0] + pts[i + 1][0]) / 2;
+          const my = (pts[i][1] + pts[i + 1][1]) / 2;
+          ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
         }
+        ctx.lineTo(pts[POINTS][0], pts[POINTS][1]);
+      };
+      const fade = (from: number, alpha: number) => {
+        const g = ctx.createLinearGradient(pts[from][0], pts[from][1], pts[POINTS][0], pts[POINTS][1]);
+        g.addColorStop(0, "rgba(124,58,237,0)");
+        g.addColorStop(0.55, `rgba(214,70,110,${alpha * 0.55})`);
+        g.addColorStop(1, `rgba(255,77,31,${alpha})`);
+        return g;
+      };
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      const passes: [number, number, number][] = [
+        // [start point, width, alpha]
+        [0, 16 + speed * 8, light ? 0.1 : 0.16],
+        [Math.round(POINTS * 0.35), 5 + speed * 2, light ? 0.3 : 0.38],
+        [0, 1.4, light ? 0.8 : 0.9],
+        [Math.round(POINTS * 0.7), 2.6, light ? 0.85 : 0.95],
+      ];
+      for (const [from, width, alpha] of passes) {
+        trace(from);
+        ctx.strokeStyle = fade(from, alpha);
+        ctx.lineWidth = width;
+        ctx.stroke();
+      }
+
+      const [hx, hy] = pts[POINTS];
+
+      // section ripples, dropped as the head crosses a section top
+      for (const top of sectionTops) {
+        if ((lastHeadDoc < top && headDoc >= top) || (lastHeadDoc > top && headDoc <= top)) {
+          ripples.push({ x: xAt(top, time), y: top, t: 0 });
+        }
+      }
+      lastHeadDoc = headDoc;
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.t += dt;
+        if (rp.t > 1.4) {
+          ripples.splice(i, 1);
+          continue;
+        }
+        const k = rp.t / 1.4;
+        ctx.beginPath();
+        ctx.arc(rp.x, rp.y - smoothY, 6 + k * 70, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,140,90,${0.55 * (1 - k)})`;
+        ctx.lineWidth = 1.5 * (1 - k) + 0.3;
+        ctx.stroke();
       }
 
       // sparks shed by the head, more when moving fast
@@ -446,7 +196,7 @@ export function ScrollThread() {
           vy: Math.sin(ang) * sp - Math.sign(vel) * speed * 1.5,
           life: 0,
           max: 0.6 + Math.random() * 0.9,
-          r: 1 + Math.random() * 2,
+          r: 0.6 + Math.random() * 1.8,
           hue: Math.random(),
         });
       }
@@ -457,38 +207,61 @@ export function ScrollThread() {
           sparks.splice(i, 1);
           continue;
         }
-        const f = dt * 60;
+        const f = dt * 60; // per-60Hz-frame units
         s.x += s.vx * f;
-        s.y += s.vy * f - dy * 0.25;
+        s.y += s.vy * f - dy * 0.25; // drift with the page a little
         s.vx *= Math.pow(0.97, f);
         s.vy *= Math.pow(0.97, f);
         const k = 1 - s.life / s.max;
         const col = s.hue < 0.55 ? "255,120,60" : s.hue < 0.8 ? "255,190,130" : "34,211,238";
         ctx.fillStyle = `rgba(${col},${0.9 * k})`;
-        const r = s.r * k;
-        ctx.fillRect(s.x - r, s.y - r, r * 2, r * 2);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * k, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      // the head: a dense knot of hot particles, no halo, no ring
-      ctx.globalCompositeOperation = light ? "source-over" : "lighter";
-      const knot = mobile ? 36 : 64;
-      const reach = 7 + speed * 6;
-      for (let i = 0; i < knot; i++) {
-        const a = ph[i] + time * (1.2 + (i % 5) * 0.35) * (i % 2 ? 1 : -1);
-        const r = reach * Math.sqrt(((i * 0.618) % 1) * 0.9 + 0.1) * (1 + 0.25 * Math.sin(time * 3 + i));
-        const s = i < 10 ? 3 : 1.8 + ((i * 7) % 3) * 0.5;
-        ctx.fillStyle = i < 10 ? (light ? "rgba(255,77,31,0.95)" : "rgba(255,244,236,0.95)") : `rgba(${i % 3 ? "255,138,76" : "255,77,31"},0.85)`;
-        ctx.fillRect(hx + Math.cos(a) * r - s / 2, hy + Math.sin(a) * r - s / 2, s, s);
-      }
+      // the head: hot core, soft halo, and the brand ring orbiting it
+      const pulse = 1 + 0.12 * Math.sin(time * 3) + speed * 0.5;
+      const halo = ctx.createRadialGradient(hx, hy, 0, hx, hy, 34 * pulse);
+      halo.addColorStop(0, light ? "rgba(255,77,31,0.55)" : "rgba(255,170,120,0.75)");
+      halo.addColorStop(0.35, "rgba(255,77,31,0.28)");
+      halo.addColorStop(1, "rgba(124,58,237,0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(hx, hy, 34 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = light ? "#ff4d1f" : "#fff4ec";
+      ctx.beginPath();
+      ctx.arc(hx, hy, 3.2, 0, Math.PI * 2);
+      ctx.fill();
 
-      drawWritings(dt, hx, hy);
+      // the ring orbits on time alone (no scroll term): a steady, even spin
+      const spin = time * 1.1;
+      const anyCtx = ctx as CanvasRenderingContext2D & {
+        createConicGradient?: (a: number, x: number, y: number) => CanvasGradient;
+      };
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = anyCtx.createConicGradient
+        ? (() => {
+            const g = anyCtx.createConicGradient!(spin, hx, hy);
+            g.addColorStop(0, "rgba(255,77,31,0.95)");
+            g.addColorStop(0.38, "rgba(124,58,237,0.9)");
+            g.addColorStop(0.68, "rgba(34,211,238,0.9)");
+            g.addColorStop(1, "rgba(255,77,31,0.95)");
+            return g;
+          })()
+        : "rgba(255,77,31,0.9)";
+      ctx.beginPath();
+      ctx.arc(hx, hy, 9 + speed * 3, spin, spin + Math.PI * 1.5);
+      ctx.stroke();
     };
 
     const onVis = () => {
       cancelAnimationFrame(raf);
       if (!document.hidden) {
-        last = performance.now();
+        t0 = performance.now() - 0;
         raf = requestAnimationFrame(frame);
       }
     };
@@ -500,16 +273,9 @@ export function ScrollThread() {
       window.removeEventListener("resize", resize);
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVis);
-      band.disconnect();
-      mo.disconnect();
-      clearTimeout(scanT);
+      ro.disconnect();
     };
   }, []);
 
-  return (
-    <>
-      <canvas ref={backRef} aria-hidden className="pointer-events-none fixed inset-0 z-[1]" />
-      <canvas ref={frontRef} aria-hidden className="pointer-events-none fixed inset-0 z-[11]" />
-    </>
-  );
+  return <canvas ref={ref} aria-hidden className="pointer-events-none fixed inset-0 z-[1]" />;
 }
