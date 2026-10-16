@@ -42,9 +42,9 @@ export const TERMS: { en: LegalDoc; ar: LegalDoc } = {
         ],
       },
       {
-        h: "5. Testimonials and results",
+        h: "5. Past work and results",
         body: [
-          "Testimonials reflect the individual experience of the people who gave them. Past projects are examples of my work, not a promise that your project will achieve the same results.",
+          "Past projects are examples of my work, not a promise that your project will achieve the same results.",
         ],
       },
       {
@@ -136,9 +136,9 @@ export const TERMS: { en: LegalDoc; ar: LegalDoc } = {
         ],
       },
       {
-        h: "5. الشهادات والنتائج",
+        h: "5. الأعمال السابقة والنتائج",
         body: [
-          "تعكس الشهادات التجربة الفردية لأصحابها. والمشاريع السابقة أمثلة على عملي، وليست وعدًا بأن يحقّق مشروعك النتائج نفسها.",
+          "المشاريع السابقة أمثلة على عملي، وليست وعدًا بأن يحقّق مشروعك النتائج نفسها.",
         ],
       },
       {

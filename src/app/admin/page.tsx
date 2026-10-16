@@ -156,7 +156,7 @@ function Frame({ children, showLogout = false }: { children: React.ReactNode; sh
   return (
     <main
       className="min-h-screen bg-[#0a0a0b] text-bone"
-      style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+      style={{ fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}
     >
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-[#0a0a0b]/85 px-6 py-3.5 backdrop-blur md:px-10">
         <div className="flex items-center gap-2.5">

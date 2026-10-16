@@ -32,9 +32,9 @@
 html, body {
   background-color: rgb(var(--ink-rgb));
   color: rgb(var(--bone-rgb));
-  /* Nexium is the site's signature face — used everywhere, with Inter as the
-     per-glyph fallback (Nexium is Latin-only, so non-Latin falls through). */
-  font-family: var(--font-nexium), var(--font-inter), system-ui, sans-serif;
+  /* Nexium is the site's signature face — used everywhere (it is Latin-only;
+     Arabic pages switch to their own stack below). */
+  font-family: var(--font-nexium), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   transition: background-color 0.6s ease, color 0.6s ease;
 }
@@ -228,8 +228,8 @@ section[id] { scroll-margin-top: 88px; }
    ARABIC (html[lang="ar"], dir="rtl")
    The Latin faces have no Arabic glyphs, so each role gets an Arabic partner
    listed AFTER the Latin face: brand names and numerals keep the site's own
-   type, Arabic letters fall through to the partner (body copy pairs with
-   Inter instead, see below).
+   type, Arabic letters fall through to the partner (body copy uses the
+   partner's own Latin instead, see below).
      body / labels → IBM Plex Sans Arabic
      display       → Alexandria (wide, geometric — Michroma's counterpart)
      accent italic → Amiri (Arabic has no italic; a naskh serif carries the
@@ -240,9 +240,10 @@ section[id] { scroll-margin-top: 88px; }
    ═══════════════════════════════════════════════════════════════════════ */
 html[lang="ar"],
 html[lang="ar"] body {
-  /* Body copy: Inter (not Nexium) for the Latin words and digits inside
-     Arabic sentences — Nexium's display numerals read heavy mid-paragraph. */
-  font-family: var(--font-ar-sans), var(--font-inter), system-ui, sans-serif;
+  /* Body copy: IBM Plex Sans Arabic's own Latin (not Nexium) for the Latin
+     words and digits inside Arabic sentences — Nexium's display numerals read
+     heavy mid-paragraph. */
+  font-family: var(--font-ar-sans), system-ui, sans-serif;
 }
 html[lang="ar"] .text-display {
   font-family: var(--font-nexium), var(--font-ar-display), var(--font-ar-sans), sans-serif;

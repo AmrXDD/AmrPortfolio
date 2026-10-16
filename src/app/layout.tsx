@@ -3,7 +3,6 @@ import {
   Alexandria,
   Amiri,
   IBM_Plex_Sans_Arabic,
-  Inter,
   Instrument_Serif,
   JetBrains_Mono,
   Michroma,
@@ -15,12 +14,6 @@ import { LanguageProvider } from "@/lib/i18n";
 import { SITE, SITE_AR } from "@/lib/constants";
 import { visitorLocale } from "@/lib/locale-server";
 import { usdRates } from "@/lib/fx";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 // Nexium — the site's signature display/body face, used everywhere.
 const nexium = localFont({
@@ -59,7 +52,8 @@ const mono = JetBrains_Mono({
  * IBM Plex Sans Arabic carries body + labels, Amiri takes the serif accents.
  */
 const arabicSans = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic"],
+  // latin too: it carries the Latin words inside Arabic sentences
+  subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "600"],
   variable: "--font-ar-sans",
   display: "swap",
@@ -173,8 +167,8 @@ const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-    { media: "(prefers-color-scheme: light)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
   ],
   colorScheme: "dark",
   width: "device-width",
@@ -252,7 +246,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={lang}
       dir={lang === "ar" ? "rtl" : "ltr"}
       suppressHydrationWarning
-      className={`${nexium.variable} ${inter.variable} ${display.variable} ${serif.variable} ${mono.variable} ${arabicSans.variable} ${arabicDisplay.variable} ${arabicSerif.variable}`}
+      className={`${nexium.variable} ${display.variable} ${serif.variable} ${mono.variable} ${arabicSans.variable} ${arabicDisplay.variable} ${arabicSerif.variable}`}
     >
       <head>
         {/* Anti-FOUC: set the saved theme class before first paint */}

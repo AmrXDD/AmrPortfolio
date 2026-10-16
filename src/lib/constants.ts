@@ -250,54 +250,6 @@ export const STATUS_LABEL: Record<Project["status"], { en: string; ar: string }>
   Featured: { en: "Featured", ar: "مميّز" },
 };
 
-export const TESTIMONIALS = [
-  {
-    quote:
-      "Amr doesn’t ship features, he ships moments. The work feels considered down to the millisecond, and clients notice within thirty seconds.",
-    author: "Studio Founder",
-    role: "Scenarios Design",
-    ar: {
-      quote:
-        "عمرو لا يسلّم ميزات، بل يسلّم لحظات. العمل مدروس حتى أجزاء الثانية، والعملاء يلاحظون ذلك خلال ثلاثين ثانية.",
-      author: "مؤسس الاستوديو",
-      role: "Scenarios Design",
-    },
-  },
-  {
-    quote:
-      "He took a vague brief and returned a product that closed our first enterprise pilot. The motion alone moved the needle.",
-    author: "Head of Product",
-    role: "Healthcare SaaS · Kuwait",
-    ar: {
-      quote:
-        "أخذ موجزًا غامضًا وأعاد منتجًا أغلقنا به أول تجربة لعميل مؤسسي. الحركة وحدها صنعت الفرق.",
-      author: "رئيس قسم المنتج",
-      role: "برمجيات رعاية صحية · الكويت",
-    },
-  },
-  {
-    quote:
-      "Frontend craft at the level you usually only see in studios with twenty engineers. He’s one.",
-    author: "Engineering Director",
-    role: "Regional Startup",
-    ar: {
-      quote: "إتقان في الواجهات بمستوى لا تراه عادةً إلا في استوديوهات من عشرين مهندسًا. وهو شخص واحد.",
-      author: "مدير الهندسة",
-      role: "شركة ناشئة إقليمية",
-    },
-  },
-  {
-    quote: "Most portfolios are static. His site is the proof.",
-    author: "Creative Director",
-    role: "Brand Studio",
-    ar: {
-      quote: "معظم ملفات الأعمال جامدة. موقعه هو الدليل.",
-      author: "مدير إبداعي",
-      role: "استوديو هوية",
-    },
-  },
-];
-
 /* Services: web development, web design & consultation, brand identity —
    plus the two crafts that run through all three. */
 export const CAPABILITIES = [

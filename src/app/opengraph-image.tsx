@@ -1,13 +1,29 @@
 /* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { SITE } from "@/lib/constants";
 
-export const runtime = "edge";
+/*
+ * Link-preview card. Rendered at build time (Node runtime) with the site's
+ * own fonts. Satori, the renderer behind ImageResponse, can't draw
+ * conic-gradient: it used to throw mid-stream and ship a 0-byte PNG, so the
+ * logo ring now comes from the real icon SVG instead.
+ */
 export const alt = `${SITE.brand} — ${SITE.role}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OpengraphImage() {
+  const dir = join(process.cwd(), "src", "app");
+  const [serif, serifItalic, mono, icon] = await Promise.all([
+    readFile(join(dir, "og", "InstrumentSerif-Regular.ttf")),
+    readFile(join(dir, "og", "InstrumentSerif-Italic.ttf")),
+    readFile(join(dir, "og", "JetBrainsMono-Medium.ttf")),
+    readFile(join(dir, "icon.svg")),
+  ]);
+  const logo = `data:image/svg+xml;base64,${icon.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -18,9 +34,9 @@ export default async function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px 80px",
-          background: "#0A0A0A",
+          background: "#000000",
           color: "#EFEAE2",
-          fontFamily: "serif",
+          fontFamily: "Instrument Serif",
           position: "relative",
         }}
       >
@@ -59,43 +75,15 @@ export default async function OpengraphImage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            {/* Logo halo + letter */}
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 9999,
-                background:
-                  "conic-gradient(from 0deg, #FF4D1F, #7C3AED, #22D3EE, #FF4D1F)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: 9999,
-                  background: "#0A0A0A",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontStyle: "italic",
-                  fontSize: 36,
-                  color: "#EFEAE2",
-                }}
-              >
-                a
-              </div>
-            </div>
+            {/* Logo: the real icon, ring + Instrument Serif "a" */}
+            <img src={logo} width={64} height={64} alt="" style={{ display: "flex" }} />
             <div
               style={{
                 fontSize: 18,
                 letterSpacing: 6,
                 textTransform: "uppercase",
                 color: "rgba(239,234,226,0.8)",
-                fontFamily: "monospace",
+                fontFamily: "JetBrains Mono",
                 display: "flex",
               }}
             >
@@ -112,7 +100,7 @@ export default async function OpengraphImage() {
               letterSpacing: 4,
               textTransform: "uppercase",
               color: "rgba(239,234,226,0.6)",
-              fontFamily: "monospace",
+              fontFamily: "JetBrains Mono",
             }}
           >
             <div
@@ -159,7 +147,7 @@ export default async function OpengraphImage() {
               marginTop: 18,
               fontSize: 26,
               color: "rgba(239,234,226,0.7)",
-              fontFamily: "monospace",
+              fontFamily: "JetBrains Mono",
               letterSpacing: 1,
               display: "flex",
             }}
@@ -193,7 +181,7 @@ export default async function OpengraphImage() {
                 letterSpacing: 4,
                 textTransform: "uppercase",
                 color: "rgba(239,234,226,0.6)",
-                fontFamily: "monospace",
+                fontFamily: "JetBrains Mono",
                 display: "flex",
               }}
             >
@@ -204,7 +192,7 @@ export default async function OpengraphImage() {
             style={{
               fontSize: 22,
               color: "rgba(239,234,226,0.85)",
-              fontFamily: "monospace",
+              fontFamily: "JetBrains Mono",
               display: "flex",
             }}
           >
@@ -213,6 +201,13 @@ export default async function OpengraphImage() {
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [
+        { name: "Instrument Serif", data: serif, style: "normal", weight: 400 },
+        { name: "Instrument Serif", data: serifItalic, style: "italic", weight: 400 },
+        { name: "JetBrains Mono", data: mono, style: "normal", weight: 500 },
+      ],
+    }
   );
 }
