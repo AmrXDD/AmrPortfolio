@@ -71,14 +71,16 @@ export function ScrollThread() {
     const ripples: Ripple[] = [];
     let raf = 0;
     let t0 = performance.now();
+    let last = t0;
 
     // The thread: x as a function of document y.
     const xAt = (docY: number, time: number) => {
       const k1 = (Math.PI * 2) / (H * 1.7);
       const k2 = (Math.PI * 2) / (H * 0.55);
       const spread = (mobile ? 0.3 : 0.34) * amp;
-      const wobble = 0.05 * Math.sin(time * 0.6 + docY * 0.002);
-      return W * (0.5 + spread * Math.sin(docY * k1 + 0.7) + (0.07 + wobble) * Math.sin(docY * k2 + 1.9));
+      // a slow, page-anchored breath (no per-frame wobble: that read as shimmer)
+      const breath = 0.012 * Math.sin(time * 0.35);
+      return W * (0.5 + spread * Math.sin(docY * k1 + 0.7) + (0.07 + breath) * Math.sin(docY * k2 + 1.9));
     };
 
     const frame = (now: number) => {
@@ -86,14 +88,19 @@ export function ScrollThread() {
       const time = (now - t0) / 1000;
       const light = document.documentElement.classList.contains("light");
 
-      // glide toward the real scroll position; speed bends the thread
+      // Glide toward the real scroll position. Frame-rate independent
+      // (exponential smoothing on real elapsed time), so 60Hz and 120Hz
+      // screens follow at the same pace and nothing steps.
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const ease = (rate: number) => 1 - Math.exp(-rate * dt);
       const y = window.scrollY;
-      smoothY += (y - smoothY) * 0.14;
+      smoothY += (y - smoothY) * ease(7);
       const dy = smoothY - lastY;
       lastY = smoothY;
-      vel += (dy - vel) * 0.2;
-      const speed = Math.min(1, Math.abs(vel) / 38);
-      amp += (1 + speed * 0.55 - amp) * 0.08;
+      vel += (dy / Math.max(dt * 60, 0.001) - vel) * ease(6);
+      const speed = Math.min(1, Math.abs(vel) / 42);
+      amp += (1 + speed * 0.35 - amp) * ease(2.5);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
@@ -109,30 +116,41 @@ export function ScrollThread() {
         pts.push([xAt(d, time), d - smoothY]);
       }
 
-      // trail: chunks with rising alpha + width; violet tail → ember head
-      const CH = 6;
-      for (let pass = 0; pass < 2; pass++) {
-        for (let i = 0; i < POINTS; i += CH) {
-          const f = i / POINTS; // 0 tail … 1 head
-          const a = Math.pow(f, 1.6);
-          ctx.beginPath();
-          ctx.moveTo(pts[i][0], pts[i][1]);
-          for (let j = i + 1; j <= Math.min(POINTS, i + CH); j++) ctx.lineTo(pts[j][0], pts[j][1]);
-          const r = Math.round(124 + (255 - 124) * f);
-          const g = Math.round(58 + (77 - 58) * f);
-          const b = Math.round(237 + (31 - 237) * f);
-          if (pass === 0) {
-            // soft glow underlay
-            ctx.strokeStyle = `rgba(${r},${g},${b},${(light ? 0.1 : 0.14) * a})`;
-            ctx.lineWidth = 10 + 10 * f + speed * 8;
-          } else {
-            ctx.strokeStyle = `rgba(${r},${g},${b},${(light ? 0.75 : 0.85) * a})`;
-            ctx.lineWidth = 0.6 + 2.2 * f;
-          }
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-          ctx.stroke();
+      // Trail: one continuous curve (midpoint quadratics, no joints), drawn
+      // in a few passes that each start further along — wide soft glow,
+      // a mid body, a thin bright core — so it tapers without the bright
+      // beads that overlapping segment caps used to leave.
+      const trace = (from: number) => {
+        ctx.beginPath();
+        ctx.moveTo(pts[from][0], pts[from][1]);
+        for (let i = from + 1; i < POINTS; i++) {
+          const mx = (pts[i][0] + pts[i + 1][0]) / 2;
+          const my = (pts[i][1] + pts[i + 1][1]) / 2;
+          ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
         }
+        ctx.lineTo(pts[POINTS][0], pts[POINTS][1]);
+      };
+      const fade = (from: number, alpha: number) => {
+        const g = ctx.createLinearGradient(pts[from][0], pts[from][1], pts[POINTS][0], pts[POINTS][1]);
+        g.addColorStop(0, "rgba(124,58,237,0)");
+        g.addColorStop(0.55, `rgba(214,70,110,${alpha * 0.55})`);
+        g.addColorStop(1, `rgba(255,77,31,${alpha})`);
+        return g;
+      };
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      const passes: [number, number, number][] = [
+        // [start point, width, alpha]
+        [0, 16 + speed * 8, light ? 0.1 : 0.16],
+        [Math.round(POINTS * 0.35), 5 + speed * 2, light ? 0.3 : 0.38],
+        [0, 1.4, light ? 0.8 : 0.9],
+        [Math.round(POINTS * 0.7), 2.6, light ? 0.85 : 0.95],
+      ];
+      for (const [from, width, alpha] of passes) {
+        trace(from);
+        ctx.strokeStyle = fade(from, alpha);
+        ctx.lineWidth = width;
+        ctx.stroke();
       }
 
       const [hx, hy] = pts[POINTS];
@@ -146,7 +164,7 @@ export function ScrollThread() {
       lastHeadDoc = headDoc;
       for (let i = ripples.length - 1; i >= 0; i--) {
         const rp = ripples[i];
-        rp.t += 1 / 60;
+        rp.t += dt;
         if (rp.t > 1.4) {
           ripples.splice(i, 1);
           continue;
@@ -177,15 +195,16 @@ export function ScrollThread() {
       }
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i];
-        s.life += 1 / 60;
+        s.life += dt;
         if (s.life >= s.max) {
           sparks.splice(i, 1);
           continue;
         }
-        s.x += s.vx;
-        s.y += s.vy - dy * 0.25; // drift with the page a little
-        s.vx *= 0.97;
-        s.vy *= 0.97;
+        const f = dt * 60; // per-60Hz-frame units
+        s.x += s.vx * f;
+        s.y += s.vy * f - dy * 0.25; // drift with the page a little
+        s.vx *= Math.pow(0.97, f);
+        s.vy *= Math.pow(0.97, f);
         const k = 1 - s.life / s.max;
         const col = s.hue < 0.55 ? "255,120,60" : s.hue < 0.8 ? "255,190,130" : "34,211,238";
         ctx.fillStyle = `rgba(${col},${0.9 * k})`;
@@ -211,7 +230,8 @@ export function ScrollThread() {
       ctx.arc(hx, hy, 3.2, 0, Math.PI * 2);
       ctx.fill();
 
-      const spin = time * 1.4 + smoothY * 0.004;
+      // the ring orbits on time alone (no scroll term): a steady, even spin
+      const spin = time * 1.1;
       const anyCtx = ctx as CanvasRenderingContext2D & {
         createConicGradient?: (a: number, x: number, y: number) => CanvasGradient;
       };
@@ -227,7 +247,7 @@ export function ScrollThread() {
           })()
         : "rgba(255,77,31,0.9)";
       ctx.beginPath();
-      ctx.arc(hx, hy, 9 + speed * 4, spin, spin + Math.PI * 1.5);
+      ctx.arc(hx, hy, 9 + speed * 3, spin, spin + Math.PI * 1.5);
       ctx.stroke();
     };
 

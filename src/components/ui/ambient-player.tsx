@@ -9,52 +9,38 @@ const BARS = [0, 1, 2, 3];
 const SRC = "/audio/ambient-loop.mp3";
 const VOLUME = 0.3; // ambient bed level — present but not intrusive
 const LOOP_END = 105; // seconds — only use 0:00 → 1:45 of the track, then loop
-const FADE_IN = 2.5; // seconds, on play
-const FADE_OUT = 1.4; // seconds, on mute
-const XFADE = 6; // seconds of overlap where the end melts into the start
-
-type Voice = { el: HTMLAudioElement; gain: GainNode | null };
-
-/*
- * Equal-power curve from `from` to `to`: the sum of two crossfading voices
- * stays at constant loudness, so the loop point has no dip or bump.
- */
-function curve(from: number, to: number, rising: boolean, n = 64) {
-  const c = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const q = ((i / (n - 1)) * Math.PI) / 2;
-    // rising follows sin (fast then gentle), falling follows cos (gentle then fast)
-    c[i] = rising ? from + (to - from) * Math.sin(q) : to + (from - to) * Math.cos(q);
-  }
-  return c;
-}
+const FADE_IN = 3; // seconds, on play and after each loop
+const FADE_OUT = 1.6; // seconds, on mute
+const LOOP_FADE = 4; // seconds the end of the loop fades out over
+const GAP = 0.6; // seconds of silence between the fade-out and the restart
 
 /**
  * AmbientPlayer — a premium, minimalist background-audio controller.
  *
  * • Autoplay-safe: defaults to PAUSED and waits for an explicit user click
  *   (browsers block unsolicited audio).
- * • Never cuts: playback fades in, muting fades out, and the loop point is a
- *   6s equal-power crossfade between two copies of the track, so 1:45 melts
- *   back into 0:00. Gain runs through Web Audio (iOS ignores element.volume).
+ * • Never cuts: playback fades in, muting fades out, and at the loop point
+ *   the track fades out, rests a breath, and fades back in from 0:00. One
+ *   voice only — the end and the start of the song never play on top of
+ *   each other. Gain runs through Web Audio (iOS ignores element.volume),
+ *   and every ramp is anchored at the current level so rapid toggles can't
+ *   pop or jump.
  * • The toggle holds a 4-line equalizer: while playing, a GSAP loop animates the
  *   bars with a random scaleY (yoyo, repeat -1, fresh randoms each cycle); when
  *   paused, the loop is killed and the bars ease back to a flat resting state.
  */
 export function AmbientPlayer() {
   const ar = useLang().lang === "ar";
-  const aRef = useRef<HTMLAudioElement>(null);
-  const bRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const barsRef = useRef<HTMLSpanElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [ready, setReady] = useState(true);
 
   // Audio graph + playback state live in refs: none of it should re-render.
   const ctxRef = useRef<AudioContext | null>(null);
-  const voicesRef = useRef<Voice[]>([]);
-  const currentRef = useRef(0); // index of the voice carrying the music
-  const xfadingRef = useRef(false);
+  const gainRef = useRef<GainNode | null>(null);
   const playingRef = useRef(false);
+  const loopingRef = useRef(false); // inside the fade-out → restart window
   const timersRef = useRef<number[]>([]);
 
   const clearTimers = () => {
@@ -64,81 +50,83 @@ export function AmbientPlayer() {
 
   /** Build the Web Audio graph once, inside a user gesture. */
   const ensureGraph = () => {
-    if (voicesRef.current.length) return voicesRef.current;
-    const els = [aRef.current, bRef.current].filter(Boolean) as HTMLAudioElement[];
+    const el = audioRef.current;
+    if (!el || ctxRef.current || gainRef.current) return;
     const AC =
-      typeof window !== "undefined"
-        ? window.AudioContext ||
-          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-        : undefined;
-    if (AC) {
-      try {
-        const ctx = new AC();
-        ctxRef.current = ctx;
-        voicesRef.current = els.map((el) => {
-          const gain = ctx.createGain();
-          gain.gain.value = 0;
-          ctx.createMediaElementSource(el).connect(gain).connect(ctx.destination);
-          el.volume = 1;
-          return { el, gain };
-        });
-        return voicesRef.current;
-      } catch {
-        // fall through to element volume
-      }
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    try {
+      const ctx = new AC();
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      ctx.createMediaElementSource(el).connect(gain).connect(ctx.destination);
+      el.volume = 1;
+      ctxRef.current = ctx;
+      gainRef.current = gain;
+    } catch {
+      // no Web Audio: fall back to element volume below
     }
-    voicesRef.current = els.map((el) => ({ el, gain: null }));
-    return voicesRef.current;
   };
 
-  /** Ramp one voice's level. Falls back to stepping element.volume. */
-  const fade = (v: Voice, to: number, seconds: number, rising: boolean) => {
+  /**
+   * Glide to `to` over `seconds`, starting from wherever the level is right
+   * now. Anchoring at the current value (cancelAndHold where available) is
+   * what keeps an interrupted fade from snapping or clicking.
+   */
+  const fadeTo = (to: number, seconds: number) => {
+    const el = audioRef.current;
     const ctx = ctxRef.current;
-    if (v.gain && ctx) {
+    const g = gainRef.current?.gain;
+    if (ctx && g) {
       const now = ctx.currentTime;
-      const from = v.gain.gain.value;
-      v.gain.gain.cancelScheduledValues(now);
-      v.gain.gain.setValueCurveAtTime(curve(from, to, rising), now, seconds);
+      const held = g.value;
+      const p = g as AudioParam & { cancelAndHoldAtTime?: (t: number) => AudioParam };
+      if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(now);
+      else g.cancelScheduledValues(now);
+      g.setValueAtTime(held, now);
+      // An S-curve feels like a fader moved by hand, not a switch. Built from
+      // short linear ramps rather than setValueCurveAtTime: ramps cancel
+      // cleanly mid-fade in every browser, a curve can throw in Firefox.
+      const dur = Math.max(0.05, seconds);
+      const steps = 12;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        g.linearRampToValueAtTime(held + (to - held) * (0.5 - 0.5 * Math.cos(Math.PI * t)), now + dur * t);
+      }
       return;
     }
-    const from = v.el.volume;
+    if (!el) return;
+    const from = el.volume;
     const t0 = performance.now();
     const step = () => {
       const k = Math.min(1, (performance.now() - t0) / (seconds * 1000));
-      v.el.volume = from + (to - from) * k;
-      if (k < 1) requestAnimationFrame(step);
+      el.volume = from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * k));
+      if (k < 1 && playingRef.current === (to > 0)) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   };
 
   const start = async () => {
-    const voices = ensureGraph();
-    const v = voices[currentRef.current];
-    if (!v) throw new Error("no audio");
+    const el = audioRef.current;
+    if (!el) throw new Error("no audio");
+    ensureGraph();
     clearTimers();
-    xfadingRef.current = false;
-    // Only the carrying voice plays; a half-finished crossfade is dropped.
-    voices.forEach((o, i) => {
-      if (i !== currentRef.current) o.el.pause();
-    });
+    loopingRef.current = false;
     await ctxRef.current?.resume();
-    if (!v.gain) v.el.volume = 0;
-    await v.el.play();
+    if (!gainRef.current) el.volume = 0;
+    await el.play();
     playingRef.current = true;
-    fade(v, VOLUME, FADE_IN, true);
+    fadeTo(VOLUME, FADE_IN);
   };
 
   const stop = () => {
     playingRef.current = false;
-    xfadingRef.current = false;
+    loopingRef.current = false;
     clearTimers();
-    for (const v of voicesRef.current) {
-      if (!v.el.paused) fade(v, 0, FADE_OUT, false);
-    }
+    fadeTo(0, FADE_OUT);
     // Pause only once the fade has finished; restarting cancels this.
-    timersRef.current.push(
-      window.setTimeout(() => voicesRef.current.forEach((v) => v.el.pause()), FADE_OUT * 1000 + 60)
-    );
+    timersRef.current.push(window.setTimeout(() => audioRef.current?.pause(), FADE_OUT * 1000 + 80));
   };
 
   const toggle = async () => {
@@ -180,52 +168,39 @@ export function AmbientPlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The loop: shortly before 1:45 (or the track's end, if shorter) the other
-  // voice starts from 0:00 and the two crossfade, so there's never a cut.
+  // The loop: shortly before 1:45 (or the track's end) fade out, rest a
+  // breath, jump to 0:00, fade back in. Driven by the element's own
+  // timeupdate, which keeps firing in background tabs.
   useEffect(() => {
-    const id = window.setInterval(() => {
-      if (!playingRef.current || xfadingRef.current) return;
-      const voices = voicesRef.current;
-      const cur = voices[currentRef.current];
-      const next = voices[1 - currentRef.current];
-      if (!cur || !next) return;
-      const end = Math.min(LOOP_END, Number.isFinite(cur.el.duration) ? cur.el.duration : LOOP_END);
-      if (cur.el.currentTime < end - XFADE) return;
-
-      xfadingRef.current = true;
-      next.el.currentTime = 0;
-      if (next.gain) next.gain.gain.value = 0;
-      else next.el.volume = 0;
-      next.el
-        .play()
-        .then(() => {
-          fade(next, VOLUME, XFADE, true);
-          fade(cur, 0, XFADE, false);
-          timersRef.current.push(
-            window.setTimeout(() => {
-              cur.el.pause();
-              cur.el.currentTime = 0;
-              currentRef.current = 1 - currentRef.current;
-              xfadingRef.current = false;
-            }, XFADE * 1000 + 80)
-          );
-        })
-        .catch(() => {
-          // Couldn't start the second voice: fade the end out and restart.
-          fade(cur, 0, 1.2, false);
-          timersRef.current.push(
-            window.setTimeout(() => {
-              cur.el.currentTime = 0;
-              fade(cur, VOLUME, FADE_IN, true);
-              xfadingRef.current = false;
-            }, 1250)
-          );
-        });
-    }, 200);
+    const el = audioRef.current;
+    if (!el) return;
+    const restart = () => {
+      if (!playingRef.current) return;
+      el.currentTime = 0;
+      if (el.paused) el.play().catch(() => {});
+      fadeTo(VOLUME, FADE_IN);
+      loopingRef.current = false;
+    };
+    const onTime = () => {
+      if (!playingRef.current || loopingRef.current) return;
+      const end = Math.min(LOOP_END, Number.isFinite(el.duration) ? el.duration : LOOP_END);
+      if (el.currentTime < end - LOOP_FADE) return;
+      loopingRef.current = true;
+      fadeTo(0, LOOP_FADE);
+      timersRef.current.push(window.setTimeout(restart, (LOOP_FADE + GAP) * 1000));
+    };
+    // safety net if the track is shorter than expected and simply ends
+    const onEnded = () => {
+      if (playingRef.current) restart();
+    };
+    el.addEventListener("timeupdate", onTime);
+    el.addEventListener("ended", onEnded);
     return () => {
-      clearInterval(id);
+      el.removeEventListener("timeupdate", onTime);
+      el.removeEventListener("ended", onEnded);
       clearTimers();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useGSAP(
@@ -259,9 +234,7 @@ export function AmbientPlayer() {
 
   return (
     <>
-      {/* two voices of the same track, crossfaded at the loop point */}
-      <audio ref={aRef} src={SRC} preload="auto" aria-hidden />
-      <audio ref={bRef} src={SRC} preload="auto" aria-hidden />
+      <audio ref={audioRef} src={SRC} preload="auto" aria-hidden />
 
       <button
         type="button"
