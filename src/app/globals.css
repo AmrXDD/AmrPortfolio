@@ -211,6 +211,9 @@ section[id] { scroll-margin-top: 88px; }
 /* ---- 3D carousel ---- */
 @keyframes spinY { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+/* split-flap board: each new character drops in like a flap */
+.flap-in { animation: flap-in 0.12s cubic-bezier(.2,.7,.3,1); transform-origin: 50% 50%; }
+@keyframes flap-in { from { transform: rotateX(-85deg); opacity: 0.35; } to { transform: rotateX(0); opacity: 1; } }
 @keyframes iri-drift { 0%, 100% { transform: translateX(-12%); } 50% { transform: translateX(12%); } }
 .animate-spinY { animation: spinY 32s linear infinite; }
 .animate-floaty { animation: floaty 6.5s ease-in-out infinite; }
