@@ -52,12 +52,19 @@ export function Hero() {
   const [kind, setKind] = useState<Engine["kind"] | null>(null);
   const [count, setCount] = useState(0);
   const [entered, setEntered] = useState(false);
-  const [canvasKey, setCanvasKey] = useState(0);
+  // this device can't run the fire: use the particle headline from now on
+  const [fallback, setFallback] = useState(false);
   // the lighter: where it lights the title, and whether it has already
   const [target, setTarget] = useState<{ x: number; y: number } | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
-  const [caught, setCaught] = useState(false);
+  const [copyIn, setCopyIn] = useState(false); // once the title has caught, the copy stays
   const lighterDone = useRef(false);
+  // once an effect has owned the headline, keep the DOM text hidden while it
+  // rebuilds, so a language or theme swap never flashes the plain title
+  const owned = useRef(false);
+  const firstBuild = useRef(true);
+  // every language/theme gets its own canvas and its own lighting
+  const gen = `${lang}-${theme}-${fallback ? "p" : "e"}`;
 
   /**
    * The start of the underline wire under the last line, in hero pixels:
@@ -101,7 +108,12 @@ export function Hero() {
   }, []);
 
   // Build the effect behind the preloader (idle time); run it once in.
+  // Rebuilt from scratch for every language and theme, on a fresh canvas
+  // (the old one's GL context is released and can't be reused), and the
+  // lighter comes back to light the new title.
   useEffect(() => {
+    lighterDone.current = false;
+    setTarget(null);
     if (reduce) return;
     const canvas = canvasRef.current;
     const host = ref.current;
@@ -120,6 +132,7 @@ export function Hero() {
           { el: lines[1], heat: 0.7 },
           { el: lines[2], heat: 1, bar: true },
         ]);
+        e.light = document.documentElement.classList.contains("light");
         engine = {
           kind: "ember",
           begin: () => {},
@@ -134,12 +147,13 @@ export function Hero() {
           scroll: (p) => e.scroll(p),
         };
       } catch {
-        // fallback: the particle headline (needs a fresh canvas: the failed
-        // attempt may have claimed this one for WebGL)
-        setCanvasKey((k) => k + 1);
+        // fallback: the particle headline, for good (on a fresh canvas: the
+        // failed attempt may have claimed this one for WebGL)
+        setFallback(true);
         return;
       }
       engineRef.current = engine;
+      owned.current = true;
       setKind(engine.kind);
       setLive(true);
     };
@@ -173,16 +187,22 @@ export function Hero() {
         };
         if (!alive) return;
         engineRef.current = engine;
+        owned.current = true;
         setKind("particles");
         setLive(true);
       } catch {
-        /* no effect: the plain headline stays */
+        // no effect at all: show the plain headline
+        owned.current = false;
+        setLive(false);
       }
     };
 
     const ric = (window as unknown as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    const idle = (cb: () => void) => (ric ? ric(cb, { timeout: 800 }) : setTimeout(cb, 120));
-    idle(() => void (canvasKey === 0 ? make() : makeParticles()));
+    // the first build waits for idle time behind the Enter screen; a rebuild
+    // after a language/theme swap starts straight away
+    const idle = (cb: () => void) => (!firstBuild.current ? setTimeout(cb, 0) : ric ? ric(cb, { timeout: 800 }) : setTimeout(cb, 120));
+    firstBuild.current = false;
+    idle(() => void (fallback ? makeParticles() : make()));
 
     // re-draw the letters when the layout changes (debounced)
     let tm = 0;
@@ -208,8 +228,8 @@ export function Hero() {
       engineRef.current = null;
       setLive(false);
     };
-    // re-draw for the other language's lines; a fresh canvas after a fallback
-  }, [reduce, lang, canvasKey]);
+    // a new build for each language and theme; a fresh canvas after a fallback
+  }, [reduce, lang, theme, fallback]);
 
   useEffect(() => {
     if (!entered) return;
@@ -218,25 +238,22 @@ export function Hero() {
     if (!e) return;
     e.start();
     if (e.kind === "ember") {
-      // the lighter does the lighting; once it has (e.g. after a language
-      // switch rebuilt the fire), catch straight away at the same spot
-      const id = setTimeout(() => {
-        const pt = ignitionPoint();
-        if (!pt) return;
-        if (lighterDone.current) e.ignite?.(pt.x, pt.y);
-        else {
+      // the lighter does the lighting, every time the title is rebuilt
+      const id = setTimeout(
+        () => {
+          const pt = ignitionPoint();
+          if (!pt) return;
           setStage({ w: ref.current?.clientWidth ?? 0, h: ref.current?.clientHeight ?? 0 });
           setTarget(pt);
-        }
-      }, 600);
+        },
+        copyIn ? 250 : 600
+      );
       return () => clearTimeout(id);
     }
     // the particle fallback: assemble as the Enter screen clears
     const id = setTimeout(() => e.begin(), 600);
     return () => clearTimeout(id);
   }, [entered, live]);
-
-  useEffect(() => engineRef.current?.recolor?.(), [theme]);
 
   const onMove = (ev: React.PointerEvent) => {
     const r = ev.currentTarget.getBoundingClientRect();
@@ -249,8 +266,8 @@ export function Hero() {
   };
 
   const ar = lang === "ar";
-  const ink = live ? "text-transparent" : "";
-  const hint = kind === "ember" ? (ar ? "حرّك المؤشر لتحريك اللهب · انقر لكرة نار" : "move to stir the fire · click for a fireball") : null;
+  const ink = live || owned.current ? "text-transparent" : "";
+  const hint = kind === "ember" ? (ar ? "حرّك المؤشر لتحريك اللهب · انقر لتأجيجه" : "move to stir the fire · click to fan it") : null;
 
   return (
     <section
@@ -269,11 +286,13 @@ export function Hero() {
       />
 
       {/* the effect: the visible headline */}
-      <canvas key={canvasKey} ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-[5]" />
+      {/* (sibling keys must differ from the lighter's, or React keeps the old canvas) */}
+      <canvas key={`canvas-${gen}`} ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-[5]" />
 
       {/* the lighter that lights it */}
       {kind === "ember" && target ? (
         <Lighter
+          key={`lighter-${gen}`}
           play={!lighterDone.current}
           target={target}
           rtl={ar}
@@ -282,7 +301,7 @@ export function Hero() {
           onFlame={(x, y, on) => engineRef.current?.lighter?.(x, y, on)}
           onIgnite={(x, y) => {
             engineRef.current?.ignite?.(x, y);
-            setCaught(true);
+            setCopyIn(true);
           }}
           onDone={() => {
             lighterDone.current = true;
@@ -336,7 +355,7 @@ export function Hero() {
 
         <motion.div
           initial={{ opacity: 0, y: 18 }}
-          animate={entered && (kind !== "ember" || caught || lighterDone.current) ? { opacity: 1, y: 0 } : {}}
+          animate={entered && (kind !== "ember" || copyIn) ? { opacity: 1, y: 0 } : {}}
           // with the fire, wait for the lighter to leave before the copy arrives
           transition={{ delay: kind === "ember" ? 2.4 : 1.4, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
           className="mt-10 grid max-w-3xl gap-6 md:grid-cols-[1fr_auto] md:items-end"

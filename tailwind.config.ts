@@ -23,6 +23,8 @@ const config: Config = {
         line: "rgb(var(--bone-rgb) / 0.12)",
         muted: "rgb(var(--bone-rgb) / 0.55)",
         accent: "#FF4D1F",
+        // chalk on a dark object (slate, flap board): the same in both themes
+        chalk: "#EFEAE2",
         plasma: "#7C3AED",
         cyan: "#22D3EE",
       },

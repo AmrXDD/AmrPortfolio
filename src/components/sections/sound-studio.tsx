@@ -173,7 +173,7 @@ export function SoundStudio() {
     const flat = () => {
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
-      g.strokeStyle = "rgba(239,234,226,0.18)";
+      g.strokeStyle = `rgba(${(getComputedStyle(document.documentElement).getPropertyValue("--bone-rgb").trim() || "239 234 226").split(/\s+/).join(",")},0.2)`;
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(0, H / 2);
@@ -304,7 +304,7 @@ export function SoundStudio() {
         <div data-no-tick className="relative rounded-[28px] border border-line bg-ash/50 p-4 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] sm:p-6">
           {/* oscilloscope */}
           <div className="relative h-24 overflow-hidden rounded-2xl border border-line bg-ink sm:h-28">
-            <div aria-hidden className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(239,234,226,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(239,234,226,0.06)_1px,transparent_1px)] [background-size:24px_24px]" />
+            <div aria-hidden className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgb(var(--bone-rgb)/0.07)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--bone-rgb)/0.07)_1px,transparent_1px)] [background-size:24px_24px]" />
             <canvas ref={scope} aria-hidden className="absolute inset-0 h-full w-full" />
             <span dir="ltr" className="absolute end-3 top-2 font-mono text-[10px] uppercase tracking-[0.2em] text-bone/40">
               {bpm} bpm

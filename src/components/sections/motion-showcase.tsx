@@ -74,6 +74,8 @@ function MagneticTile({ word }: { word: string }) {
     let H = 0;
     const dpr = Math.min(1.5, window.devicePixelRatio || 1);
     const gap = 22;
+    // the quiet dots take the page's foreground colour (dark on the light theme)
+    const bone = () => (getComputedStyle(document.documentElement).getPropertyValue("--bone-rgb").trim() || "239 234 226").split(/\s+/).join(",");
     const draw = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
@@ -81,7 +83,7 @@ function MagneticTile({ word }: { word: string }) {
       const my = sy.get() * H;
       // two passes, one fillStyle each: quiet dots, then the ember ones
       for (let pass = 0; pass < 2; pass++) {
-        ctx.fillStyle = pass ? "rgba(255,77,31,0.85)" : "rgba(239,234,226,0.22)";
+        ctx.fillStyle = pass ? "rgba(255,77,31,0.85)" : `rgba(${bone()},0.22)`;
         ctx.beginPath();
         for (let y = gap / 2; y < H; y += gap) {
           for (let x = gap / 2; x < W; x += gap) {
@@ -119,6 +121,9 @@ function MagneticTile({ word }: { word: string }) {
     size();
     const ro = new ResizeObserver(size);
     ro.observe(el);
+    // redraw the resting field when the theme flips
+    const themeMo = new MutationObserver(() => draw());
+    themeMo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     const io = new IntersectionObserver(([e]) => {
       visible = e.isIntersecting;
       if (!visible) {
@@ -131,6 +136,7 @@ function MagneticTile({ word }: { word: string }) {
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      themeMo.disconnect();
     };
   }, [sx, sy]);
 

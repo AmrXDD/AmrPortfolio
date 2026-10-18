@@ -130,9 +130,11 @@ export function Lighter({
       await wait(150);
       // flip the lid, turn the wheel, and there is a flame
       await animate(lid, 116, { type: "spring", stiffness: 170, damping: 15 });
+      if (!alive) return;
       animate(wheel, 400, { duration: 0.45, ease: "easeOut" });
       animate(spark, [0, 1], { duration: 0.5, ease: "easeOut" });
       await wait(220);
+      if (!alive) return;
       flameOn = true;
       await wait(750);
       if (!alive) return;
@@ -141,12 +143,18 @@ export function Lighter({
       if (!alive) return;
       onIgnite(T.x, T.y);
       await wait(900);
+      if (!alive) return;
       // done: close, step back, slip away
       flameOn = false;
       await animate(lid, 0, { duration: 0.35, ease: "easeIn" });
+      if (!alive) return;
       await go({ x: touch.x - 30 * dir, y: touch.y + 40 }, -6 * dir, 0.5, EASE_IO);
+      if (!alive) return;
       animate(op, 0, { duration: 1.1, delay: 0.3 });
       await go(offOut, -18 * dir, 1.4, [0.55, 0, 0.75, 0.2]);
+      // a lighter cancelled by a language/theme swap must not report back:
+      // its "done" would tell the new title's lighter not to play
+      if (!alive) return;
       cancelAnimationFrame(raf);
       onFlame(0, 0, false);
       onDone();

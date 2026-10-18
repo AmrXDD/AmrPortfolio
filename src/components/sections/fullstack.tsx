@@ -102,7 +102,7 @@ function Flap({ ch, delay }: { ch: string; delay: number }) {
     };
   }, [ch, delay]);
   return (
-    <span className="relative inline-flex h-[1.9em] w-[1.18em] items-center justify-center overflow-hidden rounded-[3px] bg-[#141414] text-bone shadow-[inset_0_-1px_0_rgba(255,255,255,0.06),0_1px_0_rgba(0,0,0,0.6)] [perspective:120px]">
+    <span className="relative inline-flex h-[1.9em] w-[1.18em] items-center justify-center overflow-hidden rounded-[3px] bg-[#141414] text-chalk shadow-[inset_0_-1px_0_rgba(255,255,255,0.06),0_1px_0_rgba(0,0,0,0.6)] [perspective:120px]">
       <span key={shown} className="flap-in inline-block">
         {shown === " " ? "\u00a0" : shown}
       </span>
@@ -198,7 +198,7 @@ function MetroMap() {
     <section id="stack" ref={section} className="relative bg-ink" style={{ height: reduce ? "auto" : "330vh" }}>
       <div ref={stage} className={`${reduce ? "relative py-24" : "sticky top-0 h-screen"} flex flex-col overflow-hidden`}>
         {/* engineering-paper grid */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.5] [background-image:linear-gradient(rgba(239,234,226,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(239,234,226,0.035)_1px,transparent_1px)] [background-size:48px_48px]" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.5] [background-image:linear-gradient(rgb(var(--bone-rgb)/0.05)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--bone-rgb)/0.05)_1px,transparent_1px)] [background-size:48px_48px]" />
 
         {/* heading + legend */}
         <div className="relative z-10 mx-auto flex w-full max-w-[1600px] items-start justify-between gap-8 px-10 pt-24 lg:pt-28">
@@ -215,9 +215,9 @@ function MetroMap() {
             initial={{ opacity: 0, y: 12 }}
             animate={seen ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="hidden w-fit shrink-0 rounded-xl border border-line bg-[#0a0a0a] p-4 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] lg:block"
+            className="hidden w-fit shrink-0 rounded-xl border border-white/10 bg-[#0a0a0a] p-4 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] lg:block"
           >
-            <div className="flex items-center justify-between gap-6 border-b border-line pb-2 text-mono text-[9px] uppercase tracking-[0.24em] text-bone/40 rtl:tracking-normal">
+            <div className="flex items-center justify-between gap-6 border-b border-white/10 pb-2 text-mono text-[9px] uppercase tracking-[0.24em] text-chalk/45 rtl:tracking-normal">
               <span className="flex items-center gap-2">
                 <span className="h-[5px] w-6 rounded-full" style={{ background: EMBER }} />
                 {c.line}
@@ -228,11 +228,11 @@ function MetroMap() {
               </span>
             </div>
             <div className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
-              <span className="text-mono text-[9px] uppercase tracking-[0.2em] text-bone/45 rtl:tracking-normal">{c.station}</span>
+              <span className="text-mono text-[9px] uppercase tracking-[0.2em] text-chalk/50 rtl:tracking-normal">{c.station}</span>
               <FlapRow text={st.en} len={14} className="text-[15px]" />
-              <span className="text-mono text-[9px] uppercase tracking-[0.2em] text-bone/45 rtl:tracking-normal">{c.stack}</span>
+              <span className="text-mono text-[9px] uppercase tracking-[0.2em] text-chalk/50 rtl:tracking-normal">{c.stack}</span>
               <FlapRow text={st.tech} len={28} className="text-[11px]" />
-              <span className="text-mono text-[9px] uppercase tracking-[0.2em] text-bone/45 rtl:tracking-normal">{c.stop}</span>
+              <span className="text-mono text-[9px] uppercase tracking-[0.2em] text-chalk/50 rtl:tracking-normal">{c.stop}</span>
               <div className="flex items-center gap-4">
                 <FlapRow text={`0${cur + 1}/06`} len={5} className="text-[11px]" />
                 <motion.span
@@ -268,7 +268,7 @@ function MetroMap() {
               <motion.path
                 d={d}
                 fill="none"
-                stroke="rgba(239,234,226,0.14)"
+                style={{ stroke: "rgb(var(--bone-rgb) / 0.14)" }}
                 strokeWidth="14"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -295,7 +295,7 @@ function MetroMap() {
                 return (
                   <g key={i} transform={`translate(${x} ${y})`}>
                     {here ? <circle r="30" fill="rgba(255,77,31,0.18)" className="animate-ping [transform-box:fill-box] [transform-origin:center]" /> : null}
-                    <circle r="17" fill={lit ? EMBER : "#0b0b0b"} stroke={lit ? "#fff4ec" : "rgba(239,234,226,0.75)"} strokeWidth="5" style={{ transition: "fill .4s, stroke .4s" }} />
+                    <circle r="17" strokeWidth="5" style={{ fill: lit ? EMBER : "rgb(var(--ink-rgb))", stroke: lit ? "#fff4ec" : "rgb(var(--bone-rgb) / 0.7)", transition: "fill .4s, stroke .4s" }} />
                   </g>
                 );
               })}
@@ -324,8 +324,8 @@ function MetroMap() {
                   animate={{ opacity: lit ? (here ? 1 : 0.55) : 0.22, y: up ? (lit ? -96 : -84) : lit ? 34 : 22 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className={`w-max min-w-[150px] overflow-hidden rounded-md border ${here ? "border-accent/60" : "border-line"} bg-[#101010] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)]`}>
-                    <div className="h-[5px]" style={{ background: lit ? EMBER : "rgba(239,234,226,0.18)" }} />
+                  <div className={`w-max min-w-[150px] overflow-hidden rounded-md border ${here ? "border-accent/60" : "border-line"} bg-ash shadow-[0_10px_30px_-14px_rgba(0,0,0,0.5)]`}>
+                    <div className="h-[5px]" style={{ background: lit ? EMBER : "rgb(var(--bone-rgb) / 0.18)" }} />
                     <div className="px-3 py-2">
                       <div className="flex items-baseline justify-between gap-4">
                         <span dir="ltr" className="text-[13px] font-semibold tracking-wide text-bone">
@@ -392,10 +392,10 @@ function MetroVertical() {
                 <div key={s.en} className="relative">
                   <span
                     className="absolute -start-[38px] top-4 h-5 w-5 rounded-full border-[4px] transition-colors duration-300"
-                    style={{ background: lit ? EMBER : "#0b0b0b", borderColor: lit ? "#fff4ec" : "rgba(239,234,226,0.7)" }}
+                    style={{ background: lit ? EMBER : "rgb(var(--ink-rgb))", borderColor: lit ? "#fff4ec" : "rgb(var(--bone-rgb) / 0.7)" }}
                   />
-                  <div className={`overflow-hidden rounded-md border bg-[#101010] transition-opacity duration-300 ${lit ? "border-accent/50 opacity-100" : "border-line opacity-50"}`}>
-                    <div className="h-[4px]" style={{ background: lit ? EMBER : "rgba(239,234,226,0.18)" }} />
+                  <div className={`overflow-hidden rounded-md border bg-ash transition-opacity duration-300 ${lit ? "border-accent/50 opacity-100" : "border-line opacity-50"}`}>
+                    <div className="h-[4px]" style={{ background: lit ? EMBER : "rgb(var(--bone-rgb) / 0.18)" }} />
                     <div className="px-3 py-2.5">
                       <p dir="ltr" className="text-[14px] font-semibold text-bone">
                         {s.en}

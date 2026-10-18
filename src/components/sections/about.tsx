@@ -134,7 +134,7 @@ function Clapper({ shut, reduce }: { shut: boolean; reduce: boolean }) {
       <div className="h-9 border-x border-black/60" style={{ background: stripes(true) }} />
 
       {/* the slate */}
-      <div className="relative overflow-hidden rounded-b-[12px] border border-white/10 bg-[#161616] p-5 text-bone shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)] sm:p-6">
+      <div className="relative overflow-hidden rounded-b-[12px] border border-white/10 bg-[#161616] p-5 text-chalk shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)] sm:p-6">
         {/* chalk dust */}
         <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:7px_7px]" />
         {/* the flash when it snaps */}
@@ -166,8 +166,8 @@ function Clapper({ shut, reduce }: { shut: boolean; reduce: boolean }) {
         </div>
 
         <div className="relative mt-4 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em]">
-          <span className="text-bone/50">
-            {c.slate.date} <span dir="ltr" className="text-bone/80">{date}</span>
+          <span className="text-chalk/50">
+            {c.slate.date} <span dir="ltr" className="text-chalk/80">{date}</span>
           </span>
           <span className="flex items-center gap-2 text-accent">
             <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
@@ -184,16 +184,16 @@ function Clapper({ shut, reduce }: { shut: boolean; reduce: boolean }) {
 function Cell({ label, note, className = "", children }: { label: string; note?: string; className?: string; children: React.ReactNode }) {
   return (
     <div className={`bg-[#161616] px-3 py-2.5 ${className}`}>
-      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-bone/45 rtl:tracking-normal">{label}</p>
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-chalk/45 rtl:tracking-normal">{label}</p>
       <div className="mt-1.5">{children}</div>
-      {note ? <p className="mt-1 text-[10px] leading-tight text-bone/40">{note}</p> : null}
+      {note ? <p className="mt-1 text-[10px] leading-tight text-chalk/45">{note}</p> : null}
     </div>
   );
 }
 
 function Big({ children, dir }: { children: React.ReactNode; dir?: "ltr" }) {
   return (
-    <span dir={dir} className="block text-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-none text-bone">
+    <span dir={dir} className="block text-display text-[clamp(1.7rem,2.6vw,2.4rem)] leading-none text-chalk">
       {children}
     </span>
   );
