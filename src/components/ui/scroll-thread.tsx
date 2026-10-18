@@ -69,6 +69,15 @@ export function ScrollThread() {
     const onScroll = () => (scrollY = window.scrollY);
     window.addEventListener("scroll", onScroll, { passive: true });
 
+    // In RTL the page reads from the right, and the hero title sits on the
+    // right; the comet's path mirrors with it so it keeps to the open side
+    // instead of cutting through the words. A language switch glides it over.
+    const html = document.documentElement;
+    let mirrorTarget = html.dir === "rtl" ? 1 : 0;
+    let mirror = mirrorTarget;
+    const dirMo = new MutationObserver(() => (mirrorTarget = html.dir === "rtl" ? 1 : 0));
+    dirMo.observe(html, { attributes: true, attributeFilter: ["dir"] });
+
     let smoothY = scrollY;
     let lastY = smoothY;
     let vel = 0; // px per frame, smoothed
@@ -87,7 +96,8 @@ export function ScrollThread() {
       const spread = (mobile ? 0.3 : 0.34) * amp;
       // a slow, page-anchored breath (no per-frame wobble: that read as shimmer)
       const breath = 0.012 * Math.sin(time * 0.35);
-      return W * (0.5 + spread * Math.sin(docY * k1 + 0.7) + (0.07 + breath) * Math.sin(docY * k2 + 1.9));
+      const x = W * (0.5 + spread * Math.sin(docY * k1 + 0.7) + (0.07 + breath) * Math.sin(docY * k2 + 1.9));
+      return x + (W - 2 * x) * mirror;
     };
 
     const frame = (now: number) => {
@@ -103,6 +113,7 @@ export function ScrollThread() {
       const ease = (rate: number) => 1 - Math.exp(-rate * dt);
       const y = scrollY;
       smoothY += (y - smoothY) * ease(7);
+      mirror += (mirrorTarget - mirror) * ease(2.6);
       const dy = smoothY - lastY;
       lastY = smoothY;
       vel += (dy / Math.max(dt * 60, 0.001) - vel) * ease(6);
@@ -274,6 +285,7 @@ export function ScrollThread() {
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVis);
       ro.disconnect();
+      dirMo.disconnect();
     };
   }, []);
 
