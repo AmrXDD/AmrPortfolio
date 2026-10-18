@@ -15,9 +15,15 @@
  *   • letters:    crisp (full-resolution mask) with white-hot edges
  *   • wind:       a soft breeze now and then so it is never still
  *
- * Interaction: ignite() runs a fuse along the title; the pointer stirs the
- * air (no heat of its own, like a hand through smoke); blast() throws a
- * fireball; scroll() lets the letters burn out and the smoke carry them up.
+ * Interaction: lighter() carries a small real flame (the hero animates a
+ * lighter and feeds its nozzle position in); ignite(x, y) catches the
+ * title at that point and the fire spreads outward, softly and unevenly,
+ * like flame across paper; the pointer stirs the air (no heat of its own);
+ * blast() puffs warm air; scroll() lets the letters burn out.
+ *
+ * Tuned calm for light-sensitive eyes: no fast flicker anywhere (every
+ * oscillation is slow), warm gold rather than white-hot, gentle bloom,
+ * unhurried smoke.
  *
  * WebGL2 + renderable float textures are required; the constructor throws
  * if they are missing so the caller can fall back.
@@ -54,6 +60,19 @@ const CLEAR = `${HEAD}
 uniform sampler2D uTexture; uniform float value;
 void main () { fragColor = value * texture(uTexture, vUv); }`;
 
+// the title catches from one point and the fire spreads outward with an
+// irregular, paper-like front
+const SPREAD = `
+uniform vec2 igP; uniform float igR; uniform float aspect;
+float spreadD (vec2 uv) {
+  vec2 d = uv - igP; d.x *= aspect;
+  float n = sin(uv.x * 23.0 + uv.y * 17.0) * 0.014 + sin(uv.x * 51.0 - uv.y * 37.0) * 0.009;
+  return length(d) + n;
+}
+float litAt (vec2 uv) { return smoothstep(igR, igR - 0.08, spreadD(uv)); }
+float frontAt (vec2 uv) { float e = spreadD(uv) - igR; return exp(-e * e * 700.0) * step(igR, 1.7); }
+`;
+
 const SPLAT = `${HEAD}
 uniform sampler2D uTarget; uniform float aspectRatio; uniform vec3 color; uniform vec2 point; uniform float radius;
 void main () {
@@ -66,17 +85,15 @@ void main () {
 const SOURCE = `${HEAD}
 uniform sampler2D uTarget; uniform sampler2D uMask;
 uniform float heat; uniform float lift; uniform float time; uniform float isVel;
-uniform float sweep; uniform float rtl;
+${SPREAD}
 void main () {
   vec4 base = texture(uTarget, vUv);
   float m = texture(uMask, vUv).r;
-  // the fuse: only what it has passed is burning, and its front burns hottest
-  float x = rtl > 0.5 ? 1.0 - vUv.x : vUv.x;
-  float lit = smoothstep(sweep + 0.01, sweep - 0.01, x);
-  float front = exp(-pow((x - sweep) * 26.0, 2.0)) * step(sweep, 1.0);
-  m = m * (lit + front * 2.5);
+  // only what the spreading fire has reached burns; its edge a little more
+  m = m * (litAt(vUv) + frontAt(vUv) * 0.6);
   if (isVel > 0.5) {
-    float n = sin(vUv.x * 91.0 + time * 3.7) * 0.6 + sin(vUv.x * 37.0 - time * 2.3 + vUv.y * 23.0) * 0.4;
+    // slow sway, not flicker
+    float n = sin(vUv.x * 61.0 + time * 1.3) * 0.6 + sin(vUv.x * 29.0 - time * 0.9 + vUv.y * 17.0) * 0.4;
     fragColor = vec4(base.xy + vec2(n * lift * 0.35, lift) * m, 0.0, 1.0);
   } else {
     fragColor = vec4(base.xyz + vec3(heat) * m, 1.0);
@@ -152,7 +169,8 @@ void main () {
 /* ── how heat looks: shared by the bloom source and the final picture ── */
 const FIRE = `
 uniform sampler2D uTexture; uniform sampler2D uMask;
-uniform float core; uniform float time; uniform float sweep; uniform float rtl; uniform vec2 dyeTexel;
+uniform float core; uniform float time; uniform vec2 dyeTexel;
+${SPREAD}
 vec3 ramp (float t) {
   vec3 c0 = vec3(0.0);
   vec3 c1 = vec3(0.17, 0.035, 0.24);
@@ -166,19 +184,16 @@ vec3 ramp (float t) {
   if (t < 0.82) return mix(c3, c4, (t - 0.60) / 0.22);
   return mix(c4, c5, (t - 0.82) / 0.18);
 }
-float litAt (vec2 uv) {
-  float x = rtl > 0.5 ? 1.0 - uv.x : uv.x;
-  return smoothstep(sweep + 0.004, sweep - 0.004, x);
-}
 vec4 fire (vec2 uv, bool hq) {
-  // heat haze: where the air is hot, the picture shimmers
+  // heat haze: a slow, faint waver where the air is hottest
   float h0 = texture(uTexture, uv).r;
-  vec2 haze = vec2(sin(uv.y * 140.0 + time * 7.0), cos(uv.x * 110.0 + time * 5.5)) * 0.0016 * clamp(h0, 0.0, 1.5);
+  vec2 haze = vec2(sin(uv.y * 60.0 + time * 2.2), cos(uv.x * 48.0 + time * 1.8)) * 0.0007 * clamp(h0, 0.0, 1.2);
   vec2 suv = uv + haze;
   float h = texture(uTexture, suv).r;
-  float t = clamp(1.0 - exp(-h * 1.15), 0.0, 1.0);
+  // softer exposure: the smoke and flame never reach white
+  float t = clamp(1.0 - exp(-h * 0.95), 0.0, 0.9);
   vec3 col = ramp(t);
-  float a = clamp(t * 1.5, 0.0, 1.0);
+  float a = clamp(t * 1.4, 0.0, 1.0);
   if (hq) {
     // volume: light the smoke from the front using the slope of the heat field
     float l = texture(uTexture, suv - vec2(dyeTexel.x, 0.0)).r;
@@ -189,12 +204,18 @@ vec4 fire (vec2 uv, bool hq) {
     float diffuse = clamp(dot(n, vec3(-0.25, 0.35, 0.9)) + 0.45, 0.5, 1.15);
     col *= diffuse;
   }
-  // the letters: a hot core that breathes a little
-  float m = texture(uMask, uv).r * core * litAt(uv);
-  float flick = 0.05 * sin(time * 8.0 + uv.x * 47.0) + 0.03 * sin(time * 13.0 + uv.y * 61.0);
-  vec3 hot = ramp(clamp(0.72 + 0.22 * m + flick, 0.0, 1.0));
+  // the letters: warm gold, glowing slowly (no flicker)
+  float raw = texture(uMask, uv).r * core;
+  float lit = litAt(uv);
+  float m = raw * lit;
+  float glow = 0.025 * sin(time * 0.9 + uv.x * 3.0);
+  vec3 hot = ramp(clamp(0.64 + 0.14 * m + glow, 0.0, 1.0));
   col = mix(col, hot, clamp(m, 0.0, 1.0));
   a = max(a, clamp(m, 0.0, 1.0));
+  // before the fire reaches them the letters wait unlit: dark, like a wick
+  float unlit = raw * (1.0 - lit);
+  col = mix(col, vec3(0.16, 0.13, 0.12), clamp(unlit, 0.0, 1.0));
+  a = max(a, clamp(unlit * 0.85, 0.0, 1.0));
   return vec4(col, a);
 }
 `;
@@ -238,8 +259,8 @@ void main () {
   float mL = texture(uMask, vL).r; float mR = texture(uMask, vR).r;
   float mT = texture(uMask, vT).r; float mB = texture(uMask, vB).r;
   float edge = clamp(length(vec2(mR - mL, mT - mB)) * 1.6, 0.0, 1.0) * core * litAt(vUv);
-  c += vec3(1.0, 0.88, 0.7) * edge * 0.55;
-  a = max(a, edge * 0.55);
+  c += vec3(1.0, 0.8, 0.58) * edge * 0.26;
+  a = max(a, edge * 0.26);
   // bloom: light spilling into the dark
   vec3 bl = texture(uBloom, vUv).rgb * bloomI;
   c += bl;
@@ -250,7 +271,8 @@ void main () {
 /* ── embers: particle state lives in a texture, updated on the GPU ── */
 const EMBER_UPDATE = `${HEAD}
 uniform sampler2D uState; uniform sampler2D uVelocity; uniform sampler2D uMask;
-uniform float dt; uniform float time; uniform float sweep; uniform float rtl; uniform float spawn; uniform vec2 velScale;
+uniform float dt; uniform float time; uniform float spawn; uniform vec2 velScale;
+${SPREAD}
 float hash (vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 void main () {
   vec4 s = texture(uState, vUv);
@@ -262,20 +284,18 @@ void main () {
     // would read a blurred-out mask and never find a letter
     vec2 q = vec2(hash(vUv + time), hash(vUv * 1.7 + time * 1.3));
     for (int i = 0; i < 10; i++) {
-      float x = rtl > 0.5 ? 1.0 - q.x : q.x;
-      if (textureLod(uMask, q, 0.0).r > 0.5 && x < sweep) break;
+      if (textureLod(uMask, q, 0.0).r > 0.5 && litAt(q) > 0.5) break;
       q = vec2(hash(q + float(i) * 7.13 + time), hash(q.yx + float(i) * 3.37 + time));
     }
-    float x = rtl > 0.5 ? 1.0 - q.x : q.x;
-    float ok = step(0.5, textureLod(uMask, q, 0.0).r) * step(x, sweep) * step(hash(q * 5.3 + time), spawn);
+    float ok = step(0.5, textureLod(uMask, q, 0.0).r) * step(0.5, litAt(q)) * step(hash(q * 5.3 + time), spawn);
     p = q; seed = hash(q * 3.7 + time);
     life = ok * (0.55 + hash(q * 9.1) * 0.9);
   } else {
     // ride the air, rise on their own, wander a little
     vec2 v = texture(uVelocity, p).xy;
     p += v * velScale * dt;
-    p.y += (0.025 + seed * 0.06) * dt;
-    p.x += sin(time * 2.7 + seed * 40.0) * 0.006 * dt;
+    p.y += (0.018 + seed * 0.04) * dt;
+    p.x += sin(time * 1.1 + seed * 40.0) * 0.004 * dt;
   }
   fragColor = vec4(p, life, seed);
 }`;
@@ -291,8 +311,9 @@ void main () {
   vLife = s.z; vSeed = s.w;
   gl_Position = vec4(s.xy * 2.0 - 1.0, 0.0, 1.0);
   float alive = step(0.001, s.z);
-  float twinkle = 0.75 + 0.25 * sin(time * 22.0 + s.w * 63.0);
-  gl_PointSize = alive * (1.7 + s.w * 3.2) * dpr * twinkle;
+  // a slow twinkle (well under one cycle a second): no strobing
+  float twinkle = 0.85 + 0.15 * sin(time * 1.6 + s.w * 63.0);
+  gl_PointSize = alive * (1.5 + s.w * 2.6) * dpr * twinkle;
 }`;
 
 const EMBER_FRAG = `#version 300 es
@@ -301,8 +322,8 @@ in float vLife; in float vSeed;
 out vec4 fragColor;
 void main () {
   vec2 d = gl_PointCoord - 0.5;
-  float a = smoothstep(0.5, 0.0, length(d)) * clamp(vLife * 1.7, 0.0, 1.0);
-  vec3 c = mix(vec3(1.0, 0.32, 0.1), vec3(1.0, 0.86, 0.58), clamp(vLife * 1.2, 0.0, 1.0));
+  float a = smoothstep(0.5, 0.0, length(d)) * clamp(vLife * 1.3, 0.0, 1.0) * 0.75;
+  vec3 c = mix(vec3(1.0, 0.32, 0.1), vec3(1.0, 0.78, 0.5), clamp(vLife * 1.1, 0.0, 1.0));
   fragColor = vec4(c * a, a);
 }`;
 
@@ -325,13 +346,14 @@ export class EmberFluid {
   private running = false;
   private last = 0;
   private time = 0;
-  private sweep = -0.1; // fuse position, 0..1 across the title (−: not lit)
   private igniteAt = -1;
+  private igP = { x: 0.2, y: 0.5 }; // where the title catches (uv)
+  private igR = -1; // how far the fire has spread (−: not yet)
+  private flame: { x: number; y: number; on: boolean } = { x: 0, y: 0, on: false };
   private scrollP = 0;
   private nextGust = 3;
   private pointerPrev: { x: number; y: number } | null = null;
   private splats: { x: number; y: number; dx: number; dy: number; heat: number; r: number }[] = [];
-  private rtl = false;
   private cssW = 1;
   private cssH = 1;
   private mobile: boolean;
@@ -523,7 +545,6 @@ export class EmberFluid {
     const o = off.getContext("2d")!;
     o.fillStyle = "#000";
     o.fillRect(0, 0, W, H);
-    let rtl = false;
     for (const line of this.lines) {
       const cs = getComputedStyle(line.el);
       const r = line.el.getBoundingClientRect();
@@ -531,7 +552,7 @@ export class EmberFluid {
       o.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
       const ls = o as CanvasRenderingContext2D & { letterSpacing?: string };
       if ("letterSpacing" in o) ls.letterSpacing = cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
-      rtl = cs.direction === "rtl";
+      const rtl = cs.direction === "rtl";
       o.direction = rtl ? "rtl" : "ltr";
       o.textAlign = rtl ? "right" : "left";
       o.textBaseline = "alphabetic";
@@ -550,7 +571,6 @@ export class EmberFluid {
         o.fillRect(rtl ? x - bw : x, r.bottom - host.top + 1, bw, Math.max(3, size * 0.035));
       }
     }
-    this.rtl = rtl;
     gl.bindTexture(gl.TEXTURE_2D, this.mask);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, off);
@@ -562,10 +582,22 @@ export class EmberFluid {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
-  /** Light the fuse. */
-  ignite() {
-    // wall clock, so the fuse takes the same time on a slow machine
-    if (this.igniteAt < 0) this.igniteAt = performance.now();
+  /** The title catches at (x, y), in hero pixels, and the fire spreads from there. */
+  ignite(x: number, y: number) {
+    if (this.igniteAt >= 0) return;
+    this.igP = { x: x / this.cssW, y: 1 - y / this.cssH };
+    // wall clock, so the spread takes the same time on a slow machine
+    this.igniteAt = performance.now();
+  }
+
+  /** Is the title already alight? (the hero skips the lighter after a re-mount) */
+  get lit() {
+    return this.igniteAt >= 0;
+  }
+
+  /** A small real flame at (x, y) in hero pixels: the lighter's nozzle. */
+  lighter(x: number, y: number, on: boolean) {
+    this.flame = { x, y, on };
   }
 
   /** The pointer moves the air only: no heat of its own, like a hand through smoke. */
@@ -581,17 +613,17 @@ export class EmberFluid {
     const dx = cap(x - p.x);
     const dy = cap(y - p.y);
     if (Math.abs(dx) + Math.abs(dy) < 0.5) return;
-    this.splats.push({ x, y, dx: dx * 3.6, dy: -dy * 3.6, heat: 0, r: 0.0014 });
+    this.splats.push({ x, y, dx: dx * 3.0, dy: -dy * 3.0, heat: 0, r: 0.0014 });
   }
 
-  /** A fireball pushed out from (x, y). */
+  /** A soft, warm puff from (x, y): no flash. */
   blast(x: number, y: number) {
-    const n = 10;
+    const n = 8;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2;
-      this.splats.push({ x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 6, dx: Math.cos(a) * 820, dy: -Math.sin(a) * 820, heat: 0.0, r: 0.0016 });
+      this.splats.push({ x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 6, dx: Math.cos(a) * 380, dy: -Math.sin(a) * 380, heat: 0.0, r: 0.0016 });
     }
-    this.splats.push({ x, y, dx: 0, dy: 300, heat: 2.2, r: 0.006 });
+    this.splats.push({ x, y, dx: 0, dy: 160, heat: 0.75, r: 0.0042 });
   }
 
   /** 0 at the top of the hero, 1 once it has scrolled away. */
@@ -667,32 +699,37 @@ export class EmberFluid {
     gl.disable(gl.BLEND);
     const sp = this.scrollP;
 
-    // the fuse: ~1.3s across the title after ignition
-    if (this.igniteAt >= 0) this.sweep = Math.min(1.2, (performance.now() - this.igniteAt) / 1300);
+    // the spread: an unhurried ease over ~2.8s from the point it caught
+    if (this.igniteAt >= 0) {
+      const k = Math.min(1, (performance.now() - this.igniteAt) / 2800);
+      this.igR = -0.02 + (0.5 - 0.5 * Math.cos(Math.PI * k)) * 1.8;
+    }
     const burning = Math.max(0, 1 - sp * 2.2); // the letters stop feeding the fire as you scroll
 
+    // the lighter's flame: a small, steady tongue of real fire
+    if (this.flame.on) this.splats.push({ x: this.flame.x, y: this.flame.y, dx: 0, dy: 80, heat: 0.13, r: 0.00024 });
+
     // a soft breeze now and then, so the fire is never still
-    if (this.sweep >= 1 && this.time > this.nextGust) {
-      this.nextGust = this.time + 2.6 + Math.random() * 3.4;
+    if (this.igR > 1 && this.time > this.nextGust) {
+      this.nextGust = this.time + 4 + Math.random() * 4;
       const side = Math.random() < 0.5 ? -1 : 1;
       const yy = this.cssH * (0.3 + Math.random() * 0.3);
-      this.splats.push({ x: this.cssW * (0.5 - side * 0.45), y: yy, dx: side * (140 + Math.random() * 120), dy: 20, heat: 0, r: 0.03 });
+      this.splats.push({ x: this.cssW * (0.5 - side * 0.45), y: yy, dx: side * (70 + Math.random() * 60), dy: 10, heat: 0, r: 0.03 });
     }
 
     // pointer + click + wind splats (sizes cached on resize: no layout reads here)
     for (const s of this.splats.splice(0)) this.splat(s.x / this.cssW, 1 - s.y / this.cssH, s.dx, s.dy, s.heat, s.r);
 
     // the letters feed the fire
-    if (this.sweep > 0 && burning > 0) {
+    if (this.igR > 0 && burning > 0) {
       let u = this.use("source");
       gl.uniform1i(u.uTarget, this.dye.read.attach(0));
       gl.uniform1i(u.uMask, this.attachMask(1));
-      gl.uniform1f(u.heat, (this.mobile ? 2.6 : 2.2) * dt * burning);
+      gl.uniform1f(u.heat, (this.mobile ? 1.9 : 1.6) * dt * burning);
       gl.uniform1f(u.lift, 0);
       gl.uniform1f(u.time, this.time);
       gl.uniform1f(u.isVel, 0);
-      gl.uniform1f(u.sweep, this.sweep);
-      gl.uniform1f(u.rtl, this.rtl ? 1 : 0);
+      this.spreadUniforms(u);
       this.blit(this.dye.write);
       this.dye.swap();
 
@@ -700,11 +737,10 @@ export class EmberFluid {
       gl.uniform1i(u.uTarget, this.velocity.read.attach(0));
       gl.uniform1i(u.uMask, this.attachMask(1));
       gl.uniform1f(u.heat, 0);
-      gl.uniform1f(u.lift, 380 * dt * burning);
+      gl.uniform1f(u.lift, 240 * dt * burning);
       gl.uniform1f(u.time, this.time);
       gl.uniform1f(u.isVel, 1);
-      gl.uniform1f(u.sweep, this.sweep);
-      gl.uniform1f(u.rtl, this.rtl ? 1 : 0);
+      this.spreadUniforms(u);
       this.blit(this.velocity.write);
       this.velocity.swap();
     }
@@ -713,7 +749,7 @@ export class EmberFluid {
     let u = this.use("buoyancy");
     gl.uniform1i(u.uVelocity, this.velocity.read.attach(0));
     gl.uniform1i(u.uDye, this.dye.read.attach(1));
-    gl.uniform1f(u.k, 70 + sp * 260);
+    gl.uniform1f(u.k, 48 + sp * 220);
     gl.uniform1f(u.dt, dt);
     this.blit(this.velocity.write);
     this.velocity.swap();
@@ -729,7 +765,7 @@ export class EmberFluid {
     gl.uniform2f(u.texelSize, vt[0], vt[1]);
     gl.uniform1i(u.uVelocity, this.velocity.read.attach(0));
     gl.uniform1i(u.uCurl, this.curlFbo.attach(1));
-    gl.uniform1f(u.curl, 26);
+    gl.uniform1f(u.curl, 15);
     gl.uniform1f(u.dt, dt);
     this.blit(this.velocity.write);
     this.velocity.swap();
@@ -766,7 +802,7 @@ export class EmberFluid {
     gl.uniform1i(u.uVelocity, this.velocity.read.attach(0));
     gl.uniform1i(u.uSource, this.velocity.read.attach(0));
     gl.uniform1f(u.dt, dt);
-    gl.uniform1f(u.dissipation, 0.25);
+    gl.uniform1f(u.dissipation, 0.4);
     this.blit(this.velocity.write);
     this.velocity.swap();
 
@@ -775,21 +811,20 @@ export class EmberFluid {
     gl.uniform1i(u.uVelocity, this.velocity.read.attach(0));
     gl.uniform1i(u.uSource, this.dye.read.attach(1));
     gl.uniform1f(u.dt, dt);
-    gl.uniform1f(u.dissipation, 0.9 + sp * 1.5);
+    gl.uniform1f(u.dissipation, 1.15 + sp * 1.5);
     this.blit(this.dye.write);
     this.dye.swap();
 
     // embers ride the air the simulation just computed
-    if (this.sweep > 0) {
+    if (this.igR > 0) {
       u = this.use("emberUpdate");
       gl.uniform1i(u.uState, this.embers.read.attach(0));
       gl.uniform1i(u.uVelocity, this.velocity.read.attach(1));
       gl.uniform1i(u.uMask, this.attachMask(2));
       gl.uniform1f(u.dt, dt);
       gl.uniform1f(u.time, this.time);
-      gl.uniform1f(u.sweep, this.sweep);
-      gl.uniform1f(u.rtl, this.rtl ? 1 : 0);
-      gl.uniform1f(u.spawn, burning * 0.5);
+      this.spreadUniforms(u);
+      gl.uniform1f(u.spawn, burning * 0.26);
       gl.uniform2f(u.velScale, vt[0], vt[1]);
       this.blit(this.embers.write);
       this.embers.swap();
@@ -803,6 +838,14 @@ export class EmberFluid {
     return id;
   }
 
+  /** Where the title caught and how far the fire has spread. */
+  private spreadUniforms(u: Record<string, WebGLUniformLocation | null>) {
+    const gl = this.gl;
+    gl.uniform2f(u.igP, this.igP.x, this.igP.y);
+    gl.uniform1f(u.igR, this.igR);
+    gl.uniform1f(u.aspect, this.cssW / this.cssH);
+  }
+
   /** The fire's look, set on whichever program is bound. */
   private fireUniforms(u: Record<string, WebGLUniformLocation | null>) {
     const gl = this.gl;
@@ -810,8 +853,7 @@ export class EmberFluid {
     gl.uniform1i(u.uMask, this.attachMask(1));
     gl.uniform1f(u.core, Math.max(0, 1 - this.scrollP * 2.4));
     gl.uniform1f(u.time, this.time);
-    gl.uniform1f(u.sweep, this.sweep);
-    gl.uniform1f(u.rtl, this.rtl ? 1 : 0);
+    this.spreadUniforms(u);
     gl.uniform2f(u.dyeTexel, 1 / this.dye.w, 1 / this.dye.h);
   }
 
@@ -825,8 +867,8 @@ export class EmberFluid {
     // 2) keep only what is bright
     u = this.use("bloomPrefilter");
     const knee = 0.7 * 0.6 + 0.0001;
-    gl.uniform3f(u.curve, 0.6 - knee, knee * 2, 0.25 / knee);
-    gl.uniform1f(u.threshold, 0.6);
+    gl.uniform3f(u.curve, 0.72 - knee, knee * 2, 0.25 / knee);
+    gl.uniform1f(u.threshold, 0.72);
     gl.uniform1i(u.uTexture, this.scene.attach(0));
     this.blit(this.bloom);
     // 3) blur down the chain, then back up, adding as it goes
@@ -851,7 +893,7 @@ export class EmberFluid {
     u = this.use("bloomFinal");
     gl.uniform2f(u.texelSize, 1 / last.w, 1 / last.h);
     gl.uniform1i(u.uTexture, last.attach(0));
-    gl.uniform1f(u.intensity, 0.9);
+    gl.uniform1f(u.intensity, 0.6);
     this.blit(this.bloom);
   }
 
@@ -871,11 +913,11 @@ export class EmberFluid {
     this.fireUniforms(u);
     gl.uniform2f(u.texelSize, 1 / this.cssW, 1 / this.cssH);
     gl.uniform1i(u.uBloom, this.bloom.attach(2));
-    gl.uniform1f(u.bloomI, 1.0);
+    gl.uniform1f(u.bloomI, 0.8);
     this.blit(null);
 
     // the embers, added on top
-    if (this.sweep > 0) {
+    if (this.igR > 0) {
       gl.blendFunc(gl.ONE, gl.ONE);
       const e = this.use("emberDraw");
       gl.uniform1i(e.uState, this.embers.read.attach(0));

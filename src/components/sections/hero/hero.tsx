@@ -9,6 +9,7 @@ import { useLang } from "@/lib/i18n";
 import { useTheme } from "@/components/providers/theme-provider";
 import { EmberFluid } from "./ember-fluid";
 import { ParticleType } from "./particle-type";
+import { Lighter } from "./lighter";
 
 /*
  * The hero: the headline is on fire. The real <h1> stays in the page
@@ -24,6 +25,9 @@ import { ParticleType } from "./particle-type";
 type Engine = {
   kind: "ember" | "particles";
   begin: () => void;
+  /** ember only: catch the title at a point / hold a lighter flame */
+  ignite?: (x: number, y: number) => void;
+  lighter?: (x: number, y: number, on: boolean) => void;
   rebuild: () => void;
   start: () => void;
   stop: () => void;
@@ -49,6 +53,25 @@ export function Hero() {
   const [count, setCount] = useState(0);
   const [entered, setEntered] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
+  // the lighter: where it lights the title, and whether it has already
+  const [target, setTarget] = useState<{ x: number; y: number } | null>(null);
+  const [stage, setStage] = useState({ w: 0, h: 0 });
+  const [caught, setCaught] = useState(false);
+  const lighterDone = useRef(false);
+
+  /**
+   * The start of the underline wire under the last line, in hero pixels:
+   * the lighter lights it like a fuse and the fire climbs into the letters.
+   * (The space below the title is empty then, so the lighter is in clear view.)
+   */
+  const ignitionPoint = () => {
+    const host = ref.current?.getBoundingClientRect();
+    const r = l3.current?.getBoundingClientRect();
+    if (!host || !r) return null;
+    const rtl = getComputedStyle(l3.current!).direction === "rtl";
+    const inset = Math.max(24, r.width * 0.05);
+    return { x: (rtl ? r.right - inset : r.left + inset) - host.left, y: r.bottom - host.top + 3 };
+  };
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const fadeUi = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
@@ -99,7 +122,9 @@ export function Hero() {
         ]);
         engine = {
           kind: "ember",
-          begin: () => e.ignite(),
+          begin: () => {},
+          ignite: (x, y) => e.ignite(x, y),
+          lighter: (x, y, on) => e.lighter(x, y, on),
           rebuild: () => e.resize(),
           start: () => e.start(),
           stop: () => e.stop(),
@@ -192,7 +217,21 @@ export function Hero() {
     const e = engineRef.current;
     if (!e) return;
     e.start();
-    // light it as the Enter screen clears, not underneath it
+    if (e.kind === "ember") {
+      // the lighter does the lighting; once it has (e.g. after a language
+      // switch rebuilt the fire), catch straight away at the same spot
+      const id = setTimeout(() => {
+        const pt = ignitionPoint();
+        if (!pt) return;
+        if (lighterDone.current) e.ignite?.(pt.x, pt.y);
+        else {
+          setStage({ w: ref.current?.clientWidth ?? 0, h: ref.current?.clientHeight ?? 0 });
+          setTarget(pt);
+        }
+      }, 600);
+      return () => clearTimeout(id);
+    }
+    // the particle fallback: assemble as the Enter screen clears
     const id = setTimeout(() => e.begin(), 600);
     return () => clearTimeout(id);
   }, [entered, live]);
@@ -231,6 +270,25 @@ export function Hero() {
 
       {/* the effect: the visible headline */}
       <canvas key={canvasKey} ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-[5]" />
+
+      {/* the lighter that lights it */}
+      {kind === "ember" && target ? (
+        <Lighter
+          play={!lighterDone.current}
+          target={target}
+          rtl={ar}
+          width={stage.w < 768 ? 44 : 60}
+          stage={stage}
+          onFlame={(x, y, on) => engineRef.current?.lighter?.(x, y, on)}
+          onIgnite={(x, y) => {
+            engineRef.current?.ignite?.(x, y);
+            setCaught(true);
+          }}
+          onDone={() => {
+            lighterDone.current = true;
+          }}
+        />
+      ) : null}
 
       {/* telemetry */}
       <motion.div
@@ -278,8 +336,9 @@ export function Hero() {
 
         <motion.div
           initial={{ opacity: 0, y: 18 }}
-          animate={entered ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 1.4, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
+          animate={entered && (kind !== "ember" || caught || lighterDone.current) ? { opacity: 1, y: 0 } : {}}
+          // with the fire, wait for the lighter to leave before the copy arrives
+          transition={{ delay: kind === "ember" ? 2.4 : 1.4, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
           className="mt-10 grid max-w-3xl gap-6 md:grid-cols-[1fr_auto] md:items-end"
         >
           <div>
