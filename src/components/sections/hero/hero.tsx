@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Magnetic } from "@/components/ui/magnetic";
@@ -8,17 +7,33 @@ import { WhatsAppCTA } from "@/components/ui/wa-cta";
 import { SITE, SITE_AR } from "@/lib/constants";
 import { useLang } from "@/lib/i18n";
 import { useTheme } from "@/components/providers/theme-provider";
+import { EmberFluid } from "./ember-fluid";
 import { ParticleType } from "./particle-type";
 
-const SideRays = dynamic(() => import("@/components/ui/side-rays").then((m) => m.SideRays), { ssr: false });
-
 /*
- * The hero: the headline is made of light. The real <h1> stays in the page
- * (transparent while the particles are live) so search, screen readers and
- * the layout all use real text; a 2D canvas redraws it as particles that
- * swirl in on entry, part around the cursor, scatter on click and fall away
- * as you scroll into the work.
+ * The hero: the headline is on fire. The real <h1> stays in the page
+ * (transparent while the fire is live) so search, screen readers and the
+ * layout all use real text. A GPU fluid simulation burns the letters: on
+ * entry a fuse runs along the title and each letter catches, smoke rises
+ * and curls off them, the cursor stirs it, a click throws a fireball, and
+ * scrolling lets the title burn away into smoke.
+ *
+ * Browsers without WebGL2 float targets get the particle headline instead.
  */
+
+type Engine = {
+  kind: "ember" | "particles";
+  begin: () => void;
+  rebuild: () => void;
+  start: () => void;
+  stop: () => void;
+  dispose: () => void;
+  pointer: (x: number, y: number, active: boolean) => void;
+  blast: (x: number, y: number) => void;
+  scroll: (p: number) => void;
+  recolor?: () => void;
+};
+
 export function Hero() {
   const { t, lang } = useLang();
   const { theme } = useTheme();
@@ -28,10 +43,12 @@ export function Hero() {
   const l1 = useRef<HTMLSpanElement>(null);
   const l2 = useRef<HTMLSpanElement>(null);
   const l3 = useRef<HTMLSpanElement>(null);
-  const engineRef = useRef<ParticleType | null>(null);
-  const [live, setLive] = useState(false); // particles own the headline
+  const engineRef = useRef<Engine | null>(null);
+  const [live, setLive] = useState(false); // the effect owns the headline
+  const [kind, setKind] = useState<Engine["kind"] | null>(null);
   const [count, setCount] = useState(0);
   const [entered, setEntered] = useState(false);
+  const [canvasKey, setCanvasKey] = useState(0);
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const fadeUi = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
@@ -42,57 +59,118 @@ export function Hero() {
   useEffect(() => {
     const onEnter = () => setEntered(true);
     window.addEventListener("ambient:start", onEnter);
-    if (!document.documentElement.classList.contains("preloading")) setEntered(true);
-    const fb = setTimeout(() => setEntered(true), 9000); // safety net
+    // No timer: the fuse must never burn behind the Enter screen, however long
+    // a visitor waits there. Enter as soon as the page is unlocked (or right
+    // away if there is no Enter screen at all).
+    const html = document.documentElement;
+    const check = setTimeout(() => {
+      if (!html.classList.contains("preloading")) setEntered(true);
+    }, 80);
+    const mo = new MutationObserver(() => {
+      if (!html.classList.contains("preloading")) setEntered(true);
+    });
+    mo.observe(html, { attributes: true, attributeFilter: ["class"] });
     return () => {
       window.removeEventListener("ambient:start", onEnter);
-      clearTimeout(fb);
+      clearTimeout(check);
+      mo.disconnect();
     };
   }, []);
 
-  // Build the particles behind the preloader (idle time), run them once in.
+  // Build the effect behind the preloader (idle time); run it once in.
   useEffect(() => {
     if (reduce) return;
     const canvas = canvasRef.current;
     const host = ref.current;
     if (!canvas || !host || !l1.current || !l2.current || !l3.current) return;
-    let engine: ParticleType;
-    try {
-      engine = new ParticleType(
-        canvas,
-        host,
-        [
-          { el: l1.current, color: "bone" },
-          { el: l2.current, color: "boneSoft" },
-          { el: l3.current, color: "accent" },
-        ],
-        { onCount: setCount }
-      );
-    } catch {
-      return;
-    }
-    engineRef.current = engine;
     let alive = true;
+    let engine: Engine | null = null;
+    const lines = [l1.current, l2.current, l3.current];
+
+    const make = async () => {
+      await document.fonts?.ready;
+      if (!alive) return;
+      // first choice: the fire
+      try {
+        const e = new EmberFluid(canvas, host, [
+          { el: lines[0], heat: 0.85 },
+          { el: lines[1], heat: 0.7 },
+          { el: lines[2], heat: 1 },
+        ]);
+        engine = {
+          kind: "ember",
+          begin: () => e.ignite(),
+          rebuild: () => e.resize(),
+          start: () => e.start(),
+          stop: () => e.stop(),
+          dispose: () => e.dispose(),
+          pointer: (x, y, a) => e.pointer(x, y, a),
+          blast: (x, y) => e.blast(x, y),
+          scroll: (p) => e.scroll(p),
+        };
+      } catch {
+        // fallback: the particle headline (needs a fresh canvas: the failed
+        // attempt may have claimed this one for WebGL)
+        setCanvasKey((k) => k + 1);
+        return;
+      }
+      engineRef.current = engine;
+      setKind(engine.kind);
+      setLive(true);
+    };
+
+    const makeParticles = async () => {
+      await document.fonts?.ready;
+      if (!alive) return;
+      try {
+        const p = new ParticleType(
+          canvas,
+          host,
+          [
+            { el: lines[0], color: "bone" },
+            { el: lines[1], color: "boneSoft" },
+            { el: lines[2], color: "accent" },
+          ],
+          { onCount: setCount }
+        );
+        await p.build();
+        engine = {
+          kind: "particles",
+          begin: () => p.assemble(),
+          rebuild: () => void p.build(),
+          start: () => p.start(),
+          stop: () => p.stop(),
+          dispose: () => p.dispose(),
+          pointer: (x, y, a) => p.pointer(x, y, a),
+          blast: (x, y) => p.blast(x, y),
+          scroll: (s) => p.scroll(s),
+          recolor: () => p.recolor(),
+        };
+        if (!alive) return;
+        engineRef.current = engine;
+        setKind("particles");
+        setLive(true);
+      } catch {
+        /* no effect: the plain headline stays */
+      }
+    };
+
     const ric = (window as unknown as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
     const idle = (cb: () => void) => (ric ? ric(cb, { timeout: 800 }) : setTimeout(cb, 120));
-    idle(() => {
-      engine.build().then(() => {
-        if (alive) setLive(true);
-      });
-    });
+    idle(() => void (canvasKey === 0 ? make() : makeParticles()));
 
-    // re-sample when the layout changes (debounced)
+    // re-draw the letters when the layout changes (debounced)
     let tm = 0;
     const ro = new ResizeObserver(() => {
       clearTimeout(tm);
-      tm = window.setTimeout(() => engine.build(), 220);
+      tm = window.setTimeout(() => engineRef.current?.rebuild(), 220);
     });
     ro.observe(host);
 
     // only animate while the hero is on screen
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && document.documentElement.dataset.heroEntered) engine.start();
-      else engine.stop();
+      if (e.isIntersecting && document.documentElement.dataset.heroEntered) engineRef.current?.start();
+      else engineRef.current?.stop();
     });
     io.observe(host);
 
@@ -101,26 +179,29 @@ export function Hero() {
       clearTimeout(tm);
       ro.disconnect();
       io.disconnect();
-      engine.dispose();
+      engine?.dispose();
       engineRef.current = null;
+      setLive(false);
     };
-    // re-sample for the other language's lines
-  }, [reduce, lang]);
+    // re-draw for the other language's lines; a fresh canvas after a fallback
+  }, [reduce, lang, canvasKey]);
 
   useEffect(() => {
     if (!entered) return;
     document.documentElement.dataset.heroEntered = "1";
     const e = engineRef.current;
     if (!e) return;
-    e.assemble();
     e.start();
+    // light it as the Enter screen clears, not underneath it
+    const id = setTimeout(() => e.begin(), 600);
+    return () => clearTimeout(id);
   }, [entered, live]);
 
-  useEffect(() => engineRef.current?.recolor(), [theme]);
+  useEffect(() => engineRef.current?.recolor?.(), [theme]);
 
   const onMove = (ev: React.PointerEvent) => {
     const r = ev.currentTarget.getBoundingClientRect();
-    engineRef.current?.pointer(ev.clientX - r.left, ev.clientY - r.top, ev.pointerType !== "touch");
+    engineRef.current?.pointer(ev.clientX - r.left, ev.clientY - r.top, ev.pointerType !== "touch" || ev.pressure > 0);
   };
   const onDown = (ev: React.PointerEvent) => {
     if ((ev.target as HTMLElement).closest("a,button")) return;
@@ -128,9 +209,9 @@ export function Hero() {
     engineRef.current?.blast(ev.clientX - r.left, ev.clientY - r.top);
   };
 
-  const heroGL = entered && !process.env.NEXT_PUBLIC_NO_WEBGL;
   const ar = lang === "ar";
   const ink = live ? "text-transparent" : "";
+  const hint = kind === "ember" ? (ar ? "حرّك المؤشر لتحريك اللهب · انقر لكرة نار" : "move to stir the fire · click for a fireball") : null;
 
   return (
     <section
@@ -141,27 +222,15 @@ export function Hero() {
       onPointerDown={onDown}
       className="relative min-h-[100svh] w-full overflow-hidden"
     >
-      {/* ember light from the top corner */}
-      <motion.div style={{ opacity: fadeUi }} className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-        {heroGL ? (
-          <SideRays
-            speed={1.6}
-            rayColor1="#ff4d1f"
-            rayColor2="#ffb066"
-            intensity={1.3}
-            spread={2.4}
-            origin={ar ? "top-left" : "top-right"}
-            tilt={0}
-            saturation={1.3}
-            blend={0.6}
-            falloff={1.7}
-            opacity={0.55}
-          />
-        ) : null}
-      </motion.div>
+      {/* a low ember glow along the floor, so the fire has somewhere to sit */}
+      <motion.div
+        style={{ opacity: fadeUi }}
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[55%] bg-[radial-gradient(ellipse_70%_60%_at_50%_100%,rgba(255,77,31,0.14),transparent_70%)]"
+      />
 
-      {/* the particles: the visible headline */}
-      <canvas ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-[5]" />
+      {/* the effect: the visible headline */}
+      <canvas key={canvasKey} ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-[5]" />
 
       {/* telemetry */}
       <motion.div
@@ -169,10 +238,10 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-5 top-24 z-10 hidden items-center justify-between text-mono text-[10px] uppercase tracking-[0.22em] text-bone/50 md:flex md:inset-x-10"
       >
         <span dir="ltr">N 29°20&apos;21&quot; · E 48°04&apos;34&quot;</span>
-        {live && count ? (
+        {live && hint ? <span className="rtl:tracking-normal">{hint}</span> : null}
+        {live && kind === "particles" && count ? (
           <span>
-            <span dir="ltr">{count.toLocaleString("en")}</span>{" "}
-            {ar ? "جسيم · حرّك المؤشر · انقر للتشتيت" : "particles · move to disturb · click to scatter"}
+            <span dir="ltr">{count.toLocaleString("en")}</span> {ar ? "جسيم · حرّك المؤشر · انقر للتشتيت" : "particles · move to disturb · click to scatter"}
           </span>
         ) : null}
       </motion.div>
@@ -209,7 +278,7 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={entered ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 1.2, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
+          transition={{ delay: 1.4, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
           className="mt-10 grid max-w-3xl gap-6 md:grid-cols-[1fr_auto] md:items-end"
         >
           <div>
