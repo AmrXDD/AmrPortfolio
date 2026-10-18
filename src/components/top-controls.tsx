@@ -38,19 +38,21 @@ export function TopControls() {
     };
   }, []);
 
-  // While the header sits over a light surface (the white Process sheet, a
-  // light client room in the case studies), flip its token scope to "light" so
-  // the (otherwise white) wordmark and controls stay legible.
-  const [onLight, setOnLight] = useState(false);
+  // While the header sits over a surface that differs from the page (the white
+  // Process sheet, a client room in the case studies, the Craft stage), flip
+  // its token scope to match it so the wordmark and controls stay legible in
+  // both themes: "light" over light surfaces, "dark" over dark ones.
+  const [surface, setSurface] = useState<"light" | "dark" | null>(null);
   useEffect(() => {
     let raf = 0;
     const check = () => {
       raf = 0;
       // sample a point under the header that no header control covers
       const hit = document
-        .elementsFromPoint(window.innerWidth * 0.3, 40)
+        .elementsFromPoint(window.innerWidth * 0.5, 64)
         .find((el) => !el.closest("header"));
-      setOnLight(Boolean(hit?.closest('[data-surface="light"]')));
+      const s = hit?.closest("[data-surface]")?.getAttribute("data-surface");
+      setSurface(s === "light" || s === "dark" ? s : null);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(check);
@@ -66,7 +68,7 @@ export function TopControls() {
   }, []);
 
   return (
-    <header className={cn("pointer-events-none fixed inset-x-0 top-0 z-50 px-4 py-4 md:px-8 md:py-5", onLight && "light")}>
+    <header className={cn("pointer-events-none fixed inset-x-0 top-0 z-50 px-4 py-4 md:px-8 md:py-5", surface)}>
       <div className="relative mx-auto flex max-w-[1800px] items-center justify-between">
         {/* Leading: theme control */}
         <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-bone/15 bg-ink/50 p-1 backdrop-blur-xl">

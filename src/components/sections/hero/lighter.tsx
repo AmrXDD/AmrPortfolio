@@ -172,7 +172,7 @@ export function Lighter({
   return (
     <motion.div
       aria-hidden
-      className="pointer-events-none absolute left-0 top-0 z-[6]"
+      className="pointer-events-none absolute left-0 top-0 z-[12]"
       style={{ x: px, y: py, rotate: rot, opacity: op, width, height: H, originX: 0.5, originY: 1 }}
     >
       <svg viewBox={`0 0 ${VB_W} ${VB_H}`} width={width} height={H} style={{ transform: rtl ? "scaleX(-1)" : undefined, overflow: "visible" }}>

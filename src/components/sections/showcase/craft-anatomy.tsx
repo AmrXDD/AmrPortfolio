@@ -305,7 +305,10 @@ export function CraftAnatomy() {
 
   return (
     <section id="craft" ref={ref} className="relative" style={{ height: reduce ? "auto" : "440vh" }} onPointerMove={onMove}>
-      <div className={`${reduce ? "relative py-24" : "sticky top-0 h-screen"} overflow-hidden`}>
+      <div
+        data-surface="dark"
+        className={`dark ${reduce ? "relative py-24" : "sticky top-0 h-screen"} overflow-hidden text-bone [.light_&]:mx-2 [.light_&]:bg-ink [.light_&]:rounded-[32px] md:[.light_&]:mx-4 md:[.light_&]:rounded-[48px]`}
+      >
         {/* header */}
         <motion.div style={{ opacity: intro }} className="relative z-20 px-5 pt-24 md:absolute md:start-10 md:top-24 md:max-w-md md:px-0 md:pt-0">
           <Eyebrow index="A1">{c.eyebrow}</Eyebrow>

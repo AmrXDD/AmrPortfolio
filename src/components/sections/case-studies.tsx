@@ -255,7 +255,7 @@ function Room({ p, i, c, dir }: { p: Project; i: number; c: Copy; dir: "ltr" | "
       dir={dir}
       className="relative flex h-screen shrink-0 items-center gap-[6vw] pe-[8vw] ps-[12vw]"
       style={{ background: bg, color: ink }}
-      data-surface={isLight(bg) ? "light" : undefined}
+      data-surface={isLight(bg) ? "light" : "dark"}
     >
       {/* the seam: an accent blade where one client's room meets the next */}
       <span aria-hidden className="absolute inset-y-0 start-0 w-[5vw] -skew-x-6 opacity-90" style={{ background: accent }} />
@@ -480,7 +480,7 @@ function Stacked({ still }: { still: boolean }) {
             id={`case-${p.slug}`}
             className="relative overflow-hidden px-5 py-16"
             style={{ background: bg, color: ink }}
-            data-surface={isLight(bg) ? "light" : undefined}
+            data-surface={isLight(bg) ? "light" : "dark"}
           >
             <span aria-hidden className="absolute inset-y-0 start-0 w-2" style={{ background: accent }} />
             <p className="text-mono text-[10px] uppercase tracking-[0.24em] opacity-60">
