@@ -132,7 +132,6 @@ export function Hero() {
           { el: lines[1], heat: 0.7 },
           { el: lines[2], heat: 1, bar: true },
         ]);
-        e.light = document.documentElement.classList.contains("light");
         engine = {
           kind: "ember",
           begin: () => {},

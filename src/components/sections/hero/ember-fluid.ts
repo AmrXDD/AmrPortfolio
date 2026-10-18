@@ -169,7 +169,7 @@ void main () {
 /* ── how heat looks: shared by the bloom source and the final picture ── */
 const FIRE = `
 uniform sampler2D uTexture; uniform sampler2D uMask;
-uniform float core; uniform float time; uniform vec2 dyeTexel; uniform float light;
+uniform float core; uniform float time; uniform vec2 dyeTexel;
 ${SPREAD}
 vec3 ramp (float t) {
   vec3 c0 = vec3(0.0);
@@ -184,16 +184,6 @@ vec3 ramp (float t) {
   if (t < 0.82) return mix(c3, c4, (t - 0.60) / 0.22);
   return mix(c4, c5, (t - 0.82) / 0.18);
 }
-// on a white page: clear flames, no smoke haze. Cool air is fully
-// transparent; flames go red-orange at the tips, orange in the body and a
-// golden yellow at the hot core, like fire seen in daylight
-vec3 rampLight (float t) {
-  vec3 tip = vec3(0.86, 0.20, 0.04);
-  vec3 body = vec3(0.98, 0.44, 0.07);
-  vec3 core = vec3(1.0, 0.70, 0.16);
-  if (t < 0.36) return mix(tip, body, smoothstep(0.14, 0.36, t));
-  return mix(body, core, smoothstep(0.36, 0.62, t));
-}
 vec4 fire (vec2 uv, bool hq) {
   // heat haze: a slow, faint waver where the air is hottest
   float h0 = texture(uTexture, uv).r;
@@ -202,10 +192,9 @@ vec4 fire (vec2 uv, bool hq) {
   float h = texture(uTexture, suv).r;
   // softer exposure: the smoke and flame never reach white
   float t = clamp(1.0 - exp(-h * 0.95), 0.0, 0.9);
-  vec3 col = light > 0.5 ? rampLight(t) : ramp(t);
-  // light: a crisp flame edge instead of a soft haze
-  float a = light > 0.5 ? smoothstep(0.1, 0.24, t) * 0.95 : clamp(t * 1.4, 0.0, 1.0);
-  if (hq && light < 0.5) {
+  vec3 col = ramp(t);
+  float a = clamp(t * 1.4, 0.0, 1.0);
+  if (hq) {
     // volume: light the smoke from the front using the slope of the heat field
     float l = texture(uTexture, suv - vec2(dyeTexel.x, 0.0)).r;
     float r = texture(uTexture, suv + vec2(dyeTexel.x, 0.0)).r;
@@ -220,15 +209,12 @@ vec4 fire (vec2 uv, bool hq) {
   float lit = litAt(uv);
   float m = raw * lit;
   float glow = 0.025 * sin(time * 0.9 + uv.x * 3.0);
-  vec3 hot = light > 0.5
-    ? mix(vec3(0.80, 0.22, 0.04), vec3(0.94, 0.40, 0.10), clamp(0.5 + glow * 8.0, 0.0, 1.0))
-    : ramp(clamp(0.64 + 0.14 * m + glow, 0.0, 1.0));
+  vec3 hot = ramp(clamp(0.64 + 0.14 * m + glow, 0.0, 1.0));
   col = mix(col, hot, clamp(m, 0.0, 1.0));
   a = max(a, clamp(m, 0.0, 1.0));
   // before the fire reaches them the letters wait unlit: dark, like a wick
   float unlit = raw * (1.0 - lit);
-  // (on white: the same ink as the rest of the page's text)
-  col = mix(col, light > 0.5 ? vec3(0.07, 0.07, 0.07) : vec3(0.16, 0.13, 0.12), clamp(unlit, 0.0, 1.0));
+  col = mix(col, vec3(0.16, 0.13, 0.12), clamp(unlit, 0.0, 1.0));
   a = max(a, clamp(unlit * 0.85, 0.0, 1.0));
   return vec4(col, a);
 }
@@ -273,9 +259,8 @@ void main () {
   float mL = texture(uMask, vL).r; float mR = texture(uMask, vR).r;
   float mT = texture(uMask, vT).r; float mB = texture(uMask, vB).r;
   float edge = clamp(length(vec2(mR - mL, mT - mB)) * 1.6, 0.0, 1.0) * core * litAt(vUv);
-  float ek = light > 0.5 ? 0.12 : 0.26;
-  c += (light > 0.5 ? vec3(1.0, 0.62, 0.3) : vec3(1.0, 0.8, 0.58)) * edge * ek;
-  a = max(a, edge * ek);
+  c += vec3(1.0, 0.8, 0.58) * edge * 0.26;
+  a = max(a, edge * 0.26);
   // bloom: light spilling into the dark
   vec3 bl = texture(uBloom, vUv).rgb * bloomI;
   c += bl;
@@ -334,14 +319,11 @@ void main () {
 const EMBER_FRAG = `#version 300 es
 precision highp float;
 in float vLife; in float vSeed;
-uniform float light;
 out vec4 fragColor;
 void main () {
   vec2 d = gl_PointCoord - 0.5;
   float a = smoothstep(0.5, 0.0, length(d)) * clamp(vLife * 1.3, 0.0, 1.0) * 0.75;
-  vec3 c = light > 0.5
-    ? mix(vec3(0.82, 0.22, 0.04), vec3(0.95, 0.45, 0.1), clamp(vLife * 1.1, 0.0, 1.0))
-    : mix(vec3(1.0, 0.32, 0.1), vec3(1.0, 0.78, 0.5), clamp(vLife * 1.1, 0.0, 1.0));
+  vec3 c = mix(vec3(1.0, 0.32, 0.1), vec3(1.0, 0.78, 0.5), clamp(vLife * 1.1, 0.0, 1.0));
   fragColor = vec4(c * a, a);
 }`;
 
@@ -373,8 +355,6 @@ export class EmberFluid {
   private pointerPrev: { x: number; y: number } | null = null;
   private splats: { x: number; y: number; dx: number; dy: number; heat: number; r: number }[] = [];
   private cssW = 1;
-  /** light theme: the fire is drawn as warm ink on white */
-  light = false;
   private cssH = 1;
   private mobile: boolean;
   private float32: boolean;
@@ -745,9 +725,7 @@ export class EmberFluid {
       let u = this.use("source");
       gl.uniform1i(u.uTarget, this.dye.read.attach(0));
       gl.uniform1i(u.uMask, this.attachMask(1));
-      // (on white the letters feed more heat so the flames read as tongues of
-      // fire; anything cooler than a flame stays fully transparent)
-      gl.uniform1f(u.heat, (this.mobile ? 1.9 : 1.6) * (this.light ? 1.7 : 1) * dt * burning);
+      gl.uniform1f(u.heat, (this.mobile ? 1.9 : 1.6) * dt * burning);
       gl.uniform1f(u.lift, 0);
       gl.uniform1f(u.time, this.time);
       gl.uniform1f(u.isVel, 0);
@@ -871,7 +849,6 @@ export class EmberFluid {
   /** The fire's look, set on whichever program is bound. */
   private fireUniforms(u: Record<string, WebGLUniformLocation | null>) {
     const gl = this.gl;
-    gl.uniform1f(u.light, this.light ? 1 : 0);
     gl.uniform1i(u.uTexture, this.dye.read.attach(0));
     gl.uniform1i(u.uMask, this.attachMask(1));
     gl.uniform1f(u.core, Math.max(0, 1 - this.scrollP * 2.4));
@@ -916,7 +893,7 @@ export class EmberFluid {
     u = this.use("bloomFinal");
     gl.uniform2f(u.texelSize, 1 / last.w, 1 / last.h);
     gl.uniform1i(u.uTexture, last.attach(0));
-    gl.uniform1f(u.intensity, this.light ? 0.12 : 0.6);
+    gl.uniform1f(u.intensity, 0.6);
     this.blit(this.bloom);
   }
 
@@ -945,7 +922,6 @@ export class EmberFluid {
       const e = this.use("emberDraw");
       gl.uniform1i(e.uState, this.embers.read.attach(0));
       gl.uniform1i(e.side, this.cfg.embers);
-      gl.uniform1f(e.light, this.light ? 1 : 0);
       gl.uniform1f(e.dpr, this.cfg.dpr);
       gl.uniform1f(e.time, this.time);
       gl.bindVertexArray(this.pointVao);
