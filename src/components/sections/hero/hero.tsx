@@ -95,7 +95,7 @@ export function Hero() {
         const e = new EmberFluid(canvas, host, [
           { el: lines[0], heat: 0.85 },
           { el: lines[1], heat: 0.7 },
-          { el: lines[2], heat: 1 },
+          { el: lines[2], heat: 1, bar: true },
         ]);
         engine = {
           kind: "ember",
@@ -270,7 +270,8 @@ export function Hero() {
               initial={{ scaleX: 0 }}
               animate={entered ? { scaleX: 1 } : {}}
               transition={{ delay: 1.6, duration: 1.1, ease: [0.19, 1, 0.22, 1] }}
-              className="absolute -bottom-1 left-0 right-0 h-[3px] origin-left bg-accent rtl:origin-right md:h-[4px]"
+              // while the fire runs, the underline is a burning wire in the fire itself
+              className={`absolute -bottom-1 left-0 right-0 h-[3px] origin-left bg-accent rtl:origin-right md:h-[4px] ${live && kind === "ember" ? "opacity-0" : ""}`}
             />
           </span>
         </h1>

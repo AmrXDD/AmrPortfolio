@@ -5,23 +5,29 @@
  * vorticity confinement, a pressure solve) where the headline's letters are
  * the fuel. Every frame the letter shapes inject heat and upward velocity,
  * heat keeps rising on its own (buoyancy), and the result is drawn through
- * a fire palette: violet smoke → ember → gold → white-hot. The letters
- * themselves stay crisp because the display pass reads the full-resolution
- * letter mask, not the low-resolution simulation.
+ * a fire palette: violet smoke → ember → gold → white-hot. On top of that:
  *
- *   • ignite():  a fuse runs along the title and each letter catches
- *   • pointer:   moving stirs the smoke (velocity + a little heat)
- *   • blast():   a fireball pushed outward from the click
- *   • scroll():  the letters stop burning and the smoke carries them away
+ *   • bloom:      the hottest light bleeds into the dark around it
+ *   • embers:     thousands of sparks shed by the letters, carried by the
+ *                 simulated airflow (they swirl around the cursor)
+ *   • volume:     the smoke is shaded from the slope of the heat field
+ *   • heat haze:  the fire shimmers where the air is hottest
+ *   • letters:    crisp (full-resolution mask) with white-hot edges
+ *   • wind:       a soft breeze now and then so it is never still
  *
- * WebGL2 + renderable half-float textures are required; the constructor
- * throws if they are missing so the caller can fall back.
+ * Interaction: ignite() runs a fuse along the title; the pointer stirs the
+ * air (no heat of its own, like a hand through smoke); blast() throws a
+ * fireball; scroll() lets the letters burn out and the smoke carry them up.
+ *
+ * WebGL2 + renderable float textures are required; the constructor throws
+ * if they are missing so the caller can fall back.
  */
 
 type FBO = { tex: WebGLTexture; fbo: WebGLFramebuffer; w: number; h: number; attach: (id: number) => number };
 type DoubleFBO = { w: number; h: number; read: FBO; write: FBO; swap: () => void };
 
-export type EmberLine = { el: HTMLElement; heat: number };
+/** A headline line; `bar` also burns an underline beneath it. */
+export type EmberLine = { el: HTMLElement; heat: number; bar?: boolean };
 
 const VERT = `#version 300 es
 precision highp float;
@@ -143,10 +149,10 @@ void main () {
   fragColor = vec4(v, 0.0, 1.0);
 }`;
 
-// heat → fire. Letters read from the full-resolution mask so they stay sharp.
-const DISPLAY = `${HEAD}
+/* ── how heat looks: shared by the bloom source and the final picture ── */
+const FIRE = `
 uniform sampler2D uTexture; uniform sampler2D uMask;
-uniform float core; uniform float time; uniform float sweep; uniform float rtl;
+uniform float core; uniform float time; uniform float sweep; uniform float rtl; uniform vec2 dyeTexel;
 vec3 ramp (float t) {
   vec3 c0 = vec3(0.0);
   vec3 c1 = vec3(0.17, 0.035, 0.24);
@@ -160,30 +166,160 @@ vec3 ramp (float t) {
   if (t < 0.82) return mix(c3, c4, (t - 0.60) / 0.22);
   return mix(c4, c5, (t - 0.82) / 0.18);
 }
-void main () {
-  float h = texture(uTexture, vUv).r;
-  float x = rtl > 0.5 ? 1.0 - vUv.x : vUv.x;
-  float lit = smoothstep(sweep + 0.004, sweep - 0.004, x);
-  float m = texture(uMask, vUv).r * core * lit;
-  float t = clamp(1.0 - exp(-(h * 1.15)), 0.0, 1.0);
+float litAt (vec2 uv) {
+  float x = rtl > 0.5 ? 1.0 - uv.x : uv.x;
+  return smoothstep(sweep + 0.004, sweep - 0.004, x);
+}
+vec4 fire (vec2 uv, bool hq) {
+  // heat haze: where the air is hot, the picture shimmers
+  float h0 = texture(uTexture, uv).r;
+  vec2 haze = vec2(sin(uv.y * 140.0 + time * 7.0), cos(uv.x * 110.0 + time * 5.5)) * 0.0016 * clamp(h0, 0.0, 1.5);
+  vec2 suv = uv + haze;
+  float h = texture(uTexture, suv).r;
+  float t = clamp(1.0 - exp(-h * 1.15), 0.0, 1.0);
   vec3 col = ramp(t);
   float a = clamp(t * 1.5, 0.0, 1.0);
+  if (hq) {
+    // volume: light the smoke from the front using the slope of the heat field
+    float l = texture(uTexture, suv - vec2(dyeTexel.x, 0.0)).r;
+    float r = texture(uTexture, suv + vec2(dyeTexel.x, 0.0)).r;
+    float b = texture(uTexture, suv - vec2(0.0, dyeTexel.y)).r;
+    float tp = texture(uTexture, suv + vec2(0.0, dyeTexel.y)).r;
+    vec3 n = normalize(vec3(r - l, tp - b, length(dyeTexel) * 9.0));
+    float diffuse = clamp(dot(n, vec3(-0.25, 0.35, 0.9)) + 0.45, 0.5, 1.15);
+    col *= diffuse;
+  }
   // the letters: a hot core that breathes a little
-  float flick = 0.05 * sin(time * 8.0 + vUv.x * 47.0) + 0.03 * sin(time * 13.0 + vUv.y * 61.0);
-  vec3 hot = ramp(clamp(0.74 + 0.22 * m + flick, 0.0, 1.0));
+  float m = texture(uMask, uv).r * core * litAt(uv);
+  float flick = 0.05 * sin(time * 8.0 + uv.x * 47.0) + 0.03 * sin(time * 13.0 + uv.y * 61.0);
+  vec3 hot = ramp(clamp(0.72 + 0.22 * m + flick, 0.0, 1.0));
   col = mix(col, hot, clamp(m, 0.0, 1.0));
   a = max(a, clamp(m, 0.0, 1.0));
-  fragColor = vec4(col * a, a);
+  return vec4(col, a);
+}
+`;
+
+// a low-resolution copy of the fire, premultiplied: what the bloom spreads
+const SCENE = `${HEAD}${FIRE}
+void main () { vec4 f = fire(vUv, false); fragColor = vec4(f.rgb * f.a, f.a); }`;
+
+const BLOOM_PREFILTER = `${HEAD}
+uniform sampler2D uTexture; uniform vec3 curve; uniform float threshold;
+void main () {
+  vec3 c = texture(uTexture, vUv).rgb;
+  float br = max(c.r, max(c.g, c.b));
+  float rq = clamp(br - curve.x, 0.0, curve.y);
+  rq = curve.z * rq * rq;
+  c *= max(rq, br - threshold) / max(br, 0.0001);
+  fragColor = vec4(c, 0.0);
+}`;
+
+const BLOOM_BLUR = `${HEAD}
+uniform sampler2D uTexture;
+void main () {
+  vec4 s = texture(uTexture, vL) + texture(uTexture, vR) + texture(uTexture, vT) + texture(uTexture, vB);
+  fragColor = s * 0.25;
+}`;
+
+const BLOOM_FINAL = `${HEAD}
+uniform sampler2D uTexture; uniform float intensity;
+void main () {
+  vec4 s = texture(uTexture, vL) + texture(uTexture, vR) + texture(uTexture, vT) + texture(uTexture, vB);
+  fragColor = s * 0.25 * intensity;
+}`;
+
+const DISPLAY = `${HEAD}${FIRE}
+uniform sampler2D uBloom; uniform float bloomI;
+void main () {
+  vec4 f = fire(vUv, true);
+  vec3 c = f.rgb * f.a;
+  float a = f.a;
+  // white-hot edges on the letters (texelSize = one mask pixel)
+  float mL = texture(uMask, vL).r; float mR = texture(uMask, vR).r;
+  float mT = texture(uMask, vT).r; float mB = texture(uMask, vB).r;
+  float edge = clamp(length(vec2(mR - mL, mT - mB)) * 1.6, 0.0, 1.0) * core * litAt(vUv);
+  c += vec3(1.0, 0.88, 0.7) * edge * 0.55;
+  a = max(a, edge * 0.55);
+  // bloom: light spilling into the dark
+  vec3 bl = texture(uBloom, vUv).rgb * bloomI;
+  c += bl;
+  a = clamp(max(a, max(bl.r, max(bl.g, bl.b))), 0.0, 1.0);
+  fragColor = vec4(c, a);
+}`;
+
+/* ── embers: particle state lives in a texture, updated on the GPU ── */
+const EMBER_UPDATE = `${HEAD}
+uniform sampler2D uState; uniform sampler2D uVelocity; uniform sampler2D uMask;
+uniform float dt; uniform float time; uniform float sweep; uniform float rtl; uniform float spawn; uniform vec2 velScale;
+float hash (vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void main () {
+  vec4 s = texture(uState, vUv);
+  vec2 p = s.xy; float life = s.z; float seed = s.w;
+  life -= dt * (0.32 + seed * 0.45);
+  if (life <= 0.0) {
+    // reborn on a burning letter: a few tries to land on one. textureLod(…, 0):
+    // neighbouring sparks pick far-apart spots, so automatic mip selection
+    // would read a blurred-out mask and never find a letter
+    vec2 q = vec2(hash(vUv + time), hash(vUv * 1.7 + time * 1.3));
+    for (int i = 0; i < 10; i++) {
+      float x = rtl > 0.5 ? 1.0 - q.x : q.x;
+      if (textureLod(uMask, q, 0.0).r > 0.5 && x < sweep) break;
+      q = vec2(hash(q + float(i) * 7.13 + time), hash(q.yx + float(i) * 3.37 + time));
+    }
+    float x = rtl > 0.5 ? 1.0 - q.x : q.x;
+    float ok = step(0.5, textureLod(uMask, q, 0.0).r) * step(x, sweep) * step(hash(q * 5.3 + time), spawn);
+    p = q; seed = hash(q * 3.7 + time);
+    life = ok * (0.55 + hash(q * 9.1) * 0.9);
+  } else {
+    // ride the air, rise on their own, wander a little
+    vec2 v = texture(uVelocity, p).xy;
+    p += v * velScale * dt;
+    p.y += (0.025 + seed * 0.06) * dt;
+    p.x += sin(time * 2.7 + seed * 40.0) * 0.006 * dt;
+  }
+  fragColor = vec4(p, life, seed);
+}`;
+
+const EMBER_VERT = `#version 300 es
+precision highp float;
+precision highp sampler2D;
+uniform sampler2D uState; uniform int side; uniform float dpr; uniform float time;
+out float vLife; out float vSeed;
+void main () {
+  ivec2 c = ivec2(gl_VertexID % side, gl_VertexID / side);
+  vec4 s = texelFetch(uState, c, 0);
+  vLife = s.z; vSeed = s.w;
+  gl_Position = vec4(s.xy * 2.0 - 1.0, 0.0, 1.0);
+  float alive = step(0.001, s.z);
+  float twinkle = 0.75 + 0.25 * sin(time * 22.0 + s.w * 63.0);
+  gl_PointSize = alive * (1.7 + s.w * 3.2) * dpr * twinkle;
+}`;
+
+const EMBER_FRAG = `#version 300 es
+precision highp float;
+in float vLife; in float vSeed;
+out vec4 fragColor;
+void main () {
+  vec2 d = gl_PointCoord - 0.5;
+  float a = smoothstep(0.5, 0.0, length(d)) * clamp(vLife * 1.7, 0.0, 1.0);
+  vec3 c = mix(vec3(1.0, 0.32, 0.1), vec3(1.0, 0.86, 0.58), clamp(vLife * 1.2, 0.0, 1.0));
+  fragColor = vec4(c * a, a);
 }`;
 
 export class EmberFluid {
   private gl: WebGL2RenderingContext;
   private programs: Record<string, { prog: WebGLProgram; u: Record<string, WebGLUniformLocation | null> }> = {};
+  private quadVao: WebGLVertexArrayObject;
+  private pointVao: WebGLVertexArrayObject;
   private velocity!: DoubleFBO;
   private dye!: DoubleFBO;
   private divergence!: FBO;
   private curlFbo!: FBO;
   private pressure!: DoubleFBO;
+  private scene!: FBO;
+  private bloom!: FBO;
+  private bloomLevels: FBO[] = [];
+  private embers!: DoubleFBO;
   private mask: WebGLTexture;
   private raf = 0;
   private running = false;
@@ -192,23 +328,31 @@ export class EmberFluid {
   private sweep = -0.1; // fuse position, 0..1 across the title (−: not lit)
   private igniteAt = -1;
   private scrollP = 0;
+  private nextGust = 3;
   private pointerPrev: { x: number; y: number } | null = null;
   private splats: { x: number; y: number; dx: number; dy: number; heat: number; r: number }[] = [];
   private rtl = false;
   private cssW = 1;
   private cssH = 1;
   private mobile: boolean;
-  private cfg: { sim: number; dye: number; iters: number; dpr: number };
+  private float32: boolean;
+  private cfg: { sim: number; dye: number; iters: number; dpr: number; bloomRes: number; bloomIters: number; embers: number };
 
   constructor(private canvas: HTMLCanvasElement, private host: HTMLElement, private lines: EmberLine[]) {
     const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, depth: false, stencil: false, antialias: false, powerPreference: "high-performance" });
     if (!gl) throw new Error("webgl2 unavailable");
-    if (!gl.getExtension("EXT_color_buffer_float") && !gl.getExtension("EXT_color_buffer_half_float")) throw new Error("no float render targets");
+    this.float32 = !!gl.getExtension("EXT_color_buffer_float");
+    if (!this.float32 && !gl.getExtension("EXT_color_buffer_half_float")) throw new Error("no float render targets");
     this.gl = gl;
     this.mobile = window.matchMedia("(max-width: 767px)").matches;
-    this.cfg = this.mobile ? { sim: 80, dye: 512, iters: 14, dpr: 1 } : { sim: 128, dye: 1024, iters: 20, dpr: Math.min(1.5, window.devicePixelRatio || 1) };
+    this.cfg = this.mobile
+      ? { sim: 80, dye: 512, iters: 14, dpr: 1, bloomRes: 128, bloomIters: 4, embers: 32 }
+      : { sim: 128, dye: 1024, iters: 20, dpr: Math.min(1.5, window.devicePixelRatio || 1), bloomRes: 256, bloomIters: 6, embers: 64 };
 
-    // full-screen triangle pair
+    // a full-screen quad (for every pass) and an empty array (for the embers,
+    // which read their positions from a texture by vertex id)
+    this.quadVao = gl.createVertexArray()!;
+    gl.bindVertexArray(this.quadVao);
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
@@ -217,12 +361,32 @@ export class EmberFluid {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(0);
+    this.pointVao = gl.createVertexArray()!;
+    gl.bindVertexArray(this.quadVao);
 
     const vs = this.shader(gl.VERTEX_SHADER, VERT);
-    const defs: Record<string, string> = { clear: CLEAR, splat: SPLAT, source: SOURCE, buoyancy: BUOYANCY, advect: ADVECT, divergence: DIVERGENCE, curl: CURL, vorticity: VORTICITY, pressure: PRESSURE, gradient: GRADIENT, display: DISPLAY };
-    for (const [name, src] of Object.entries(defs)) {
+    const defs: Record<string, [WebGLShader | string, string]> = {
+      clear: [vs, CLEAR],
+      splat: [vs, SPLAT],
+      source: [vs, SOURCE],
+      buoyancy: [vs, BUOYANCY],
+      advect: [vs, ADVECT],
+      divergence: [vs, DIVERGENCE],
+      curl: [vs, CURL],
+      vorticity: [vs, VORTICITY],
+      pressure: [vs, PRESSURE],
+      gradient: [vs, GRADIENT],
+      scene: [vs, SCENE],
+      bloomPrefilter: [vs, BLOOM_PREFILTER],
+      bloomBlur: [vs, BLOOM_BLUR],
+      bloomFinal: [vs, BLOOM_FINAL],
+      display: [vs, DISPLAY],
+      emberUpdate: [vs, EMBER_UPDATE],
+      emberDraw: [EMBER_VERT, EMBER_FRAG],
+    };
+    for (const [name, [v, src]] of Object.entries(defs)) {
       const prog = gl.createProgram()!;
-      gl.attachShader(prog, vs);
+      gl.attachShader(prog, typeof v === "string" ? this.shader(gl.VERTEX_SHADER, v) : v);
       gl.attachShader(prog, this.shader(gl.FRAGMENT_SHADER, src));
       gl.bindAttribLocation(prog, 0, "aPosition");
       gl.linkProgram(prog);
@@ -249,15 +413,15 @@ export class EmberFluid {
     return s;
   }
 
-  private fbo(w: number, h: number, internal: number, format: number): FBO {
+  private fbo(w: number, h: number, internal: number, format: number, type: number = this.gl.HALF_FLOAT, filter: number = this.gl.LINEAR): FBO {
     const gl = this.gl;
     const tex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, internal, w, h, 0, format, gl.HALF_FLOAT, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internal, w, h, 0, format, type, null);
     const fbo = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
@@ -278,9 +442,9 @@ export class EmberFluid {
     };
   }
 
-  private double(w: number, h: number, internal: number, format: number): DoubleFBO {
-    let a = this.fbo(w, h, internal, format);
-    let b = this.fbo(w, h, internal, format);
+  private double(w: number, h: number, internal: number, format: number, type?: number, filter?: number): DoubleFBO {
+    let a = this.fbo(w, h, internal, format, type, filter);
+    let b = this.fbo(w, h, internal, format, type, filter);
     return {
       w,
       h,
@@ -328,6 +492,21 @@ export class EmberFluid {
       this.divergence = this.fbo(s.w, s.h, gl.R16F, gl.RED);
       this.curlFbo = this.fbo(s.w, s.h, gl.R16F, gl.RED);
       this.pressure = this.double(s.w, s.h, gl.R16F, gl.RED);
+      // bloom chain: a base and halving levels below it
+      const b = this.res(this.cfg.bloomRes);
+      this.scene = this.fbo(b.w, b.h, gl.RGBA16F, gl.RGBA);
+      this.bloom = this.fbo(b.w, b.h, gl.RGBA16F, gl.RGBA);
+      this.bloomLevels = [];
+      for (let i = 1; i <= this.cfg.bloomIters; i++) {
+        const lw = Math.max(2, b.w >> i);
+        const lh = Math.max(2, b.h >> i);
+        this.bloomLevels.push(this.fbo(lw, lh, gl.RGBA16F, gl.RGBA));
+      }
+      // embers: one texel per spark (positions want 32-bit floats when we can)
+      const side = this.cfg.embers;
+      this.embers = this.float32
+        ? this.double(side, side, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST)
+        : this.double(side, side, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.NEAREST);
     }
     this.drawMask();
   }
@@ -365,6 +544,11 @@ export class EmberFluid {
       const v = Math.round(255 * line.heat);
       o.fillStyle = `rgb(${v},${v},${v})`;
       o.fillText(text, x, y);
+      // a burning wire under the line, where the accent underline sits
+      if (line.bar) {
+        const bw = Math.min(r.width, m.width);
+        o.fillRect(rtl ? x - bw : x, r.bottom - host.top + 1, bw, Math.max(3, size * 0.035));
+      }
     }
     this.rtl = rtl;
     gl.bindTexture(gl.TEXTURE_2D, this.mask);
@@ -384,6 +568,7 @@ export class EmberFluid {
     if (this.igniteAt < 0) this.igniteAt = performance.now();
   }
 
+  /** The pointer moves the air only: no heat of its own, like a hand through smoke. */
   pointer(x: number, y: number, active: boolean) {
     if (!active) {
       this.pointerPrev = null;
@@ -392,10 +577,11 @@ export class EmberFluid {
     const p = this.pointerPrev;
     this.pointerPrev = { x, y };
     if (!p) return;
-    const dx = x - p.x;
-    const dy = y - p.y;
+    const cap = (v: number) => Math.max(-28, Math.min(28, v));
+    const dx = cap(x - p.x);
+    const dy = cap(y - p.y);
     if (Math.abs(dx) + Math.abs(dy) < 0.5) return;
-    this.splats.push({ x, y, dx: dx * 9, dy: -dy * 9, heat: 0.05, r: 0.0022 });
+    this.splats.push({ x, y, dx: dx * 3.6, dy: -dy * 3.6, heat: 0, r: 0.0014 });
   }
 
   /** A fireball pushed out from (x, y). */
@@ -403,7 +589,7 @@ export class EmberFluid {
     const n = 10;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2;
-      this.splats.push({ x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 6, dx: Math.cos(a) * 900, dy: -Math.sin(a) * 900, heat: 0.0, r: 0.0016 });
+      this.splats.push({ x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 6, dx: Math.cos(a) * 820, dy: -Math.sin(a) * 820, heat: 0.0, r: 0.0016 });
     }
     this.splats.push({ x, y, dx: 0, dy: 300, heat: 2.2, r: 0.006 });
   }
@@ -424,7 +610,7 @@ export class EmberFluid {
       this.last = now;
       this.time += dt;
       this.step(dt);
-      this.render();
+      this.render(dt);
     };
     this.raf = requestAnimationFrame(loop);
   }
@@ -477,6 +663,7 @@ export class EmberFluid {
 
   private step(dt: number) {
     const gl = this.gl;
+    gl.bindVertexArray(this.quadVao);
     gl.disable(gl.BLEND);
     const sp = this.scrollP;
 
@@ -484,8 +671,15 @@ export class EmberFluid {
     if (this.igniteAt >= 0) this.sweep = Math.min(1.2, (performance.now() - this.igniteAt) / 1300);
     const burning = Math.max(0, 1 - sp * 2.2); // the letters stop feeding the fire as you scroll
 
-    // pointer + click splats (screen px → uv)
-    // (sizes are cached on resize: no layout reads inside the frame)
+    // a soft breeze now and then, so the fire is never still
+    if (this.sweep >= 1 && this.time > this.nextGust) {
+      this.nextGust = this.time + 2.6 + Math.random() * 3.4;
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const yy = this.cssH * (0.3 + Math.random() * 0.3);
+      this.splats.push({ x: this.cssW * (0.5 - side * 0.45), y: yy, dx: side * (140 + Math.random() * 120), dy: 20, heat: 0, r: 0.03 });
+    }
+
+    // pointer + click + wind splats (sizes cached on resize: no layout reads here)
     for (const s of this.splats.splice(0)) this.splat(s.x / this.cssW, 1 - s.y / this.cssH, s.dx, s.dy, s.heat, s.r);
 
     // the letters feed the fire
@@ -584,6 +778,22 @@ export class EmberFluid {
     gl.uniform1f(u.dissipation, 0.9 + sp * 1.5);
     this.blit(this.dye.write);
     this.dye.swap();
+
+    // embers ride the air the simulation just computed
+    if (this.sweep > 0) {
+      u = this.use("emberUpdate");
+      gl.uniform1i(u.uState, this.embers.read.attach(0));
+      gl.uniform1i(u.uVelocity, this.velocity.read.attach(1));
+      gl.uniform1i(u.uMask, this.attachMask(2));
+      gl.uniform1f(u.dt, dt);
+      gl.uniform1f(u.time, this.time);
+      gl.uniform1f(u.sweep, this.sweep);
+      gl.uniform1f(u.rtl, this.rtl ? 1 : 0);
+      gl.uniform1f(u.spawn, burning * 0.5);
+      gl.uniform2f(u.velScale, vt[0], vt[1]);
+      this.blit(this.embers.write);
+      this.embers.swap();
+    }
   }
 
   private attachMask(id: number) {
@@ -593,22 +803,90 @@ export class EmberFluid {
     return id;
   }
 
-  private render() {
+  /** The fire's look, set on whichever program is bound. */
+  private fireUniforms(u: Record<string, WebGLUniformLocation | null>) {
     const gl = this.gl;
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    const u = this.use("display");
     gl.uniform1i(u.uTexture, this.dye.read.attach(0));
     gl.uniform1i(u.uMask, this.attachMask(1));
     gl.uniform1f(u.core, Math.max(0, 1 - this.scrollP * 2.4));
     gl.uniform1f(u.time, this.time);
     gl.uniform1f(u.sweep, this.sweep);
     gl.uniform1f(u.rtl, this.rtl ? 1 : 0);
+    gl.uniform2f(u.dyeTexel, 1 / this.dye.w, 1 / this.dye.h);
+  }
+
+  private bloomPass() {
+    const gl = this.gl;
+    gl.disable(gl.BLEND);
+    // 1) a small copy of the fire
+    let u = this.use("scene");
+    this.fireUniforms(u);
+    this.blit(this.scene);
+    // 2) keep only what is bright
+    u = this.use("bloomPrefilter");
+    const knee = 0.7 * 0.6 + 0.0001;
+    gl.uniform3f(u.curve, 0.6 - knee, knee * 2, 0.25 / knee);
+    gl.uniform1f(u.threshold, 0.6);
+    gl.uniform1i(u.uTexture, this.scene.attach(0));
+    this.blit(this.bloom);
+    // 3) blur down the chain, then back up, adding as it goes
+    u = this.use("bloomBlur");
+    let last = this.bloom;
+    for (const lvl of this.bloomLevels) {
+      gl.uniform2f(u.texelSize, 1 / last.w, 1 / last.h);
+      gl.uniform1i(u.uTexture, last.attach(0));
+      this.blit(lvl);
+      last = lvl;
+    }
+    gl.blendFunc(gl.ONE, gl.ONE);
+    gl.enable(gl.BLEND);
+    for (let i = this.bloomLevels.length - 2; i >= 0; i--) {
+      const dst = this.bloomLevels[i];
+      gl.uniform2f(u.texelSize, 1 / last.w, 1 / last.h);
+      gl.uniform1i(u.uTexture, last.attach(0));
+      this.blit(dst);
+      last = dst;
+    }
+    gl.disable(gl.BLEND);
+    u = this.use("bloomFinal");
+    gl.uniform2f(u.texelSize, 1 / last.w, 1 / last.h);
+    gl.uniform1i(u.uTexture, last.attach(0));
+    gl.uniform1f(u.intensity, 0.9);
+    this.blit(this.bloom);
+  }
+
+  private render(dt: number) {
+    void dt;
+    const gl = this.gl;
+    gl.bindVertexArray(this.quadVao);
+    this.bloomPass();
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    const u = this.use("display");
+    this.fireUniforms(u);
+    gl.uniform2f(u.texelSize, 1 / this.cssW, 1 / this.cssH);
+    gl.uniform1i(u.uBloom, this.bloom.attach(2));
+    gl.uniform1f(u.bloomI, 1.0);
     this.blit(null);
+
+    // the embers, added on top
+    if (this.sweep > 0) {
+      gl.blendFunc(gl.ONE, gl.ONE);
+      const e = this.use("emberDraw");
+      gl.uniform1i(e.uState, this.embers.read.attach(0));
+      gl.uniform1i(e.side, this.cfg.embers);
+      gl.uniform1f(e.dpr, this.cfg.dpr);
+      gl.uniform1f(e.time, this.time);
+      gl.bindVertexArray(this.pointVao);
+      gl.drawArrays(gl.POINTS, 0, this.cfg.embers * this.cfg.embers);
+      gl.bindVertexArray(this.quadVao);
+    }
+    gl.disable(gl.BLEND);
   }
 
   dispose() {
