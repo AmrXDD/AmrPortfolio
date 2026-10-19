@@ -9,7 +9,7 @@ import { setMusic } from "@/lib/music-clock";
 const BARS = [0, 1, 2, 3];
 const SRC = "/audio/ambient-loop.mp3";
 const VOLUME = 0.3; // ambient bed level — present but not intrusive
-const LOOP_END = 218; // seconds — the whole track (it fades out on its own by 3:38), then loop
+const LOOP_END = 166; // seconds — the whole track (it fades out on its own by 2:46), then loop
 const FADE_IN = 3; // seconds, on play and after each loop
 const FADE_OUT = 1.6; // seconds, on mute
 const LOOP_FADE = 4; // seconds the end of the loop fades out over

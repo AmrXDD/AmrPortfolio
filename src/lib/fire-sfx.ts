@@ -42,9 +42,10 @@ function ensure() {
     limiter.attack.value = 0.003;
     limiter.release.value = 0.2;
     master = ctx.createGain();
-    // balanced against the music: the title catching sits a few dB above the
-    // track's drop, the small sounds near its quiet intro
-    master.gain.value = 0.25;
+    // balanced against the track (as AmbientPlayer plays it): the title
+    // catching sits a few dB above the music, the lighter's sounds about
+    // level with it, the burning bed well under it
+    master.gain.value = 0.8;
     master.connect(limiter).connect(ctx.destination);
     // two seconds of white noise, reused by every effect
     white = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
