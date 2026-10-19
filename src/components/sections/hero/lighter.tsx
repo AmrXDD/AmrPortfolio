@@ -2,6 +2,8 @@
 
 import { animate, motion, useMotionValue, useTransform, type MotionValue } from "framer-motion";
 import { useEffect, useRef } from "react";
+import * as sfx from "@/lib/fire-sfx";
+import { musicTime } from "@/lib/music-clock";
 
 /*
  * The lighter that lights the hero. A brushed-steel flip-top with the studio
@@ -9,6 +11,9 @@ import { useEffect, useRef } from "react";
  * wheel and holds a real flame (the fluid simulation draws it: we only feed
  * it the nozzle position), carries the flame to the first word, lets it
  * catch, then closes and slips away. Every move is eased and unhurried.
+ * With sound on, each step has its sound, and the title catches exactly on
+ * second SYNC_AT of the music (the lighter holds its flame, or hurries a
+ * little, to land on it).
  *
  * The SVG is drawn in a 70 × 120 box; the wick sits at (24, 15).
  */
@@ -18,6 +23,11 @@ const VB_H = 120;
 const WICK = { x: 24, y: 15 };
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const EASE_IO = [0.65, 0, 0.35, 1] as const;
+/** the music's second the title catches on: where the track's beat comes in */
+const SYNC_AT = 5;
+const TOUCH = 1.15; // seconds to carry the flame to the title
+const TOUCH_MIN = 0.45; // the quickest it may go to still land on the beat
+const easeInOut = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2);
 
 type Pt = { x: number; y: number };
 
@@ -95,8 +105,14 @@ export function Lighter({
 
     // keep the simulation's flame on the wick while anything moves
     let raf = 0;
+    // the frame interval (smoothed), so a moment lands on the nearest frame
+    let dt = 1 / 60;
+    let lastFrame = performance.now();
     const follow = () => {
       raf = requestAnimationFrame(follow);
+      const now = performance.now();
+      dt += (Math.min(0.5, (now - lastFrame) / 1000) - dt) * 0.25;
+      lastFrame = now;
       const n = wickNow();
       onFlame(n.x, n.y - 2 * s, flameOn);
     };
@@ -117,6 +133,46 @@ export function Lighter({
       ]);
     };
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // wait for the music to reach `at` (on the frame nearest it): true once
+    // it has, false if it stopped or stalled (gives up after maxMs)
+    const until = (at: number, maxMs: number) =>
+      new Promise<boolean>((done) => {
+        const t0 = performance.now();
+        const tick = () => {
+          const t = musicTime();
+          if (t !== null && t + dt / 2 >= at) return done(true);
+          if (!alive || t === null || performance.now() - t0 > maxMs) return done(false);
+          requestAnimationFrame(tick);
+        };
+        tick();
+      });
+    // like go(), but on the music's clock, so it arrives at second `endAt`
+    // however the frames fall (the wall clock takes over if the music stops)
+    const glide = (to: Pt, deg: number, endAt: number) =>
+      new Promise<void>((done) => {
+        const from = { x: px.get(), y: py.get(), r: rot.get() };
+        const b = boxFor(to, deg);
+        const t0 = musicTime() ?? 0;
+        const span = Math.max(0.05, endAt - t0);
+        let k = 0;
+        let wall = performance.now();
+        const deadline = wall + span * 1000 + 1500; // a stalled track can't hold it
+        const tick = () => {
+          if (!alive) return done();
+          const t = musicTime();
+          const now = performance.now();
+          k = Math.min(1, Math.max(k, t === null ? k + (now - wall) / 1000 / span : (t + dt / 2 - t0) / span));
+          if (now > deadline) k = 1;
+          wall = now;
+          const e = easeInOut(k);
+          px.set(from.x + (b.x - from.x) * e);
+          py.set(from.y + (b.y - from.y) * e);
+          rot.set(from.r + (deg - from.r) * e);
+          if (k >= 1) return done();
+          requestAnimationFrame(tick);
+        };
+        tick();
+      });
 
     (async () => {
       const start = boxFor(offIn, -24 * dir);
@@ -129,25 +185,46 @@ export function Lighter({
       if (!alive) return;
       await wait(150);
       // flip the lid, turn the wheel, and there is a flame
-      await animate(lid, 116, { type: "spring", stiffness: 170, damping: 15 });
+      // (the thumb strikes while the lid is still swinging, in one motion)
+      sfx.lidOpen();
+      animate(lid, 116, { type: "spring", stiffness: 170, damping: 15 });
+      await wait(480);
       if (!alive) return;
+      sfx.strike();
       animate(wheel, 400, { duration: 0.45, ease: "easeOut" });
       animate(spark, [0, 1], { duration: 0.5, ease: "easeOut" });
       await wait(220);
       if (!alive) return;
       flameOn = true;
-      await wait(750);
+      sfx.flame(true);
+      // hold the flame, then carry it to the first word; with the music
+      // still before the beat, hold until there is TOUCH left and glide in
+      // on the music's clock, so the title catches exactly on SYNC_AT
+      await wait(300);
       if (!alive) return;
-      // carry the flame to the first word
-      await go(touch, 0, 1.15, EASE_IO);
+      const early = (musicTime() ?? Infinity) < SYNC_AT - TOUCH_MIN;
+      if (early && (await until(SYNC_AT - TOUCH, 6000))) {
+        if (!alive) return;
+        await glide(touch, 0, SYNC_AT);
+        if (!alive) return;
+        await until(SYNC_AT, 400);
+      } else {
+        if (!alive) return;
+        await wait(450);
+        if (!alive) return;
+        await go(touch, 0, TOUCH, EASE_IO);
+      }
       if (!alive) return;
       onIgnite(T.x, T.y);
+      sfx.ignite();
       await wait(900);
       if (!alive) return;
       // done: close, step back, slip away
       flameOn = false;
+      sfx.flame(false);
       await animate(lid, 0, { duration: 0.35, ease: "easeIn" });
       if (!alive) return;
+      sfx.lidClose();
       await go({ x: touch.x - 30 * dir, y: touch.y + 40 }, -6 * dir, 0.5, EASE_IO);
       if (!alive) return;
       animate(op, 0, { duration: 1.1, delay: 0.3 });
@@ -164,6 +241,7 @@ export function Lighter({
       alive = false;
       cancelAnimationFrame(raf);
       onFlame(0, 0, false);
+      sfx.flame(false);
     };
     // the sequence runs once
     // eslint-disable-next-line react-hooks/exhaustive-deps

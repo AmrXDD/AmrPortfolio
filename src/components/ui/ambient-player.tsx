@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useLang } from "@/lib/i18n";
+import { setMusic } from "@/lib/music-clock";
 
 const BARS = [0, 1, 2, 3];
 const SRC = "/audio/ambient-loop.mp3";
 const VOLUME = 0.3; // ambient bed level — present but not intrusive
-const LOOP_END = 105; // seconds — only use 0:00 → 1:45 of the track, then loop
+const LOOP_END = 218; // seconds — the whole track (it fades out on its own by 3:38), then loop
 const FADE_IN = 3; // seconds, on play and after each loop
 const FADE_OUT = 1.6; // seconds, on mute
 const LOOP_FADE = 4; // seconds the end of the loop fades out over
@@ -115,13 +116,20 @@ export function AmbientPlayer() {
     loopingRef.current = false;
     await ctxRef.current?.resume();
     if (!gainRef.current) el.volume = 0;
-    await el.play();
+    setMusic(el);
+    try {
+      await el.play();
+    } catch (err) {
+      setMusic(null);
+      throw err;
+    }
     playingRef.current = true;
     fadeTo(VOLUME, FADE_IN);
   };
 
   const stop = () => {
     playingRef.current = false;
+    setMusic(null);
     loopingRef.current = false;
     clearTimers();
     fadeTo(0, FADE_OUT);
@@ -168,7 +176,7 @@ export function AmbientPlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The loop: shortly before 1:45 (or the track's end) fade out, rest a
+  // The loop: shortly before the track's end fade out, rest a
   // breath, jump to 0:00, fade back in. Driven by the element's own
   // timeupdate, which keeps firing in background tabs.
   useEffect(() => {

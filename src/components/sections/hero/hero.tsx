@@ -7,6 +7,7 @@ import { WhatsAppCTA } from "@/components/ui/wa-cta";
 import { SITE, SITE_AR } from "@/lib/constants";
 import { useLang } from "@/lib/i18n";
 import { useTheme } from "@/components/providers/theme-provider";
+import * as sfx from "@/lib/fire-sfx";
 import { EmberFluid } from "./ember-fluid";
 import { ParticleType } from "./particle-type";
 import { Lighter } from "./lighter";
@@ -63,6 +64,8 @@ export function Hero() {
   // rebuilds, so a language or theme swap never flashes the plain title
   const owned = useRef(false);
   const firstBuild = useRef(true);
+  // the title is alight (its fire is heard while it burns)
+  const burning = useRef(false);
   // every language/theme gets its own canvas and its own lighting
   const gen = `${lang}-${theme}-${fallback ? "p" : "e"}`;
 
@@ -83,7 +86,13 @@ export function Hero() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const fadeUi = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
   const liftUi = useTransform(scrollYProgress, [0, 0.35], ["0%", "-12%"]);
-  useMotionValueEvent(scrollYProgress, "change", (p) => engineRef.current?.scroll(p * 1.6));
+  // the fire burns away as the hero scrolls off, and its sound with it
+  const fireLevel = (p: number) => (burning.current ? Math.max(0, 1 - p * 2) : 0);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    engineRef.current?.scroll(p * 1.6);
+    sfx.bed(fireLevel(p));
+  });
+  useEffect(() => () => sfx.bed(0), []);
 
   // Hold the intro until the visitor actually enters (preloader click).
   useEffect(() => {
@@ -113,6 +122,8 @@ export function Hero() {
   // lighter comes back to light the new title.
   useEffect(() => {
     lighterDone.current = false;
+    burning.current = false;
+    sfx.bed(0);
     setTarget(null);
     if (reduce) return;
     const canvas = canvasRef.current;
@@ -300,6 +311,8 @@ export function Hero() {
           onFlame={(x, y, on) => engineRef.current?.lighter?.(x, y, on)}
           onIgnite={(x, y) => {
             engineRef.current?.ignite?.(x, y);
+            burning.current = true;
+            sfx.bed(fireLevel(scrollYProgress.get()));
             setCopyIn(true);
           }}
           onDone={() => {
