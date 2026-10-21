@@ -23,12 +23,14 @@ const nexium = localFont({
   display: "swap",
 });
 
-// Wide, geometric, futuristic display face for headlines.
+// Wide, geometric display face: only a fallback behind Nexium now, so it
+// isn't preloaded (it was ~12 KB on every phone's critical path).
 const display = Michroma({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-display",
   display: "swap",
+  preload: false,
 });
 
 // Kept for the elegant italic accent words inside headlines.
