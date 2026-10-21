@@ -36,7 +36,9 @@ export function BookingCalendar() {
   const [event, setEvent] = useState<CalEvent>("long");
   const [near, setNear] = useState(false);
   const [ready, setReady] = useState<Partial<Record<CalEvent, boolean>>>({});
-  const [failed, setFailed] = useState(false);
+  // per call: it couldn't show (a missing event, Cal.com unreachable, or no
+  // sign of life after 12 s): then a direct link replaces the spinner
+  const [failed, setFailed] = useState<Partial<Record<CalEvent, boolean>>>({});
 
   // start when it comes within a screen or so; follow the site's theme
   useEffect(() => {
@@ -59,13 +61,19 @@ export function BookingCalendar() {
     if (!near || !el || started.current[event]) return;
     started.current[event] = true;
     const k = event;
+    let shown = false;
     inlineBooking(el, k, {
-      ready: () => setReady((r) => ({ ...r, [k]: true })),
-      fail: () => setFailed(true),
+      ready: () => {
+        shown = true;
+        setReady((r) => ({ ...r, [k]: true }));
+      },
+      fail: () => setFailed((f) => ({ ...f, [k]: true })),
     });
+    window.setTimeout(() => !shown && setFailed((f) => ({ ...f, [k]: true })), 12000);
   }, [near, event]);
 
   const loaded = !!ready[event];
+  const broken = !!failed[event] && !loaded;
 
   return (
     <div id="book" ref={box} className="scroll-mt-24 overflow-hidden rounded-[28px] border border-line bg-ash/30">
@@ -99,16 +107,19 @@ export function BookingCalendar() {
 
       {/* the calendars */}
       <div className="relative min-h-[560px] p-2 md:p-4" data-lenis-prevent>
-        {!loaded && !failed ? (
+        {!loaded && !broken ? (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-bone/50">
             <span className="h-2.5 w-2.5 animate-ping rounded-full bg-accent" />
             <span className="text-mono text-[10px] uppercase tracking-[0.24em]">{c.loading}</span>
           </div>
         ) : null}
-        {failed ? (
-          <div className="flex min-h-[540px] items-center justify-center">
-            <a href={CAL_URL} target="_blank" rel="noreferrer" data-cursor="link" className="inline-flex items-center gap-2 text-mono text-[12px] uppercase tracking-[0.18em] text-accent">
+        {broken ? (
+          <div className="flex min-h-[540px] flex-col items-center justify-center gap-4">
+            <a href={`https://cal.com/${CAL_EVENTS[event].link}`} target="_blank" rel="noreferrer" data-cursor="link" className="inline-flex items-center gap-2 text-mono text-[12px] uppercase tracking-[0.18em] text-accent">
               {c.fallback} <ArrowUpRight size={14} className="rtl:-scale-x-100" />
+            </a>
+            <a href={CAL_URL} target="_blank" rel="noreferrer" data-cursor="link" className="text-mono text-[10px] uppercase tracking-[0.2em] text-bone/50 underline-offset-4 hover:underline">
+              cal.com/amrstudios
             </a>
           </div>
         ) : null}
@@ -118,7 +129,7 @@ export function BookingCalendar() {
             ref={(n) => {
               hosts.current[k] = n;
             }}
-            className={cn("w-full transition-opacity duration-500", event === k ? "block" : "hidden", ready[k] && !failed ? "opacity-100" : "opacity-0")}
+            className={cn("w-full transition-opacity duration-500", event === k ? "block" : "hidden", ready[k] ? "opacity-100" : "opacity-0")}
           />
         ))}
       </div>

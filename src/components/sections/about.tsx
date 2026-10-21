@@ -7,7 +7,9 @@ import { RevealWords } from "@/components/ui/reveal";
 import { PROJECTS, SITE, SITE_AR } from "@/lib/constants";
 import { useCopy, useLang } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/use-mobile";
-import { Headshot } from "@/components/sections/headshot";
+import ProfileCard from "@/components/ui/profile-card";
+import { useTheme } from "@/components/providers/theme-provider";
+import { CAL_URL, openBooking } from "@/lib/cal";
 
 /*
  * About · "The Slate". The headline says software is built the way a
@@ -295,8 +297,8 @@ export function About() {
           <div className="col-span-12 md:col-span-4">
             <Eyebrow index="02">{c.eyebrow}</Eyebrow>
             <p className="mt-6 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">{c.label}</p>
-            {/* the director's headshot */}
-            <Headshot className="mt-10 md:mb-24 md:ms-0" />
+            {/* the director's card */}
+            <DirectorCard />
           </div>
           <div className="col-span-12 md:col-span-8">
             <h2 key={lang} className="text-display size-h2 text-bone">
@@ -326,5 +328,42 @@ export function About() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** The director's card: a holographic profile card with the booking on it. */
+function DirectorCard() {
+  const ar = useLang().lang === "ar";
+  const { theme } = useTheme();
+  return (
+    <div className="mx-auto mt-10 w-full max-w-[340px] md:mx-0 md:mb-24">
+      <ProfileCard
+        avatarUrl="/images/amr-portrait.webp"
+        iconUrl="/icon.svg"
+        name="Amr Ghamrawy"
+        title={ar ? "المخرج · تصميم وبرمجة" : "Director · design & code"}
+        handle="amrstudio"
+        status={ar ? "متاح بعدد محدود" : "Selectively available"}
+        contactText={ar ? "احجز مكالمة" : "Book a call"}
+        theme={theme === "light" ? "light" : "dark"}
+        backdrop={
+          theme === "light"
+            ? "radial-gradient(120% 90% at 50% 16%, #ffc39e 0%, #ff7a3d 30%, #f3e6da 72%)"
+            : "radial-gradient(120% 90% at 50% 16%, #ff6a2b 0%, #8a1f0c 32%, #2a0f0a 58%, #0b0708 100%)"
+        }
+        holo={0.8}
+        glare={0.5}
+        tiltStrength={12}
+        parallax={8}
+        radius={16}
+        enableTilt
+        intro
+        showUserInfo
+        enableMobileTilt={false}
+        onContactClick={() => {
+          if (!openBooking()) window.open(CAL_URL, "_blank", "noreferrer");
+        }}
+      />
+    </div>
   );
 }
