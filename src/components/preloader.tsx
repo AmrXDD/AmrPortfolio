@@ -49,8 +49,8 @@ const MAX_SCALE = 2.6; // the logo group on the loader vs its size in the top ba
 const WORD = `${SITE.name}/studio`;
 // the build-up's pace (CSS --t): a first visit, and a return (same story,
 // a little quicker, never skipped)
-const FIRST = 1.3;
-const FAST = 0.85;
+const FIRST = 2;
+const FAST = 1.5;
 
 /** The burn: the black backdrop burns away from (ox, oy) like paper. */
 function burnAway(canvas: HTMLCanvasElement, ox: number, oy: number, onDone: () => void) {
@@ -70,7 +70,7 @@ function burnAway(canvas: HTMLCanvasElement, ox: number, oy: number, onDone: () 
   const edge = (a: number, R: number, t: number) =>
     R * (1 + 0.1 * Math.sin(a * 3 + ph[0] + t * 2) + 0.06 * Math.sin(a * 7 + ph[1] - t * 3) + 0.035 * Math.sin(a * 13 + ph[2] + t * 5));
   const N = 96;
-  const D = 1150;
+  const D = 1700;
   const sparks: { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number }[] = [];
   const t0 = performance.now();
   let last = t0;
@@ -239,10 +239,10 @@ export function Preloader() {
       const oy = r ? r.top + r.height / 2 : window.innerHeight * 0.66;
       stopBurn.current = burnAway(canvas, ox, oy, () => {});
     }
-    // Reveal the top-bar logo exactly when the glide lands (matches the 1.05s
+    // Reveal the top-bar logo exactly when the glide lands (matches the 1.5s
     // transition), then unmount the loader once the burn has cleared.
-    setTimeout(() => window.dispatchEvent(new CustomEvent("brand:reveal")), 1050);
-    setTimeout(() => setMounted(false), 1500);
+    setTimeout(() => window.dispatchEvent(new CustomEvent("brand:reveal")), 1500);
+    setTimeout(() => setMounted(false), 2100);
   }
 
   function unlock() {
@@ -281,7 +281,7 @@ export function Preloader() {
           className="flex items-center will-change-transform"
           style={{
             transform: exiting ? `translate3d(${target.x}px, ${target.y}px, 0) scale(1)` : `translate3d(0, 0, 0) scale(${scale})`,
-            transition: exiting ? "transform 1.05s cubic-bezier(0.76, 0, 0.24, 1)" : "none",
+            transition: exiting ? "transform 1.5s cubic-bezier(0.76, 0, 0.24, 1)" : "none",
           }}
         >
           <div ref={groupRef} className="intro-group flex items-center" style={{ ["--shift" as string]: `${shift}px` }}>

@@ -29,7 +29,7 @@ export function TopControls() {
     }
     const reveal = () => setBrandReady(true);
     // Fallback aligned to the glide, in case the complete event never fires.
-    const onEnter = () => window.setTimeout(reveal, 1300);
+    const onEnter = () => window.setTimeout(reveal, 1700);
     window.addEventListener("brand:reveal", reveal);
     window.addEventListener("ambient:start", onEnter);
     return () => {

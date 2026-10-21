@@ -136,8 +136,8 @@ section[id] { scroll-margin-top: 88px; }
 /* ── The Enter screen (src/components/preloader.tsx) ─────────────────────
    All CSS, so the main thread stays free while the hero's fire compiles.
    --t scales every time: 1 on a first visit, compressed for returning ones. */
-.intro { --t: 1.3; }
-.intro.fast { --t: 0.85; }
+.intro { --t: 2; }
+.intro.fast { --t: 1.5; }
 /* an ember runs once round the ring, its tail glowing behind it */
 .intro-track {
   background: rgba(255, 255, 255, 0.07);
@@ -188,7 +188,7 @@ section[id] { scroll-margin-top: 88px; }
 .intro-rise {
   opacity: 0;
   transform: translateY(10px);
-  animation: intro-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--d) * var(--t)) forwards;
+  animation: intro-rise calc(0.7s * var(--t)) cubic-bezier(0.22, 1, 0.36, 1) calc(var(--d) * var(--t)) forwards;
 }
 .intro.exiting .intro-ui { opacity: 0; transition: opacity 0.25s ease; }
 
