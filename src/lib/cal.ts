@@ -100,7 +100,9 @@ const UI = () => ({
   theme: theme(),
   hideEventTypeDetails: false,
   layout: "month_view",
-  styles: { branding: { brandColor: BRAND } },
+  // the embedded page's own background is white unless told otherwise: let
+  // the site's panel show through around the calendar
+  styles: { body: { background: "transparent" }, branding: { brandColor: BRAND } },
   cssVarsPerTheme: { light: { "cal-brand": BRAND }, dark: { "cal-brand": BRAND } },
 });
 

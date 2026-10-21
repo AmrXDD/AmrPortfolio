@@ -106,7 +106,8 @@ export function BookingCalendar() {
       </div>
 
       {/* the calendars */}
-      <div className="relative min-h-[560px] p-2 md:p-4" data-lenis-prevent>
+      {/* (dark behind the iframe too, so nothing flashes white while it loads) */}
+      <div className="relative min-h-[560px] bg-ink p-2 [color-scheme:dark] md:p-4 [.light_&]:[color-scheme:light]" data-lenis-prevent>
         {!loaded && !broken ? (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-bone/50">
             <span className="h-2.5 w-2.5 animate-ping rounded-full bg-accent" />
