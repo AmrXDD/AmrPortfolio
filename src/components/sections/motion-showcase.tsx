@@ -281,10 +281,11 @@ export function MotionShowcase() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const x1 = useTransform(scrollYProgress, [0, 1], ["4%", "-30%"]);
   const x2 = useTransform(scrollYProgress, [0, 1], ["-34%", "0%"]);
-  // lean into the scroll: the faster you go, the harder the bands skew
-  const { scrollY } = useScroll();
-  const vel = useSpring(useVelocity(scrollY), { stiffness: 220, damping: 40 });
-  const skew = useTransform(vel, [-2400, 0, 2400], [9, 0, -9], { clamp: true });
+  // lean into the scroll: the faster you go, the harder the bands skew. The
+  // speed comes from this section's own progress (it only moves while the
+  // section is in view), not the page's, so it costs nothing elsewhere.
+  const vel = useSpring(useVelocity(scrollYProgress), { stiffness: 220, damping: 40 });
+  const skew = useTransform(vel, [-1.1, 0, 1.1], [9, 0, -9], { clamp: true });
   const c = useCopy(COPY);
   const { lang } = useLang();
   const ar = lang === "ar";
@@ -295,7 +296,7 @@ export function MotionShowcase() {
       <div className="mx-auto mb-20 max-w-[1600px] px-5 md:px-10">
         <div className="grid grid-cols-12 items-end gap-y-8">
           <div className="col-span-12 md:col-span-6">
-            <Eyebrow index="08">{c.eyebrow}</Eyebrow>
+            <Eyebrow index="09">{c.eyebrow}</Eyebrow>
             <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
               <RevealWords text={c.h1} />
               <br />

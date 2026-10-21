@@ -14,7 +14,10 @@ import { useEffect, useRef } from "react";
  *
  * One fixed 2D canvas behind the content (pointer-events: none), ~120 path
  * points + ≤140 particles a frame, DPR capped at 1.5, paused when the tab is
- * hidden, and skipped entirely for prefers-reduced-motion.
+ * hidden, and skipped entirely for prefers-reduced-motion. Phones get a
+ * lighter cut: 1x density, fewer points, it sleeps when nothing moves, it
+ * ignores the URL bar resizing the screen, and it rises out of the hero
+ * instead of sitting on its copy.
  */
 
 const HEAD_AT = 0.6; // head height, as a fraction of the viewport
@@ -36,11 +39,17 @@ export function ScrollThread() {
     if (!ctx) return;
 
     const mobile = window.matchMedia("(max-width: 767px)").matches;
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    const P = mobile ? 64 : POINTS;
     let W = 0;
     let H = 0;
     let dpr = 1;
     const resize = () => {
-      dpr = Math.min(1.5, window.devicePixelRatio || 1);
+      // a phone's URL bar showing/hiding changes only the height a little:
+      // keep the canvas (re-allocating it, and the thread's wavelength
+      // jumping with it, read as a glitch)
+      if (touch && W && window.innerWidth === W && Math.abs(window.innerHeight - H) < 160) return;
+      dpr = Math.min(mobile ? 1 : 1.5, window.devicePixelRatio || 1);
       W = window.innerWidth;
       H = window.innerHeight;
       canvas.width = Math.round(W * dpr);
@@ -66,7 +75,10 @@ export function ScrollThread() {
     // reading scrollY in rAF forces a full layout whenever anything on the
     // page has touched styles that frame (the marquees do, every frame).
     let scrollY = window.scrollY;
-    const onScroll = () => (scrollY = window.scrollY);
+    const onScroll = () => {
+      scrollY = window.scrollY;
+      wake();
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
 
     // In RTL the page reads from the right, and the hero title sits on the
@@ -75,8 +87,12 @@ export function ScrollThread() {
     const html = document.documentElement;
     let mirrorTarget = html.dir === "rtl" ? 1 : 0;
     let mirror = mirrorTarget;
-    const dirMo = new MutationObserver(() => (mirrorTarget = html.dir === "rtl" ? 1 : 0));
-    dirMo.observe(html, { attributes: true, attributeFilter: ["dir"] });
+    // (a theme change also wakes a sleeping comet, to redraw in its colours)
+    const dirMo = new MutationObserver(() => {
+      mirrorTarget = html.dir === "rtl" ? 1 : 0;
+      wake();
+    });
+    dirMo.observe(html, { attributes: true, attributeFilter: ["dir", "class"] });
 
     let smoothY = scrollY;
     let lastY = smoothY;
@@ -88,6 +104,16 @@ export function ScrollThread() {
     let raf = 0;
     let t0 = performance.now();
     let last = t0;
+    // phones: when nothing has moved for a moment, stop drawing until a scroll
+    let sleeping = false;
+    let stillFor = 0;
+    function wake() {
+      if (!sleeping || document.hidden) return;
+      sleeping = false;
+      stillFor = 0;
+      last = performance.now();
+      raf = requestAnimationFrame(frame);
+    }
 
     // The thread: x as a function of document y.
     const xAt = (docY: number, time: number) => {
@@ -122,6 +148,21 @@ export function ScrollThread() {
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
+
+      if (mobile) {
+        // asleep once still (no scroll glide, sparks, ripples or mirroring)
+        const still = Math.abs(y - smoothY) < 0.5 && Math.abs(dy) < 0.05 && !sparks.length && !ripples.length && Math.abs(mirrorTarget - mirror) < 0.002;
+        stillFor = still ? stillFor + dt : 0;
+        if (stillFor > 0.8) sleeping = true;
+      }
+      // phones: on the hero the fire is the show, and the head would sit on
+      // the copy; the comet rises in over the first half-screen of scroll
+      const vis = mobile ? Math.min(1, Math.max(0, smoothY / (H * 0.5))) : 1;
+      if (vis <= 0) {
+        if (sleeping) cancelAnimationFrame(raf);
+        return;
+      }
+      ctx.globalAlpha = vis;
       ctx.globalCompositeOperation = light ? "source-over" : "lighter";
 
       const headDoc = smoothY + H * HEAD_AT;
@@ -129,8 +170,8 @@ export function ScrollThread() {
 
       // path points, tail → head, in viewport space
       const pts: [number, number][] = [];
-      for (let i = 0; i <= POINTS; i++) {
-        const d = tailDoc + ((headDoc - tailDoc) * i) / POINTS;
+      for (let i = 0; i <= P; i++) {
+        const d = tailDoc + ((headDoc - tailDoc) * i) / P;
         pts.push([xAt(d, time), d - smoothY]);
       }
 
@@ -141,15 +182,15 @@ export function ScrollThread() {
       const trace = (from: number) => {
         ctx.beginPath();
         ctx.moveTo(pts[from][0], pts[from][1]);
-        for (let i = from + 1; i < POINTS; i++) {
+        for (let i = from + 1; i < P; i++) {
           const mx = (pts[i][0] + pts[i + 1][0]) / 2;
           const my = (pts[i][1] + pts[i + 1][1]) / 2;
           ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
         }
-        ctx.lineTo(pts[POINTS][0], pts[POINTS][1]);
+        ctx.lineTo(pts[P][0], pts[P][1]);
       };
       const fade = (from: number, alpha: number) => {
-        const g = ctx.createLinearGradient(pts[from][0], pts[from][1], pts[POINTS][0], pts[POINTS][1]);
+        const g = ctx.createLinearGradient(pts[from][0], pts[from][1], pts[P][0], pts[P][1]);
         g.addColorStop(0, "rgba(124,58,237,0)");
         g.addColorStop(0.55, `rgba(214,70,110,${alpha * 0.55})`);
         g.addColorStop(1, `rgba(255,77,31,${alpha})`);
@@ -160,9 +201,9 @@ export function ScrollThread() {
       const passes: [number, number, number][] = [
         // [start point, width, alpha]
         [0, 16 + speed * 8, light ? 0.1 : 0.16],
-        [Math.round(POINTS * 0.35), 5 + speed * 2, light ? 0.3 : 0.38],
+        [Math.round(P * 0.35), 5 + speed * 2, light ? 0.3 : 0.38],
         [0, 1.4, light ? 0.8 : 0.9],
-        [Math.round(POINTS * 0.7), 2.6, light ? 0.85 : 0.95],
+        [Math.round(P * 0.7), 2.6, light ? 0.85 : 0.95],
       ];
       for (const [from, width, alpha] of passes) {
         trace(from);
@@ -171,7 +212,7 @@ export function ScrollThread() {
         ctx.stroke();
       }
 
-      const [hx, hy] = pts[POINTS];
+      const [hx, hy] = pts[P];
 
       // section ripples, dropped as the head crosses a section top
       for (const top of sectionTops) {
@@ -267,12 +308,16 @@ export function ScrollThread() {
       ctx.beginPath();
       ctx.arc(hx, hy, 9 + speed * 3, spin, spin + Math.PI * 1.5);
       ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (sleeping) cancelAnimationFrame(raf);
     };
 
     const onVis = () => {
       cancelAnimationFrame(raf);
       if (!document.hidden) {
         t0 = performance.now() - 0;
+        sleeping = false;
+        stillFor = 0;
         raf = requestAnimationFrame(frame);
       }
     };

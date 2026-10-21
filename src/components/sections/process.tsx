@@ -19,7 +19,7 @@ const EASE = [0.19, 1, 0.22, 1] as const;
 
 const COPY = {
   en: {
-    eyebrow: "06 · Process",
+    eyebrow: "07 · Process",
     h: "Method",
     sub: "A five beat method for inevitable software, the same sequence, every engagement, no improvisation where it counts.",
     artefacts: ["brief.md", "frame.fig", "layout.fig", "deploy.log", "perf.trace"],
@@ -29,7 +29,7 @@ const COPY = {
     frameTime: "frame time",
   },
   ar: {
-    eyebrow: "06 · المنهجية",
+    eyebrow: "07 · المنهجية",
     h: "المنهج",
     sub: "منهج من خمس مراحل لبرمجيات تبدو حتمية؛ التسلسل نفسه في كل مشروع، ولا ارتجال حيث يهمّ الأمر.",
     artefacts: ["brief.md", "frame.fig", "layout.fig", "deploy.log", "perf.trace"],

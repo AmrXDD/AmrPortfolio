@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
 import { useLang } from "@/lib/i18n";
 import { setMusic } from "@/lib/music-clock";
 
@@ -26,14 +24,14 @@ const GAP = 0.6; // seconds of silence between the fade-out and the restart
  *   each other. Gain runs through Web Audio (iOS ignores element.volume),
  *   and every ramp is anchored at the current level so rapid toggles can't
  *   pop or jump.
- * • The toggle holds a 4-line equalizer: while playing, a GSAP loop animates the
- *   bars with a random scaleY (yoyo, repeat -1, fresh randoms each cycle); when
- *   paused, the loop is killed and the bars ease back to a flat resting state.
+ * • The toggle holds a 4-line equalizer (CSS: each bar breathes at its own
+ *   rate while playing, and settles flat when paused).
+ * • Phones get the toggle inside the bottom dock instead (SoundDockIcon): it
+ *   asks for a toggle with a "sound:request" event.
  */
 export function AmbientPlayer() {
   const ar = useLang().lang === "ar";
   const audioRef = useRef<HTMLAudioElement>(null);
-  const barsRef = useRef<HTMLSpanElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [ready, setReady] = useState(true);
 
@@ -211,38 +209,40 @@ export function AmbientPlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useGSAP(
-    () => {
-      const bars = barsRef.current?.querySelectorAll("span");
-      if (!bars || !bars.length) return;
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    let t = 0;
+    const warm = () => (t = window.setTimeout(() => (el.preload = "auto"), 1200));
+    if (document.readyState === "complete") warm();
+    else window.addEventListener("load", warm, { once: true });
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("load", warm);
+    };
+  }, []);
 
-      if (isPlaying) {
-        gsap.to(bars, {
-          scaleY: "random(0.3, 1.0)",
-          transformOrigin: "50% 100%",
-          duration: 0.42,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-          repeatRefresh: true, // pick new random heights every cycle
-          stagger: { each: 0.08, from: "center" },
-        });
-      } else {
-        gsap.killTweensOf(bars);
-        gsap.to(bars, {
-          scaleY: 0.2,
-          transformOrigin: "50% 100%",
-          duration: 0.5,
-          ease: "power2.out",
-        });
-      }
-    },
-    { dependencies: [isPlaying] }
-  );
+  // tell the dock's sound button what is actually playing (a start can fail)
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("sound:state", { detail: { on: isPlaying } }));
+  }, [isPlaying]);
+
+  // the dock's sound button (phones) asks for a toggle; it is a click, so
+  // starting the music from here is still inside the user's gesture
+  const toggleRef = useRef(toggle);
+  toggleRef.current = toggle;
+  useEffect(() => {
+    const onRequest = () => void toggleRef.current();
+    window.addEventListener("sound:request", onRequest);
+    return () => window.removeEventListener("sound:request", onRequest);
+  }, []);
 
   return (
     <>
-      <audio ref={audioRef} src={SRC} preload="auto" aria-hidden />
+      {/* preload "none" at first, so the track never competes with the page's
+          own first load; it starts buffering once the page has settled (by
+          the time anyone taps Enter, it's there) */}
+      <audio ref={audioRef} src={SRC} preload="none" aria-hidden />
 
       <button
         type="button"
@@ -251,18 +251,9 @@ export function AmbientPlayer() {
         aria-pressed={isPlaying}
         aria-label={ar ? (isPlaying ? "كتم الصوت المحيط" : "تشغيل الصوت المحيط") : isPlaying ? "Mute ambient sound" : "Play ambient sound"}
         title={!ready ? "Add /audio/ambient-loop.mp3 to enable" : undefined}
-        className="group fixed bottom-[76px] start-4 z-[120] inline-flex items-center gap-3 rounded-full border border-line bg-ink/55 px-4 py-2.5 backdrop-blur-md transition-colors duration-300 hover:border-bone/40 md:bottom-7 md:start-7"
+        className="group fixed bottom-7 start-7 z-[120] hidden items-center gap-3 rounded-full border border-line bg-ink/55 px-4 py-2.5 backdrop-blur-md transition-colors duration-300 hover:border-bone/40 md:inline-flex"
       >
-        {/* 4-line equalizer */}
-        <span ref={barsRef} className="flex h-4 items-end gap-[3px]">
-          {BARS.map((i) => (
-            <span
-              key={i}
-              className="block w-[2px] rounded-full bg-bone"
-              style={{ height: "100%", transform: "scaleY(0.2)" }}
-            />
-          ))}
-        </span>
+        <Equalizer on={isPlaying} />
 
         <span className="text-mono text-[10px] uppercase tracking-[0.24em] text-bone/70 transition-colors group-hover:text-bone">
           {ar ? (isPlaying ? "الصوت يعمل" : "الصوت مغلق") : isPlaying ? "Sound On" : "Sound Off"}
@@ -270,4 +261,35 @@ export function AmbientPlayer() {
       </button>
     </>
   );
+}
+
+/** The 4-line equalizer: each bar breathes at its own rate while sound is on. */
+function Equalizer({ on }: { on: boolean }) {
+  return (
+    <span aria-hidden className={`flex h-4 items-end gap-[3px] ${on ? "eq-on" : ""}`}>
+      {BARS.map((i) => (
+        <span key={i} className="eq-bar block h-full w-[2px] rounded-full bg-current" style={{ ["--eq" as string]: i }} />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The sound button for the phone dock: shows the equalizer and asks the
+ * AmbientPlayer to toggle (it follows the same on/off events as everything else).
+ */
+export function SoundDockIcon() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const follow = (e: Event) => setOn(!!(e as CustomEvent).detail?.on);
+    window.addEventListener("ambient:start", follow);
+    window.addEventListener("sound:toggle", follow);
+    window.addEventListener("sound:state", follow);
+    return () => {
+      window.removeEventListener("ambient:start", follow);
+      window.removeEventListener("sound:toggle", follow);
+      window.removeEventListener("sound:state", follow);
+    };
+  }, []);
+  return <Equalizer on={on} />;
 }

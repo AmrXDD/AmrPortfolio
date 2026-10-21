@@ -44,9 +44,13 @@ export function TopControls() {
   // both themes: "light" over light surfaces, "dark" over dark ones.
   const [surface, setSurface] = useState<"light" | "dark" | null>(null);
   useEffect(() => {
-    let raf = 0;
+    // a hit test is not free on a long page: at most ~8 per second while
+    // scrolling, plus one when the scroll settles
+    let tm = 0;
+    let last = 0;
     const check = () => {
-      raf = 0;
+      tm = 0;
+      last = performance.now();
       // sample a point under the header that no header control covers
       const hit = document
         .elementsFromPoint(window.innerWidth * 0.5, 64)
@@ -55,13 +59,14 @@ export function TopControls() {
       setSurface(s === "light" || s === "dark" ? s : null);
     };
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(check);
+      if (tm) return;
+      tm = window.setTimeout(check, Math.max(0, 120 - (performance.now() - last)));
     };
     check();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
-      cancelAnimationFrame(raf);
+      clearTimeout(tm);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
@@ -69,9 +74,13 @@ export function TopControls() {
 
   return (
     <header className={cn("pointer-events-none fixed inset-x-0 top-0 z-50 px-4 py-4 md:px-8 md:py-5", surface)}>
+      {/* phones: the page fades out under the header instead of running into
+          its controls (it takes the surface's colour, like the controls do) */}
+      <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-[92px] bg-gradient-to-b from-ink via-ink/85 to-ink/0 md:hidden" />
       <div className="relative mx-auto flex max-w-[1800px] items-center justify-between">
-        {/* Leading: theme control */}
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-bone/15 bg-ink/50 p-1 backdrop-blur-xl">
+        {/* Leading: theme control (glass on desktop; solid on phones, where a
+            blurred layer over a moving page is re-rendered every frame) */}
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-bone/15 bg-ink/80 p-1 md:bg-ink/50 md:backdrop-blur-xl">
           <button
             type="button"
             onClick={toggleTheme}

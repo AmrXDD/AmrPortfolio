@@ -183,7 +183,9 @@ function AutoScrollIndicator({ active }: { active: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none fixed bottom-7 left-1/2 z-[150] -translate-x-1/2"
+          // centred in the motion style: framer's transform replaces a translate class
+          style={{ x: "-50%" }}
+          className="pointer-events-none fixed bottom-7 left-1/2 z-[150]"
         >
           <div className="flex items-center gap-2.5 rounded-full border border-bone/20 bg-ink/70 px-5 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl">
             <motion.span
@@ -204,20 +206,38 @@ function AutoScrollIndicator({ active }: { active: boolean }) {
 }
 
 export function SmoothScroll({ children }: { children: ReactNode }) {
+  // Smooth scrolling is for mouse and trackpad only. On touch screens the
+  // page scrolls natively: Lenis listens to touches on the window with
+  // non-passive handlers, so every swipe would wait on the main thread, and
+  // native momentum is what a phone should feel like. (With no Lenis, the
+  // section auto-glide is off too: it never takes over a finger.)
+  const [smooth, setSmooth] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const on = () => setSmooth(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
   return (
-    <ReactLenis
-      root
-      options={{
-        lerp: 0.085,
-        smoothWheel: true,
-        wheelMultiplier: 1,
-        touchMultiplier: 1.5,
-        gestureOrientation: "vertical",
-      }}
-    >
+    <>
+      {/* childless: it only creates the root instance, so switching it on
+          never remounts the page (useLenis finds it through the root store) */}
+      {smooth ? (
+        <ReactLenis
+          root
+          options={{
+            lerp: 0.085,
+            smoothWheel: true,
+            wheelMultiplier: 1,
+            gestureOrientation: "vertical",
+          }}
+        />
+      ) : null}
       <AnchorScrollGlue />
       <AutoScroll />
       {children}
-    </ReactLenis>
+    </>
   );
 }

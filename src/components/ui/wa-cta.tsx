@@ -1,9 +1,8 @@
 "use client";
 
-import { Magnetic } from "./magnetic";
+import { Btn } from "./btn";
 import { waLink, SITE } from "@/lib/constants";
 import { cn } from "@/lib/cn";
-import { ArrowUpRight } from "lucide-react";
 
 export function WhatsAppCTA({
   message,
@@ -13,30 +12,13 @@ export function WhatsAppCTA({
 }: {
   message?: string;
   label?: string;
-  variant?: "solid" | "ghost";
+  variant?: "ember" | "solid" | "ghost";
   className?: string;
 }) {
   return (
-    <Magnetic strength={0.25}>
-      <a
-        href={waLink(message)}
-        target="_blank"
-        rel="noreferrer"
-        data-cursor="link"
-        data-cursor-label="Whatsapp"
-        className={cn(
-          variant === "solid" ? "btn-solid" : "btn-ghost",
-          "group relative overflow-hidden",
-          className
-        )}
-      >
-        <span className="relative z-10">{label}</span>
-        <ArrowUpRight
-          size={14}
-          className="relative z-10 transition-transform duration-300 group-hover:-translate-y-px group-hover:translate-x-px"
-        />
-      </a>
-    </Magnetic>
+    <Btn href={waLink(message)} target="_blank" rel="noreferrer" variant={variant} cursorLabel="WhatsApp" className={className}>
+      {label}
+    </Btn>
   );
 }
 

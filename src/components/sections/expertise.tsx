@@ -6,6 +6,7 @@ import { CAPABILITIES } from "@/lib/constants";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Reveal, RevealWords } from "@/components/ui/reveal";
 import { useCopy, useLang } from "@/lib/i18n";
+import { CAL_URL, openBooking, warmBooking } from "@/lib/cal";
 
 /*
  * Capabilities · an index set like a type specimen. Each service is one
@@ -99,8 +100,8 @@ export function Expertise() {
       next: "Next",
       ctaA: "Have something in mind?",
       ctaB: "Let's build it.",
-      cta: "Start a project",
-      cursor: "Contact",
+      cta: "Book a call",
+      cursor: "Book",
     },
     ar: {
       eyebrow: "القدرات",
@@ -110,8 +111,8 @@ export function Expertise() {
       next: "التالي",
       ctaA: "لديك فكرة؟",
       ctaB: "لنبنِها معًا.",
-      cta: "ابدأ مشروعًا",
-      cursor: "تواصل",
+      cta: "احجز مكالمة",
+      cursor: "احجز",
     },
   });
 
@@ -136,7 +137,7 @@ export function Expertise() {
         <div className="mx-auto max-w-[1600px]">
           <div className="mb-16 grid grid-cols-12 items-end gap-y-8 md:mb-20">
             <div className="col-span-12 md:col-span-6">
-              <Eyebrow index="07">{c.eyebrow}</Eyebrow>
+              <Eyebrow index="08">{c.eyebrow}</Eyebrow>
               <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
                 <RevealWords text={c.h1} />
                 <br />
@@ -218,9 +219,16 @@ export function Expertise() {
               </AnimatePresence>
             </motion.div>
 
-            {/* the last row: the way in */}
+            {/* the last row: the way in (books a call, see src/lib/cal.ts) */}
             <a
-              href="#contact"
+              href={CAL_URL}
+              target="_blank"
+              rel="noreferrer"
+              onPointerEnter={warmBooking}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                if (openBooking()) e.preventDefault();
+              }}
               data-cursor="link"
               data-cursor-label={c.cursor}
               className="group relative flex flex-col gap-6 overflow-hidden border-y border-line py-10 md:flex-row md:items-center md:justify-between md:py-14"

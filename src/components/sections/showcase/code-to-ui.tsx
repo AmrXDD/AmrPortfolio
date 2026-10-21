@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { useCopy } from "@/lib/i18n";
 
@@ -86,25 +86,20 @@ export function CodeToUI() {
   const els = useRef<Partial<Record<El, HTMLElement | null>>>({});
   const glyphs = useRef<Glyph[]>([]);
   const raf = useRef(0);
-  const [typed, setTyped] = useState(reduce ? TOTAL : 0);
+  // the typing itself lives in <Editor> (it changes almost every scroll
+  // frame); the section only hears when a line finishes (15 times in all)
+  const [done, setDone] = useState(reduce ? LINES.length : 0);
   const doneRef = useRef(reduce ? LINES.length : 0);
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const headOpacity = useTransform(scrollYProgress, [0, 0.06, 0.12], [1, 1, 0.35]);
 
-  useMotionValueEvent(scrollYProgress, "change", (p) => {
-    if (reduce) return;
-    const k = Math.max(0, Math.min(1, (p - 0.08) / 0.74));
-    setTyped(Math.round(k * TOTAL));
-  });
-
-  // which lines are complete, and which elements they've built
-  const done = useMemo(() => LINES.filter((_, i) => typed >= START[i] + LEN[i]).length, [typed]);
+  // the elements the finished lines have built (lines finish in order)
   const built = useMemo(() => {
     const s = new Set<El>();
-    LINES.forEach((l, i) => l.el && typed >= START[i] + LEN[i] && s.add(l.el));
+    LINES.forEach((l, i) => l.el && i < done && s.add(l.el));
     return s;
-  }, [typed]);
+  }, [done]);
 
   // glyph stream: newly finished lines pour into their elements
   useEffect(() => {
@@ -157,7 +152,9 @@ export function CodeToUI() {
       raf.current = 0;
       return;
     }
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // phones: 1x density and no glow blur (canvas shadowBlur is slow there)
+    const phone = window.innerWidth < 768;
+    const dpr = phone ? 1 : Math.min(2, window.devicePixelRatio || 1);
     const w = stage.clientWidth;
     const h = stage.clientHeight;
     if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
@@ -185,8 +182,10 @@ export function CodeToUI() {
       ctx.translate(x, y);
       ctx.rotate(g.rot * e);
       ctx.globalAlpha = Math.sin(Math.PI * Math.min(1, k * 1.15));
-      ctx.shadowColor = g.color;
-      ctx.shadowBlur = 8;
+      if (!phone) {
+        ctx.shadowColor = g.color;
+        ctx.shadowBlur = 8;
+      }
       ctx.fillStyle = g.color;
       ctx.fillText(g.ch, 0, 0);
       ctx.restore();
@@ -206,8 +205,6 @@ export function CodeToUI() {
     els.current[el] = node;
   };
 
-  // the caret sits on the line being typed
-  const caretLine = Math.min(LINES.length - 1, START.findIndex((s, i) => typed < s + LEN[i] + 1));
 
   return (
     <section ref={ref} className="relative border-b border-line" style={{ height: reduce ? "auto" : "360vh" }}>
@@ -215,7 +212,7 @@ export function CodeToUI() {
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[60vh] w-[70vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(130,170,255,0.12),transparent)] blur-2xl" />
 
         <motion.div style={{ opacity: reduce ? 1 : headOpacity }} className="relative z-10 mx-auto max-w-[1600px] pt-24 md:pt-24">
-          <Eyebrow index="A4">{c.eyebrow}</Eyebrow>
+          <Eyebrow index="05">{c.eyebrow}</Eyebrow>
           <h2 className="mt-4 text-display text-[clamp(1.8rem,3.6vw,3.2rem)] leading-[1.02] text-bone">
             {c.h1} <span className="italic text-accent">{c.h2}</span>
           </h2>
@@ -224,38 +221,7 @@ export function CodeToUI() {
 
         <div dir="ltr" className="relative z-10 mx-auto mt-6 grid max-w-[1600px] grid-cols-1 gap-4 md:mt-8 md:grid-cols-[0.95fr_1.05fr] md:gap-8">
           {/* editor */}
-          <div className="code-editor overflow-hidden rounded-2xl border border-line bg-[#0b0c10]/90 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.9)]">
-            <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
-              <span className="h-2 w-2 rounded-full bg-accent" />
-              <span className="font-mono text-[10px] tracking-wide text-bone/50">Hero.tsx</span>
-              <span className="ml-auto font-mono text-[10px] text-bone/35">
-                {typed}/{TOTAL}
-              </span>
-            </div>
-            <div className="h-[30vh] overflow-hidden p-4 font-mono text-[10px] leading-[1.75] md:h-[48vh] md:text-[12.5px]">
-              {LINES.map((line, i) => {
-                let left = Math.max(0, Math.min(LEN[i], typed - START[i]));
-                return (
-                  <div key={i} className="flex gap-4 whitespace-pre">
-                    <span className="code-gutter w-5 shrink-0 select-none text-right">{i + 1}</span>
-                    <span>
-                      {line.t.map(([s, cls], j) => {
-                        const show = s.slice(0, left);
-                        left -= show.length;
-                        return show ? (
-                          <span key={j} className={`tok-${cls}`}>
-                            {show}
-                          </span>
-                        ) : null;
-                      })}
-                      <span ref={(n) => { lineEnds.current[i] = n; }} />
-                      {!reduce && i === caretLine ? <span className="ml-px inline-block h-[1.1em] w-[0.55em] translate-y-[0.15em] animate-pulse bg-accent" /> : null}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <Editor progress={scrollYProgress} reduce={reduce} lineEnds={lineEnds} onDone={setDone} />
 
           {/* live preview, built by the code */}
           <div className="overflow-hidden rounded-2xl border border-line bg-[#141417] shadow-[0_40px_90px_-40px_rgba(0,0,0,0.9)]">
@@ -330,5 +296,64 @@ export function CodeToUI() {
         <canvas ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0 z-20 h-full w-full" />
       </div>
     </section>
+  );
+}
+
+/** The code editor: your scroll types it, character by character. */
+function Editor({
+  progress,
+  reduce,
+  lineEnds,
+  onDone,
+}: {
+  progress: MotionValue<number>;
+  reduce: boolean;
+  lineEnds: React.MutableRefObject<(HTMLSpanElement | null)[]>;
+  onDone: (n: number) => void;
+}) {
+  const [typed, setTyped] = useState(reduce ? TOTAL : 0);
+  useMotionValueEvent(progress, "change", (p) => {
+    if (reduce) return;
+    const k = Math.max(0, Math.min(1, (p - 0.08) / 0.74));
+    setTyped(Math.round(k * TOTAL));
+  });
+  const done = LINES.filter((_, i) => typed >= START[i] + LEN[i]).length;
+  useEffect(() => onDone(done), [done, onDone]);
+  // the caret sits on the line being typed
+  const caretLine = Math.min(LINES.length - 1, START.findIndex((s, i) => typed < s + LEN[i] + 1));
+
+  return (
+    <div className="code-editor overflow-hidden rounded-2xl border border-line bg-[#0b0c10]/90 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.9)]">
+      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
+        <span className="h-2 w-2 rounded-full bg-accent" />
+        <span className="font-mono text-[10px] tracking-wide text-bone/50">Hero.tsx</span>
+        <span className="ml-auto font-mono text-[10px] text-bone/35">
+          {typed}/{TOTAL}
+        </span>
+      </div>
+      <div className="h-[30vh] overflow-hidden p-4 font-mono text-[10px] leading-[1.75] md:h-[48vh] md:text-[12.5px]">
+        {LINES.map((line, i) => {
+          let left = Math.max(0, Math.min(LEN[i], typed - START[i]));
+          return (
+            <div key={i} className="flex gap-4 whitespace-pre">
+              <span className="code-gutter w-5 shrink-0 select-none text-right">{i + 1}</span>
+              <span>
+                {line.t.map(([s, cls], j) => {
+                  const show = s.slice(0, left);
+                  left -= show.length;
+                  return show ? (
+                    <span key={j} className={`tok-${cls}`}>
+                      {show}
+                    </span>
+                  ) : null;
+                })}
+                <span ref={(n) => { lineEnds.current[i] = n; }} />
+                {!reduce && i === caretLine ? <span className="ml-px inline-block h-[1.1em] w-[0.55em] translate-y-[0.15em] animate-pulse bg-accent" /> : null}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import { FullStack } from "@/components/sections/fullstack";
 import { About } from "@/components/sections/about";
 import { WorkGrid } from "@/components/sections/work-grid";
 import { CaseStudies } from "@/components/sections/case-studies";
+import { BookingStrip } from "@/components/sections/booking-strip";
 import { CraftAnatomy } from "@/components/sections/showcase/craft-anatomy";
 import { Guarantees } from "@/components/sections/guarantees";
 import { CodeToUI } from "@/components/sections/showcase/code-to-ui";
@@ -26,6 +27,8 @@ export default function Home() {
       <WorkGrid />
       {/* Featured case studies: a sideways gallery, each room in its client's colours */}
       <CaseStudies />
+      {/* right after the work: the booking, one tap away */}
+      <BookingStrip />
 
       {/* ── Craft showcase: cinematic device sequences ── */}
       <CraftAnatomy />

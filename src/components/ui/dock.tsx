@@ -16,6 +16,7 @@ import {
 } from "framer-motion";
 import {
   Children,
+  Fragment,
   cloneElement,
   useEffect,
   useMemo,
@@ -30,6 +31,10 @@ export type DockItemData = {
   label: ReactNode;
   onClick: () => void;
   className?: string;
+  /** a hairline after this item (sets a control apart from the nav) */
+  divider?: boolean;
+  /** for a toggle: its pressed state */
+  pressed?: boolean;
 };
 
 type DockProps = {
@@ -52,9 +57,11 @@ function DockItem({
   distance,
   magnification,
   baseItemSize,
+  pressed,
 }: {
   children: ReactNode;
   className?: string;
+  pressed?: boolean;
   onClick: () => void;
   mouseX: MotionValue<number>;
   spring: SpringOptions;
@@ -91,11 +98,20 @@ function DockItem({
       onClick={onClick}
       data-cursor="link"
       className={cn(
-        "relative inline-flex items-center justify-center rounded-full border border-bone/15 bg-ash/70 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-xl",
+        // solid, no backdrop blur: the dock is phone-only, where every blurred
+        // layer over a moving page is re-rendered each frame
+        "relative inline-flex items-center justify-center rounded-full border border-bone/15 bg-ash before:absolute before:-inset-1 before:content-['']",
         className
       )}
       tabIndex={0}
       role="button"
+      aria-pressed={pressed}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       {Children.map(children, (child) =>
         cloneElement(child as React.ReactElement<{ hovered?: boolean }>, { hovered })
@@ -167,7 +183,7 @@ export function Dock({
           mouseX.set(Infinity);
         }}
         className={cn(
-          "pointer-events-auto mx-auto flex w-fit items-end gap-3 rounded-full border border-bone/15 bg-ink/50 px-3 pb-2.5 pt-2 backdrop-blur-2xl",
+          "pointer-events-auto mx-auto flex w-fit items-end gap-2 rounded-full border border-bone/15 bg-ink/90 px-2.5 pb-2.5 pt-2 shadow-[0_10px_40px_-12px_rgba(0,0,0,0.8)]",
           className
         )}
         style={{ height: panelHeight }}
@@ -175,19 +191,22 @@ export function Dock({
         aria-label="Site navigation dock"
       >
         {items.map((item, i) => (
-          <DockItem
-            key={i}
-            onClick={item.onClick}
-            className={item.className}
-            mouseX={mouseX}
-            spring={spring}
-            distance={distance}
-            magnification={magnification}
-            baseItemSize={baseItemSize}
-          >
-            <DockIcon>{item.icon}</DockIcon>
-            <DockLabel>{item.label}</DockLabel>
-          </DockItem>
+          <Fragment key={i}>
+            <DockItem
+              onClick={item.onClick}
+              className={item.className}
+              pressed={item.pressed}
+              mouseX={mouseX}
+              spring={spring}
+              distance={distance}
+              magnification={magnification}
+              baseItemSize={baseItemSize}
+            >
+              <DockIcon>{item.icon}</DockIcon>
+              <DockLabel>{item.label}</DockLabel>
+            </DockItem>
+            {item.divider ? <span aria-hidden className="mb-1.5 h-6 w-px self-end bg-bone/15" /> : null}
+          </Fragment>
         ))}
       </motion.div>
     </motion.div>

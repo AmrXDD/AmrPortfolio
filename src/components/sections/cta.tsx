@@ -8,7 +8,11 @@ import { Reveal } from "@/components/ui/reveal";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { BorderGlow } from "@/components/ui/border-glow";
 import { Magnetic } from "@/components/ui/magnetic";
-import { WhatsAppCTA, EmailCTA } from "@/components/ui/wa-cta";
+import { EmailCTA } from "@/components/ui/wa-cta";
+import { Btn } from "@/components/ui/btn";
+import { BookCall } from "@/components/ui/book-call";
+import { StudioClocks } from "@/components/ui/studio-clocks";
+import { CAL_URL, openBooking, warmBooking } from "@/lib/cal";
 import { ContactForm } from "@/components/sections/contact-form";
 import { useCopy, useLang } from "@/lib/i18n";
 import { SITE, SITE_AR, waLink } from "@/lib/constants";
@@ -21,9 +25,13 @@ const COPY = {
     workingFrom: "Working from",
     city: SITE.city as string,
     zone: "GMT+3 · Worldwide",
-    openWa: "Open WhatsApp",
+    openWa: "WhatsApp",
     waMsg: "Hey Amr, saw your portfolio. Want to talk about a project.",
-    ring: "Start a project · WhatsApp · Start a project · WhatsApp · ",
+    ring: "Book a call · Pick a time · Book a call · Pick a time · ",
+    book: "Book a call",
+    bookTitle: "Talk it through, face to face.",
+    bookBody: "Pick a time on my calendar. It opens right here, in your own time zone.",
+    overlap: "Where the day is",
     rows: [
       { label: "01 · Web development", title: "Build something from zero.", desc: "Marketing sites, product sites and web apps, designed and engineered by one pair of hands, from first commit to launch." },
       { label: "02 · Design & consultation", title: "Get a second pair of eyes.", desc: "Design direction, UX and performance audits, and straight answers on stack and structure before you spend on a build." },
@@ -37,9 +45,13 @@ const COPY = {
     workingFrom: "أعمل من",
     city: SITE_AR.city,
     zone: "GMT+3 · حول العالم",
-    openWa: "افتح واتساب",
+    openWa: "واتساب",
     waMsg: "مرحبًا عمرو، شاهدت أعمالك وأرغب في الحديث عن مشروع.",
-    ring: "ابدأ مشروعًا   ·   واتساب   ·   ابدأ مشروعًا   ·   واتساب   ·   ",
+    ring: "احجز مكالمة   ·   اختر موعدًا   ·   احجز مكالمة   ·   اختر موعدًا   ·   ",
+    book: "احجز مكالمة",
+    bookTitle: "لنتحدّث عنه وجهًا لوجه.",
+    bookBody: "اختر موعدًا من تقويمي. يفتح هنا مباشرةً، وبتوقيتك المحلي.",
+    overlap: "الساعة الآن في",
     rows: [
       { label: "01 · تطوير المواقع", title: "ابنِ شيئًا من الصفر.", desc: "مواقع تعريفية ومواقع منتجات وتطبيقات ويب، يصمّمها ويبرمجها شخص واحد من أول سطر حتى الإطلاق." },
       { label: "02 · التصميم والاستشارات", title: "عين خبيرة ثانية.", desc: "توجيه تصميمي، وتدقيق لتجربة المستخدم والأداء، وإجابات واضحة عن التقنيات والبنية قبل أن تنفق على التنفيذ." },
@@ -67,7 +79,12 @@ function Seal({ ring, href, label, ar }: { ring: string; href: string; label: st
         rel="noreferrer"
         aria-label={label}
         data-cursor="link"
-        data-cursor-label="Whatsapp"
+        data-cursor-label={ar ? "احجز" : "Book"}
+        onPointerEnter={warmBooking}
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+          if (openBooking()) e.preventDefault();
+        }}
         className="group relative flex h-[150px] w-[150px] items-center justify-center rounded-full bg-accent text-ink shadow-[0_30px_80px_-20px_rgba(255,77,31,0.65)] transition-transform duration-500 hover:scale-[1.08] md:h-[210px] md:w-[210px]"
       >
         {/* laid out LTR along the path: the bidi pass still orders each Arabic run right-to-left */}
@@ -148,7 +165,7 @@ export function CTA() {
 
       <div className="relative mx-auto max-w-[1600px]">
         <div className="flex flex-wrap items-center justify-between gap-6">
-          <Eyebrow index="11">{t("contact.eyebrow")}</Eyebrow>
+          <Eyebrow index="12">{t("contact.eyebrow")}</Eyebrow>
           <p className="text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
             {c.workingFrom} <span className="text-bone">{c.city}</span> · <span dir="ltr">{c.zone}</span>
           </p>
@@ -162,7 +179,7 @@ export function CTA() {
             {line(t("contact.h3"), x3, "text-accent", 0.16)}
           </h2>
           <motion.div style={{ rotate: sealR }} className="mt-10 md:absolute md:end-[2vw] md:top-[28%] md:mt-0">
-            <Seal ring={c.ring} href={waLink(c.waMsg)} label={c.openWa} ar={ar} />
+            <Seal ring={c.ring} href={CAL_URL} label={c.book} ar={ar} />
           </motion.div>
         </div>
 
@@ -171,10 +188,24 @@ export function CTA() {
             <p className="text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">{c.engagement}</p>
             <ScrollReveal key={lang} className="mt-3 max-w-md text-sm leading-relaxed text-bone/90" text={c.engagementBody} />
           </Reveal>
-          <div className="col-span-12 flex flex-wrap items-center gap-4 md:col-span-6 md:col-start-7 md:justify-end">
-            <WhatsAppCTA label={c.openWa} message={c.waMsg} className="!px-6 !py-4 !text-sm" />
-            <EmailCTA />
-          </div>
+
+          {/* the booking desk: the call, the clocks, the other ways in */}
+          <Reveal className="col-span-12 md:col-span-6 md:col-start-7">
+            <div className="relative overflow-hidden rounded-[28px] border border-line bg-ash/40 p-6 md:p-8">
+              <div aria-hidden className="pointer-events-none absolute -end-24 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(255,77,31,0.22),transparent_65%)]" />
+              <p className="text-display text-[clamp(1.5rem,5.4vw,2.4rem)] leading-tight text-bone">{c.bookTitle}</p>
+              <p className="mt-3 max-w-md text-sm leading-relaxed text-bone/65">{c.bookBody}</p>
+              <p className="mt-7 text-mono text-[10px] uppercase tracking-[0.22em] text-bone/45">{c.overlap}</p>
+              <StudioClocks ar={ar} className="mt-3" />
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <BookCall label={c.book} />
+                <Btn href={waLink(c.waMsg)} target="_blank" rel="noreferrer" variant="ghost" cursorLabel="WhatsApp">
+                  {c.openWa}
+                </Btn>
+              </div>
+              <EmailCTA className="mt-6 inline-block text-bone/70" />
+            </div>
+          </Reveal>
         </div>
 
         {/* Inquiry form — budget · service · reason → Supabase + Resend */}

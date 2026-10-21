@@ -368,7 +368,9 @@ export class EmberFluid {
     this.gl = gl;
     this.mobile = window.matchMedia("(max-width: 767px)").matches;
     this.cfg = this.mobile
-      ? { sim: 80, dye: 512, iters: 14, dpr: 1, bloomRes: 128, bloomIters: 4, embers: 32 }
+      ? // phones: a lighter dye field and fewer solver passes (the dye was
+        // larger than the canvas it is shown on, at 1.7x the pixels)
+        { sim: 80, dye: 384, iters: 10, dpr: 1, bloomRes: 128, bloomIters: 3, embers: 28 }
       : { sim: 128, dye: 1024, iters: 20, dpr: Math.min(1.5, window.devicePixelRatio || 1), bloomRes: 256, bloomIters: 6, embers: 64 };
 
     // a full-screen quad (for every pass) and an empty array (for the embers,
@@ -638,6 +640,9 @@ export class EmberFluid {
     const loop = (now: number) => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(loop);
+      // 60 fps is the simulation's own rate (dt is capped to it): on 90/120 Hz
+      // screens, skip the in-between frames instead of doubling the GPU work
+      if (now - this.last < 15) return;
       const dt = Math.max(0, Math.min(0.0167, (now - this.last) / 1000));
       this.last = now;
       this.time += dt;

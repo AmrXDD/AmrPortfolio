@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { ArrowUp, ArrowUpRight } from "lucide-react";
 import { WhatsAppCTA, EmailCTA } from "@/components/ui/wa-cta";
+import { BookCall } from "@/components/ui/book-call";
 import { scrollToId } from "@/components/site-dock";
 import { SITE, SITE_AR, NAV_LINKS, waLink } from "@/lib/constants";
 import { useCopy, useLang } from "@/lib/i18n";
+import { CAL_URL } from "@/lib/cal";
 
 const COPY = {
   en: {
@@ -44,16 +46,30 @@ const COPY = {
 
 const WORD = "Amr Studio";
 
-function useTime() {
-  const [t, setT] = useState("--:--:--");
+/** The studio's clock: it writes its own text (no footer re-render each
+ *  second) and only ticks while it is on screen. */
+function KuwaitClock() {
+  const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
     const fmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Kuwait" });
-    const f = () => setT(fmt.format(new Date()));
-    f();
-    const id = setInterval(f, 1000);
-    return () => clearInterval(id);
+    const f = () => (el.textContent = fmt.format(new Date()));
+    let id = 0;
+    const io = new IntersectionObserver(([e]) => {
+      clearInterval(id);
+      if (e.isIntersecting) {
+        f();
+        id = window.setInterval(f, 1000);
+      }
+    });
+    io.observe(el);
+    return () => {
+      clearInterval(id);
+      io.disconnect();
+    };
   }, []);
-  return t;
+  return <span ref={ref}>--:--:--</span>;
 }
 
 /** One letter of the wordmark, rising out of the floor at its own pace. */
@@ -70,7 +86,6 @@ function Letter({ ch, i, p, reduce }: { ch: string; i: number; p: MotionValue<nu
 }
 
 export function Footer() {
-  const time = useTime();
   const c = useCopy(COPY);
   const { t, lang } = useLang();
   const reduce = !!useReducedMotion();
@@ -83,6 +98,7 @@ export function Footer() {
   const dot = useTransform(p, [0.6, 0.95], [0, 1]);
 
   const social = [
+    { l: lang === "ar" ? "احجز مكالمة" : "Book a call", h: CAL_URL },
     { l: "Instagram", h: "https://instagram.com/amrrstudios" },
     { l: "Github", h: "https://github.com/AmrXDD" },
     { l: lang === "ar" ? "واتساب" : "WhatsApp", h: waLink(c.waMsg) },
@@ -101,7 +117,8 @@ export function Footer() {
               {c.hA} <span className="italic text-bone/70">{c.hB}</span> <span className="text-accent">{c.hC}</span>
             </h3>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <WhatsAppCTA label={lang === "ar" ? "واتساب" : "WhatsApp"} message={c.waMsg} />
+              <BookCall />
+              <WhatsAppCTA variant="ghost" label={lang === "ar" ? "واتساب" : "WhatsApp"} message={c.waMsg} />
               <EmailCTA />
             </div>
           </div>
@@ -142,7 +159,7 @@ export function Footer() {
             <ul className="mt-5 space-y-3 text-sm text-bone/85">
               <li>{c.city}</li>
               <li dir="ltr" className="font-mono text-[13px] tabular-nums rtl:text-right">
-                {time} · GMT+3
+                <KuwaitClock /> · GMT+3
               </li>
               <li className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />

@@ -2,8 +2,8 @@
 
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Magnetic } from "@/components/ui/magnetic";
-import { WhatsAppCTA } from "@/components/ui/wa-cta";
+import { Btn } from "@/components/ui/btn";
+import { BookCall } from "@/components/ui/book-call";
 import { SITE, SITE_AR } from "@/lib/constants";
 import { useLang } from "@/lib/i18n";
 import { useTheme } from "@/components/providers/theme-provider";
@@ -337,7 +337,9 @@ export function Hero() {
 
       <motion.div
         style={{ opacity: fadeUi, y: liftUi }}
-        className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1600px] flex-col justify-center px-5 pb-16 pt-28 md:px-10"
+        // phones: the block sits low, clear of the dock, and the space above
+        // it is where the flames rise; desktop keeps it centred
+        className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1600px] flex-col justify-end px-5 pb-[calc(92px+env(safe-area-inset-bottom))] pt-28 md:justify-center md:px-10 md:pb-16"
       >
         <div className="mb-8 flex items-center gap-3">
           <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.8)]" />
@@ -348,7 +350,9 @@ export function Hero() {
           <span ref={l1} className={`block whitespace-nowrap leading-[1.02] ${ink}`} style={{ fontSize: "clamp(1.8rem, 7.2vw, 8rem)" }}>
             {t("hero.line1")}
           </span>
-          <span ref={l2} className={`block whitespace-nowrap italic leading-[1.02] text-bone/85 ${ink}`} style={{ fontSize: "clamp(1.8rem, 7.2vw, 8rem)" }}>
+          {/* Arabic line 2 is set in Amiri, whose small x-height reads at half
+              the size of the lines around it: give it its own, larger size */}
+          <span ref={l2} className={`block whitespace-nowrap italic leading-[1.02] text-bone/85 ${ink}`} style={{ fontSize: ar ? "clamp(2.15rem, 8.8vw, 9.5rem)" : "clamp(1.8rem, 7.2vw, 8rem)" }}>
             {t("hero.line2")}
           </span>
           <span className="relative inline-block">
@@ -368,34 +372,34 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={entered && (kind !== "ember" || copyIn) ? { opacity: 1, y: 0 } : {}}
-          // with the fire, wait for the lighter to leave before the copy arrives
-          transition={{ delay: kind === "ember" ? 2.4 : 1.4, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
-          className="mt-10 grid max-w-3xl gap-6 md:grid-cols-[1fr_auto] md:items-end"
+          // with the fire, the copy follows the title catching: on desktop once
+          // the lighter has left; on phones sooner (a visitor there shouldn't
+          // wait for the whole performance to learn what this is)
+          transition={{ delay: kind === "ember" ? (stage.w > 0 && stage.w < 768 ? 1 : 2.4) : 1.4, duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
+          className="mt-8 grid max-w-3xl gap-6 md:mt-10 md:grid-cols-[1fr_auto] md:items-end"
         >
           <div>
-            <p className="text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">{ar ? SITE_AR.role : SITE.role}</p>
+            <p className="text-balance text-mono text-[11px] uppercase tracking-[0.14em] text-bone/50 md:tracking-[0.22em]">
+              {/* a line may break after a "·", never before one */}
+              {(ar ? SITE_AR.role : SITE.role).replace(/ · /g, "\u00A0· ")}
+            </p>
             <p className="mt-3 max-w-md text-[15px] leading-relaxed text-bone/80">{t("hero.subtitle")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Magnetic strength={0.2}>
-              <a href="#work" data-cursor="link" data-cursor-label={ar ? "عرض" : "View"} className="btn-ghost">
-                <span className="relative flex h-1.5 w-1.5 items-center justify-center">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-bone" />
-                  <span className="relative h-1 w-1 rounded-full bg-bone" />
-                </span>
-                {t("cta.selectedWork")}
-              </a>
-            </Magnetic>
-            <WhatsAppCTA label={t("cta.startProject")} message={ar ? "مرحبًا عمرو، شاهدت أعمالك وأريد بدء مشروع." : undefined} />
+            <BookCall />
+            <Btn href="#work" variant="ghost" cursorLabel={ar ? "عرض" : "View"} icon={null}>
+              {t("cta.selectedWork")}
+            </Btn>
           </div>
         </motion.div>
       </motion.div>
 
-      {/* scroll cue */}
-      <motion.div style={{ opacity: fadeUi }} className="absolute bottom-8 start-5 z-10 md:start-10">
+      {/* scroll cue (desktop: on phones the dock owns that corner). A CSS
+          animation, so it never keeps the JS frame loop awake. */}
+      <motion.div style={{ opacity: fadeUi }} className="absolute bottom-8 start-10 z-10 hidden md:block">
         <span className="text-mono text-[10px] uppercase tracking-[0.3em] text-bone/40">{ar ? "مرّر" : "Scroll"}</span>
         <div className="mt-3 h-10 w-px overflow-hidden bg-bone/10">
-          <motion.div animate={{ y: ["-100%", "100%"] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="h-full w-full bg-bone" />
+          <div className="h-full w-full animate-[cue_2s_ease-in-out_infinite] bg-bone" />
         </div>
       </motion.div>
     </section>

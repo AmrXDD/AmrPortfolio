@@ -118,6 +118,7 @@ function Clapper({ shut, reduce }: { shut: boolean; reduce: boolean }) {
       ref={box}
       animate={shut && !reduce ? { x: [0, -5, 4, -2, 0], rotate: [0, -0.6, 0.4, 0] } : {}}
       transition={{ duration: 0.35, delay: 0.12 }}
+      data-surface="dark"
       className="relative mx-auto w-full max-w-[460px] select-none"
     >
       {/* the clapper stick, hinged at the left */}
@@ -165,7 +166,7 @@ function Clapper({ shut, reduce }: { shut: boolean; reduce: boolean }) {
           </Cell>
         </div>
 
-        <div className="relative mt-4 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em]">
+        <div className="relative mt-4 flex items-center justify-between text-mono text-[11px] uppercase tracking-[0.18em]">
           <span className="text-chalk/50">
             {c.slate.date} <span dir="ltr" className="text-chalk/80">{date}</span>
           </span>
@@ -184,9 +185,9 @@ function Clapper({ shut, reduce }: { shut: boolean; reduce: boolean }) {
 function Cell({ label, note, className = "", children }: { label: string; note?: string; className?: string; children: React.ReactNode }) {
   return (
     <div className={`bg-[#161616] px-3 py-2.5 ${className}`}>
-      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-chalk/45 rtl:tracking-normal">{label}</p>
+      <p className="text-mono text-[10.5px] uppercase tracking-[0.2em] text-chalk/60 rtl:tracking-normal">{label}</p>
       <div className="mt-1.5">{children}</div>
-      {note ? <p className="mt-1 text-[10px] leading-tight text-chalk/45">{note}</p> : null}
+      {note ? <p className="mt-1 text-[11.5px] leading-tight text-chalk/60">{note}</p> : null}
     </div>
   );
 }
@@ -237,7 +238,7 @@ function Screenplay() {
     <div className="relative mx-auto w-full max-w-[640px] -rotate-[0.8deg] rtl:rotate-[0.8deg]" style={font}>
       {/* a second sheet underneath */}
       <div aria-hidden className="absolute inset-0 translate-x-2 translate-y-2 rotate-[1.4deg] rounded-[3px] bg-[#e6e2d8] shadow-[0_30px_60px_-30px_rgba(0,0,0,0.8)] rtl:-translate-x-2" />
-      <div className="relative rounded-[3px] px-[10%] py-12 shadow-[0_50px_100px_-40px_rgba(0,0,0,0.9)] sm:py-16" style={{ background: PAPER }}>
+      <div data-surface="light" className="relative rounded-[3px] px-6 py-12 shadow-[0_50px_100px_-40px_rgba(0,0,0,0.9)] sm:px-[10%] sm:py-16" style={{ background: PAPER }}>
         {/* brass brads */}
         {["18%", "82%"].map((t) => (
           <span key={t} aria-hidden className="absolute start-[4.5%] h-4 w-4 rounded-full shadow-[inset_0_-1px_2px_rgba(0,0,0,0.4),0_1px_2px_rgba(0,0,0,0.4)]" style={{ top: t, background: "radial-gradient(circle at 35% 30%, #fff1b8, #c9a227 55%, #6d5410)" }} />
@@ -252,12 +253,12 @@ function Screenplay() {
           <Typed text={s.action} />
 
           <div className="pt-2">
-            <Typed text={s.who} className="ms-[38%] font-bold" />
-            <Typed text={c.p1} className="mx-[12%] mt-1" />
+            <Typed text={s.who} className="ms-[30%] font-bold sm:ms-[38%]" />
+            <Typed text={c.p1} className="mt-1 sm:mx-[12%]" />
           </div>
           <div>
-            <Typed text={s.cont} className="ms-[38%] font-bold" />
-            <Typed text={c.p2} className="mx-[12%] mt-1" />
+            <Typed text={s.cont} className="ms-[30%] font-bold sm:ms-[38%]" />
+            <Typed text={c.p2} className="mt-1 sm:mx-[12%]" />
           </div>
 
           <div className="flex items-center justify-end gap-1 pt-4 font-bold">
@@ -283,7 +284,7 @@ export function About() {
   const pageY = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
   return (
-    <section className="relative border-b border-line bg-ink px-5 py-32 md:px-10 md:py-44">
+    <section className="relative border-b border-line bg-ink px-5 py-20 md:px-10 md:py-44">
       {/* a projector's light from above */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[60vh] bg-[radial-gradient(ellipse_60%_70%_at_50%_0%,rgba(255,77,31,0.10),transparent_70%)]" />
 
@@ -291,7 +292,7 @@ export function About() {
         {/* the title card */}
         <div className="grid grid-cols-12 gap-y-12">
           <div className="col-span-12 md:col-span-4">
-            <Eyebrow index="00">{c.eyebrow}</Eyebrow>
+            <Eyebrow index="02">{c.eyebrow}</Eyebrow>
             <p className="mt-6 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">{c.label}</p>
           </div>
           <div className="col-span-12 md:col-span-8">
@@ -312,7 +313,7 @@ export function About() {
         </div>
 
         {/* the set: slate + script */}
-        <div ref={set} className="mt-28 grid grid-cols-12 items-start gap-y-16 md:mt-32 md:gap-x-10">
+        <div ref={set} className="mt-16 grid grid-cols-12 items-start gap-y-16 md:mt-32 md:gap-x-10">
           <div className="col-span-12 md:sticky md:top-28 md:col-span-5">
             <Clapper shut={shut} reduce={reduce} />
           </div>

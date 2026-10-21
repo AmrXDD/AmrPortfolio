@@ -311,7 +311,7 @@ export function CraftAnatomy() {
       >
         {/* header */}
         <motion.div style={{ opacity: intro }} className="relative z-20 px-5 pt-24 md:absolute md:start-10 md:top-24 md:max-w-md md:px-0 md:pt-0">
-          <Eyebrow index="A1">{c.eyebrow}</Eyebrow>
+          <Eyebrow index="04">{c.eyebrow}</Eyebrow>
           <h2 className="mt-4 text-display text-[clamp(1.9rem,4vw,3.4rem)] leading-[1.02] text-bone">
             {c.h1} <span className="italic text-accent">{c.h2}</span>
           </h2>

@@ -17,7 +17,7 @@ export function Testimonials() {
   return (
     <section className="relative border-b border-line bg-ink py-24 md:py-32">
       <div className="mx-auto mb-14 max-w-[1600px] px-5 md:px-10">
-        <Eyebrow index="10">{ar ? "العملاء" : "Clients"}</Eyebrow>
+        <Eyebrow index="11">{ar ? "العملاء" : "Clients"}</Eyebrow>
         <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
           <RevealWords text={ar ? "صُنع لـ" : "Built for"} />{" "}
           <span className="italic text-bone/80">

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useBudgets, useLang } from "@/lib/i18n";
-import { ArrowUpRight } from "lucide-react";
 import { CurrencyPicker } from "@/components/ui/currency-picker";
+import { Btn } from "@/components/ui/btn";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
@@ -165,15 +165,9 @@ export function ContactForm() {
       {consentError ? <span className="-mt-2 text-[12px] text-accent">{t("form.consentRequired")}</span> : null}
 
       <div className="flex flex-wrap items-center gap-4">
-        <button
-          type="submit"
-          data-cursor="link"
-          disabled={status === "sending"}
-          className="btn-solid !px-6 disabled:opacity-60"
-        >
+        <Btn type="submit" variant="solid" disabled={status === "sending"}>
           {status === "sending" ? t("form.sending") : t("form.send")}
-          <ArrowUpRight size={14} />
-        </button>
+        </Btn>
         {status === "sent" ? (
           <span className="text-sm text-emerald-400">{t("form.success")}</span>
         ) : null}

@@ -9,3 +9,12 @@ export async function visitorLocale(): Promise<{ lang: Lang; currency: CurrencyC
   const currency = h.get(CURRENCY_HEADER);
   return { lang: isLang(lang) ? lang : "en", currency: isCurrency(currency) ? currency : "USD" };
 }
+
+/** Whether this request comes from a phone (Client Hints, else the user agent).
+ *  Only a first guess for the layout; the page corrects it on the device. */
+export async function visitorIsPhone(): Promise<boolean> {
+  const h = await headers();
+  const hint = h.get("sec-ch-ua-mobile");
+  if (hint) return hint === "?1";
+  return /Mobi|Android.+Mobile|iPhone|iPod/i.test(h.get("user-agent") ?? "");
+}

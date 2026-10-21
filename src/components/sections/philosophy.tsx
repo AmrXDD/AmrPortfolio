@@ -124,7 +124,7 @@ export function Philosophy() {
       <div className="relative mx-auto max-w-[1600px]">
         <div className="mb-16 grid grid-cols-12 gap-y-8 md:mb-24">
           <div className="col-span-12 md:col-span-3">
-            <Eyebrow index="09">{ar ? "البيان" : "Manifesto"}</Eyebrow>
+            <Eyebrow index="10">{ar ? "البيان" : "Manifesto"}</Eyebrow>
           </div>
           <div className="col-span-12 md:col-span-9">
             <h2 key={lang} className="text-display size-h2 text-bone">

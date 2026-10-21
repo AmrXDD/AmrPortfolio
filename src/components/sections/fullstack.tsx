@@ -358,32 +358,67 @@ function MetroMap() {
 function MetroVertical() {
   const c = useCopy(COPY);
   const list = useRef<HTMLDivElement>(null);
+  const dots = useRef<(HTMLSpanElement | null)[]>([]);
   const { scrollYProgress } = useScroll({ target: list, offset: ["start 0.65", "end 0.55"] });
   const p = useSpring(scrollYProgress, { stiffness: 110, damping: 26 });
-  const top = useTransform(p, (v) => `${Math.min(100, Math.max(0, v * 100))}%`);
+
+  // the rail runs from the first stop's dot to the last one's, measured from
+  // the real dots (so the line, the dots and the train share one axis)
+  const geo = useRef({ first: 0, span: 1, marks: [] as number[] });
+  const [rail, setRail] = useState<{ top: number; height: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = list.current;
+    if (!el) return;
+    const measure = () => {
+      const top = el.getBoundingClientRect().top;
+      const ys = dots.current.map((d) => {
+        const r = d!.getBoundingClientRect();
+        return r.top + r.height / 2 - top;
+      });
+      const first = ys[0];
+      const span = Math.max(1, ys[ys.length - 1] - first);
+      geo.current = { first, span, marks: ys.map((y) => (y - first) / span) };
+      setRail({ top: first, height: span });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // transforms only: the fill scales, the train slides (no layout per frame)
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const fill = useTransform(p, clamp01);
+  const trainY = useTransform(p, (v) => geo.current.first + clamp01(v) * geo.current.span);
+  // a stop lights when the train reaches its dot
   const [at, setAt] = useState(-1);
   useMotionValueEvent(p, "change", (v) => {
-    const r = v <= 0.001 ? -1 : Math.min(STATIONS.length - 1, Math.floor(v * (STATIONS.length - 1) + 0.05));
+    let r = -1;
+    if (v > 0.001) geo.current.marks.forEach((m, i) => v + 0.002 >= m && (r = i));
     setAt((cur) => (cur === r ? cur : r));
   });
 
   return (
-    <section id="stack" className="relative border-b border-line bg-ink px-5 py-24">
+    <section id="stack" className="relative border-b border-line bg-ink px-5 pb-12 pt-24">
       <div className="mx-auto max-w-[560px]">
         <Eyebrow index="01">{c.eyebrow}</Eyebrow>
-        <h2 className="mt-5 text-display size-h2 text-bone">
+        <h2 className="mt-5 text-balance text-display size-h2 text-bone">
           {c.h1} <span className="italic text-bone/70">{c.h2}</span>
         </h2>
         <p className="mt-3 text-mono text-[10px] uppercase tracking-[0.2em] text-bone/45">{c.line}</p>
 
-        <div ref={list} className="relative mt-10 ps-12">
-          {/* the line */}
-          <div className="absolute bottom-6 start-[18px] top-6 w-[8px] rounded-full bg-bone/15" />
-          <motion.div className="absolute start-[18px] top-6 w-[8px] origin-top rounded-full" style={{ height: top, background: EMBER }} />
-          {/* the train */}
-          <motion.div className="absolute start-[10px] z-10 -mt-3 h-6 w-6 rounded-full shadow-[0_0_18px_rgba(255,77,31,0.9)]" style={{ top, background: EMBER }}>
-            <span className="absolute inset-[6px] rounded-full bg-[#fff4ec]" />
-          </motion.div>
+        <div ref={list} className="relative mt-10 ps-[48px]">
+          {/* the line (centre 23 px from the start edge, like the dots and the train) */}
+          {rail ? (
+            <>
+              <div className="absolute start-[19px] w-[8px] rounded-full bg-bone/15" style={{ top: rail.top, height: rail.height }} />
+              <motion.div className="absolute start-[19px] w-[8px] origin-top rounded-full will-change-transform" style={{ top: rail.top, height: rail.height, scaleY: fill, background: EMBER }} />
+              {/* the train */}
+              <motion.div className="absolute start-[11px] top-0 z-10 -mt-[12px] h-[24px] w-[24px] rounded-full shadow-[0_0_18px_rgba(255,77,31,0.9)] will-change-transform" style={{ y: trainY, background: EMBER }}>
+                <span className="absolute inset-[6px] rounded-full bg-[#fff4ec]" />
+              </motion.div>
+            </>
+          ) : null}
 
           <div className="space-y-6">
             {STATIONS.map((s, i) => {
@@ -391,10 +426,13 @@ function MetroVertical() {
               return (
                 <div key={s.en} className="relative">
                   <span
-                    className="absolute -start-[38px] top-4 h-5 w-5 rounded-full border-[4px] transition-colors duration-300"
+                    ref={(el) => {
+                      dots.current[i] = el;
+                    }}
+                    className="absolute -start-[35px] top-4 h-[20px] w-[20px] rounded-full border-[4px] transition-colors duration-300"
                     style={{ background: lit ? EMBER : "rgb(var(--ink-rgb))", borderColor: lit ? "#fff4ec" : "rgb(var(--bone-rgb) / 0.7)" }}
                   />
-                  <div className={`overflow-hidden rounded-md border bg-ash transition-opacity duration-300 ${lit ? "border-accent/50 opacity-100" : "border-line opacity-50"}`}>
+                  <div className={`overflow-hidden rounded-md border bg-ash transition-opacity duration-300 ${lit ? "border-accent/50 opacity-100" : "border-line opacity-70"}`}>
                     <div className="h-[4px]" style={{ background: lit ? EMBER : "rgb(var(--bone-rgb) / 0.18)" }} />
                     <div className="px-3 py-2.5">
                       <p dir="ltr" className="text-[14px] font-semibold text-bone">
@@ -403,7 +441,7 @@ function MetroVertical() {
                       <p dir="rtl" lang="ar" className="text-[13px] text-bone/80" style={{ fontFamily: "var(--font-ar-sans), sans-serif" }}>
                         {s.ar}
                       </p>
-                      <p dir="ltr" className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-bone/45">
+                      <p dir="ltr" className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-bone/65">
                         {s.tech}
                       </p>
                     </div>

@@ -4,6 +4,7 @@ import { Dock, type DockItemData } from "@/components/ui/dock";
 import { SideNav } from "@/components/ui/side-nav";
 import { useLang } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/use-mobile";
+import { SoundDockIcon } from "@/components/ui/ambient-player";
 import {
   VscHome,
   VscArchive,
@@ -70,15 +71,25 @@ export function SiteDock() {
     );
   }
 
-  const items: DockItemData[] = SECTIONS.map((s) => ({
-    icon: <s.Icon size={18} />,
-    label: t(s.key),
-    onClick: () => scrollToId(s.id),
-  }));
+  // phones: the sound switch lives in the dock (one bar at the bottom, not
+  // three floating controls), set apart from the sections by a hairline
+  const items: DockItemData[] = [
+    {
+      icon: <SoundDockIcon />,
+      label: lang === "ar" ? "الصوت" : "Sound",
+      onClick: () => window.dispatchEvent(new CustomEvent("sound:request")),
+      divider: true,
+    },
+    ...SECTIONS.map((s) => ({
+      icon: <s.Icon size={17} />,
+      label: t(s.key),
+      onClick: () => scrollToId(s.id),
+    })),
+  ];
 
   return (
-    <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3">
-      <Dock items={items} panelHeight={54} baseItemSize={38} magnification={52} distance={110} />
+    <div className="fixed inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 flex justify-center px-3">
+      <Dock items={items} panelHeight={52} baseItemSize={36} magnification={46} distance={90} />
     </div>
   );
 }

@@ -317,7 +317,7 @@ function Projection() {
           {/* text column */}
           <div className="col-span-12 flex flex-col gap-8 lg:col-span-4">
             <div>
-              <Eyebrow index="01">{t("work.eyebrow")}</Eyebrow>
+              <Eyebrow index="03">{t("work.eyebrow")}</Eyebrow>
               <h2 key={lang} className="mt-4 text-display text-[clamp(1.3rem,2vw,1.9rem)] leading-tight text-bone">
                 <RevealWords text={t("work.h1")} />{" "}
                 <span className="italic text-bone/75">
@@ -500,7 +500,7 @@ function ShutterList({ still }: { still: boolean }) {
   return (
     <section id="work" className="relative border-b border-line px-5 py-16 md:px-10 md:py-24">
       <div className="mx-auto max-w-[1080px]">
-        <Eyebrow index="01">{t("work.eyebrow")}</Eyebrow>
+        <Eyebrow index="03">{t("work.eyebrow")}</Eyebrow>
         <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
           <RevealWords text={t("work.h1")} />{" "}
           <span className="italic text-bone/80">

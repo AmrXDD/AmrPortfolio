@@ -48,7 +48,8 @@ export function StickyWhatsApp() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.85 }}
           transition={{ duration: 0.45, ease: [0.19, 1, 0.22, 1] }}
-          className="fixed bottom-[76px] end-4 z-[60] flex flex-col items-end gap-2 md:bottom-7 md:end-7"
+          // desktop only: on phones the header's Hire button opens the same chat
+          className="fixed bottom-7 end-7 z-[60] hidden flex-col items-end gap-2 md:flex"
         >
           <AnimatePresence>
             {open ? (

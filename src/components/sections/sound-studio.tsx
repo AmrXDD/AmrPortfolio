@@ -286,7 +286,7 @@ export function SoundStudio() {
 
       <div className="relative mx-auto grid max-w-[1400px] grid-cols-1 items-center gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
         <div>
-          <Eyebrow index="A3">{c.eyebrow}</Eyebrow>
+          <Eyebrow index="06">{c.eyebrow}</Eyebrow>
           <h2 key={lang} className="mt-6 text-display size-h2 text-bone">
             <RevealWords text={c.h1} />{" "}
             <span className="italic text-accent">

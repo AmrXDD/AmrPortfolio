@@ -12,7 +12,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/lib/i18n";
 import { SITE, SITE_AR } from "@/lib/constants";
-import { visitorLocale } from "@/lib/locale-server";
+import { visitorIsPhone, visitorLocale } from "@/lib/locale-server";
+import { MobileHintProvider } from "@/lib/use-mobile";
 import { usdRates } from "@/lib/fx";
 
 // Nexium — the site's signature display/body face, used everywhere.
@@ -240,7 +241,7 @@ const jsonLd = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [{ lang, currency }, rates] = await Promise.all([visitorLocale(), usdRates()]);
+  const [{ lang, currency }, rates, phone] = await Promise.all([visitorLocale(), usdRates(), visitorIsPhone()]);
   return (
     <html
       lang={lang}
@@ -263,7 +264,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="antialiased">
         <ThemeProvider>
           <LanguageProvider initialLang={lang} initialCurrency={rates[currency] ? currency : "USD"} rates={rates}>
-            {children}
+            <MobileHintProvider value={phone}>{children}</MobileHintProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>
