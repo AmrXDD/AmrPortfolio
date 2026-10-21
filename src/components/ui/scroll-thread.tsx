@@ -40,7 +40,9 @@ export function ScrollThread() {
 
     const mobile = window.matchMedia("(max-width: 767px)").matches;
     const touch = window.matchMedia("(pointer: coarse)").matches;
-    const P = mobile ? 64 : POINTS;
+    // lean: phones, and weak machines once the governor says so (html.lite)
+    let lean = mobile || document.documentElement.classList.contains("lite");
+    let P = lean ? 64 : POINTS;
     let W = 0;
     let H = 0;
     let dpr = 1;
@@ -49,7 +51,7 @@ export function ScrollThread() {
       // keep the canvas (re-allocating it, and the thread's wavelength
       // jumping with it, read as a glitch)
       if (touch && W && window.innerWidth === W && Math.abs(window.innerHeight - H) < 160) return;
-      dpr = Math.min(mobile ? 1 : 1.5, window.devicePixelRatio || 1);
+      dpr = Math.min(lean ? 1 : 1.5, window.devicePixelRatio || 1);
       W = window.innerWidth;
       H = window.innerHeight;
       canvas.width = Math.round(W * dpr);
@@ -59,6 +61,14 @@ export function ScrollThread() {
     };
     resize();
     window.addEventListener("resize", resize);
+    const goLean = () => {
+      if (lean) return;
+      lean = true;
+      P = 64;
+      W = 0; // force the canvas down to 1x
+      resize();
+    };
+    window.addEventListener("perf:lite", goLean);
 
     // Section tops in document space, for the ripples.
     let sectionTops: number[] = [];
@@ -149,7 +159,7 @@ export function ScrollThread() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      if (mobile) {
+      if (lean) {
         // asleep once still (no scroll glide, sparks, ripples or mirroring)
         const still = Math.abs(y - smoothY) < 0.5 && Math.abs(dy) < 0.05 && !sparks.length && !ripples.length && Math.abs(mirrorTarget - mirror) < 0.002;
         stillFor = still ? stillFor + dt : 0;
@@ -327,6 +337,7 @@ export function ScrollThread() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("perf:lite", goLean);
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVis);
       ro.disconnect();

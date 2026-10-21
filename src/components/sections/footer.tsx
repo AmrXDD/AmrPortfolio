@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { ArrowUp, ArrowUpRight } from "lucide-react";
 import { WhatsAppCTA, EmailCTA } from "@/components/ui/wa-cta";
 import { BookCall } from "@/components/ui/book-call";
@@ -72,30 +71,44 @@ function KuwaitClock() {
   return <span ref={ref}>--:--:--</span>;
 }
 
-/** One letter of the wordmark, rising out of the floor at its own pace. */
-function Letter({ ch, i, p, reduce }: { ch: string; i: number; p: MotionValue<number>; reduce: boolean }) {
-  const from = 0.05 + (i % 5) * 0.06 + (i > 4 ? 0.05 : 0);
-  const y = useTransform(p, [from, from + 0.55], ["110%", "0%"]);
-  const r = useTransform(p, [from, from + 0.55], [i % 2 ? 8 : -8, 0]);
+/** One letter of the wordmark, rising out of the floor at its own pace
+ *  (a CSS transition, once: no work per scroll frame). */
+function Letter({ ch, i }: { ch: string; i: number }) {
   if (ch === " ") return <span className="inline-block w-[0.22em]" />;
   return (
-    <motion.span style={reduce ? undefined : { y, rotate: r }} className="inline-block origin-bottom transition-colors duration-300 hover:text-accent">
-      {ch}
-    </motion.span>
+    <span className="ft-letter inline-block origin-bottom" style={{ ["--i" as string]: i, ["--r" as string]: i % 2 ? "8deg" : "-8deg" }}>
+      <span className="inline-block transition-colors duration-300 hover:text-accent">{ch}</span>
+    </span>
   );
 }
 
 export function Footer() {
   const c = useCopy(COPY);
   const { t, lang } = useLang();
-  const reduce = !!useReducedMotion();
   const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
-  const p = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
-  // the body arrives from below like a curtain lifting
-  const lift = useTransform(p, [0, 0.6], ["-18%", "0%"]);
-  const fade = useTransform(p, [0, 0.45], [0.2, 1]);
-  const dot = useTransform(p, [0.6, 0.95], [0, 1]);
+  // the footer used to be scrubbed by scroll (about 30 values a frame, a
+  // whole-footer opacity among them): now it plays once, on arrival, in CSS
+  const [inView, setInView] = useState(false);
+  const wordRef = useRef<HTMLParagraphElement>(null);
+  const [wordIn, setWordIn] = useState(false);
+  useEffect(() => {
+    const a = ref.current;
+    const b = wordRef.current;
+    if (!a || !b) return;
+    const io = new IntersectionObserver(
+      (es) =>
+        es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          if (e.target === a) setInView(true);
+          if (e.target === b) setWordIn(true);
+          io.unobserve(e.target);
+        }),
+      { threshold: 0.15 }
+    );
+    io.observe(a);
+    io.observe(b);
+    return () => io.disconnect();
+  }, []);
 
   const social = [
     { l: lang === "ar" ? "احجز مكالمة" : "Book a call", h: CAL_URL },
@@ -106,7 +119,7 @@ export function Footer() {
 
   return (
     <footer ref={ref} className="relative overflow-hidden bg-ink">
-      <motion.div style={reduce ? undefined : { y: lift, opacity: fade }}>
+      <div className={`ft-body ${inView ? "in" : ""}`}>
         <div className="mx-auto grid max-w-[1600px] grid-cols-12 gap-y-12 px-5 pb-16 pt-24 md:px-10 md:pt-32">
           <div className="col-span-12 md:col-span-5">
             <p className="flex items-center gap-3 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">
@@ -168,21 +181,17 @@ export function Footer() {
             </ul>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* the wordmark rises out of the floor */}
       <div dir="ltr" className="relative select-none border-t border-line px-3 pt-6 md:px-6">
-        <p className="whitespace-nowrap text-center text-display leading-[0.82] text-bone" style={{ fontSize: "clamp(2.6rem, 14.5vw, 19rem)" }} aria-label={`${SITE.name} Studio`}>
+        <p ref={wordRef} className={`ft-word whitespace-nowrap text-center text-display leading-[0.82] text-bone ${wordIn ? "in" : ""}`} style={{ fontSize: "clamp(2.6rem, 14.5vw, 19rem)" }} aria-label={`${SITE.name} Studio`}>
           <span aria-hidden className="inline-block overflow-hidden pb-[0.06em] align-bottom">
             {WORD.split("").map((ch, i) => (
-              <Letter key={i} ch={ch} i={i} p={p} reduce={reduce} />
+              <Letter key={i} ch={ch} i={i} />
             ))}
           </span>
-          <motion.span
-            aria-hidden
-            style={reduce ? undefined : { scale: dot }}
-            className="ms-[0.05em] inline-block h-[0.12em] w-[0.12em] rounded-full bg-accent align-baseline"
-          />
+          <span aria-hidden className="ft-dot ms-[0.05em] inline-block h-[0.12em] w-[0.12em] rounded-full bg-accent align-baseline" />
         </p>
       </div>
 

@@ -8,6 +8,7 @@ import { AmbientPlayer } from "@/components/ui/ambient-player";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SoundFX } from "@/components/ui/sound-fx";
 import { ScrollThread } from "@/components/ui/scroll-thread";
+import { PerfGovernor } from "@/components/perf-governor";
 
 /*
  * Layout for the marketing site only. All the cinematic chrome — preloader,
@@ -35,6 +36,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <AmbientPlayer />
       {/* UI tick sounds on hover/click */}
       <SoundFX />
+      {/* weak machine? go easy (html.lite) */}
+      <PerfGovernor />
     </>
   );
 }

@@ -369,7 +369,8 @@ export class EmberFluid {
     if (!this.float32 && !gl.getExtension("EXT_color_buffer_half_float")) throw new Error("no float render targets");
     this.gl = gl;
     this.mobile = window.matchMedia("(max-width: 767px)").matches;
-    this.cfg = this.mobile
+    // phones, and weak machines (html.lite, from the PerfGovernor), get the lighter field
+    this.cfg = this.mobile || document.documentElement.classList.contains("lite")
       ? // phones: a lighter dye field and fewer solver passes (the dye was
         // larger than the canvas it is shown on, at 1.7x the pixels)
         { sim: 80, dye: 384, iters: 10, dpr: 1, bloomRes: 128, bloomIters: 3, embers: 28 }
@@ -679,7 +680,8 @@ export class EmberFluid {
       this.raf = requestAnimationFrame(loop);
       // 60 fps is the simulation's own rate (dt is capped to it): on 90/120 Hz
       // screens, skip the in-between frames instead of doubling the GPU work
-      if (now - this.last < 15) return;
+      // (on a weak machine, "lite", 30 fps is plenty for slow flames)
+      if (now - this.last < (document.documentElement.classList.contains("lite") ? 30 : 15)) return;
       const dt = Math.max(0, Math.min(0.0167, (now - this.last) / 1000));
       this.last = now;
       this.time += dt;

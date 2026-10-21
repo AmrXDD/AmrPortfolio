@@ -23,12 +23,15 @@ let state: "idle" | "loading" | "ready" | "failed" = "idle";
 let queued = false;
 
 /**
- * Cal's own embed snippet, typed: the first call adds the script, and every
- * call is queued until it has loaded (it then replays the queue).
+ * Cal's own embed snippet, typed: the first call adds the script, every call
+ * is queued until it has loaded, and "init" with a name opens a namespace
+ * (each inline calendar gets its own: one embed per namespace is what Cal
+ * supports).
  */
 function install(w: Win) {
   if (w.Cal) return;
   const d = w.document;
+  const push = (a: CalFn, ar: IArguments | unknown[]) => a.q!.push(ar as unknown as unknown[]);
   w.Cal = function () {
     const cal = w.Cal!;
     // eslint-disable-next-line prefer-rest-params
@@ -45,15 +48,30 @@ function install(w: Win) {
       };
       s.onerror = () => {
         state = "failed";
+        failed.forEach((f) => f());
         // the tap that asked for it still gets its booking: on Cal.com itself
         if (queued) window.location.assign(CAL_URL);
       };
       d.head.appendChild(s);
       cal.loaded = true;
     }
-    cal.q!.push(ar as unknown as unknown[]);
+    if (ar[0] === "init" && typeof ar[1] === "string") {
+      const name = ar[1];
+      const api = function () {
+        // eslint-disable-next-line prefer-rest-params
+        push(api as CalFn, arguments);
+      } as CalFn;
+      api.q = [];
+      cal.ns![name] = cal.ns![name] || api;
+      push(cal.ns![name] as CalFn, ar);
+      push(cal, ["initNamespace", name]);
+      return;
+    }
+    push(cal, ar);
   } as CalFn;
 }
+
+const failed = new Set<() => void>();
 
 function load(w: Win) {
   if (state !== "idle") return;
@@ -76,27 +94,40 @@ export function warmBooking() {
 }
 
 const theme = () => (document.documentElement.classList.contains("light") ? "light" : "dark");
-const ui = (w: Win) =>
-  w.Cal!("ui", {
-    theme: theme(),
-    hideEventTypeDetails: false,
-    layout: "month_view",
-    styles: { branding: { brandColor: BRAND } },
-    cssVarsPerTheme: { light: { "cal-brand": BRAND }, dark: { "cal-brand": BRAND } },
-  });
+const ui = (w: Win) => w.Cal!("ui", UI());
+
+const UI = () => ({
+  theme: theme(),
+  hideEventTypeDetails: false,
+  layout: "month_view",
+  styles: { branding: { brandColor: BRAND } },
+  cssVarsPerTheme: { light: { "cal-brand": BRAND }, dark: { "cal-brand": BRAND } },
+});
 
 /**
- * The calendar itself, inline in the page (month view, the call's details
- * beside it, times on the right). Re-run it to switch the call.
+ * A calendar inline in the page (month view, the call's details beside it,
+ * times on the right), in its own namespace. Calls back once it has shown,
+ * or if it can't (a missing event, Cal.com unreachable).
  */
-export function inlineBooking(el: HTMLElement, event: CalEvent) {
+export function inlineBooking(el: HTMLElement, event: CalEvent, on: { ready: () => void; fail: () => void }) {
   const w = window as Win;
-  if (state === "failed") return false;
+  if (state === "failed") return on.fail();
   load(w);
-  el.innerHTML = "";
-  ui(w);
-  w.Cal!("inline", { elementOrSelector: el, calLink: CAL_EVENTS[event].link, layout: "month_view", config: { layout: "month_view", theme: theme() } });
-  return true;
+  failed.add(on.fail);
+  const ns = `inline-${event}`;
+  w.Cal!("init", ns, { origin: "https://cal.com" });
+  const api = (w.Cal!.ns as Record<string, CalFn>)[ns];
+  api("ui", UI());
+  api("on", { action: "linkReady", callback: on.ready });
+  api("on", { action: "linkFailed", callback: on.fail });
+  api("inline", { elementOrSelector: el, calLink: CAL_EVENTS[event].link, layout: "month_view", config: { layout: "month_view", theme: theme() } });
+}
+
+/** Follow the site's theme in the inline calendars. */
+export function themeBooking() {
+  const w = window as Win;
+  const ns = (w.Cal?.ns ?? {}) as Record<string, CalFn>;
+  for (const k of Object.keys(ns)) ns[k]("ui", UI());
 }
 
 /**

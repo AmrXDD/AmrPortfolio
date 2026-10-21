@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { CAL_EVENTS, CAL_URL, inlineBooking, warmBooking, type CalEvent } from "@/lib/cal";
+import { CAL_EVENTS, CAL_URL, inlineBooking, themeBooking, warmBooking, type CalEvent } from "@/lib/cal";
 import { useCopy } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
@@ -30,49 +30,42 @@ const COPY = {
  */
 export function BookingCalendar() {
   const c = useCopy(COPY);
-  const host = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
+  const hosts = useRef<Partial<Record<CalEvent, HTMLDivElement | null>>>({});
+  const started = useRef<Partial<Record<CalEvent, boolean>>>({});
   const [event, setEvent] = useState<CalEvent>("long");
   const [near, setNear] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [ready, setReady] = useState<Partial<Record<CalEvent, boolean>>>({});
   const [failed, setFailed] = useState(false);
-  const [theme, setTheme] = useState("dark");
 
-  // start when it comes within a screen or so
+  // start when it comes within a screen or so; follow the site's theme
   useEffect(() => {
     const el = box.current;
     if (!el) return;
     const io = new IntersectionObserver(([e]) => e.isIntersecting && (setNear(true), io.disconnect()), { rootMargin: "800px 0px" });
     io.observe(el);
-    // follow the site's theme
-    const html = document.documentElement;
-    const read = () => setTheme(html.classList.contains("light") ? "light" : "dark");
-    read();
-    const mo = new MutationObserver(read);
-    mo.observe(html, { attributes: true, attributeFilter: ["class"] });
+    const mo = new MutationObserver(() => themeBooking());
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => {
       io.disconnect();
       mo.disconnect();
     };
   }, []);
 
-  // (re)draw the calendar for the chosen call and theme
+  // each call's calendar is made once, in its own box, the first time it's
+  // chosen; switching back and forth only shows or hides it
   useEffect(() => {
-    const el = host.current;
-    if (!near || !el) return;
-    setLoaded(false);
-    if (!inlineBooking(el, event)) return setFailed(true);
-    const mo = new MutationObserver(() => {
-      const f = el.querySelector("iframe");
-      if (f) f.addEventListener("load", () => setLoaded(true), { once: true });
+    const el = hosts.current[event];
+    if (!near || !el || started.current[event]) return;
+    started.current[event] = true;
+    const k = event;
+    inlineBooking(el, k, {
+      ready: () => setReady((r) => ({ ...r, [k]: true })),
+      fail: () => setFailed(true),
     });
-    mo.observe(el, { childList: true, subtree: true });
-    const t = window.setTimeout(() => !el.querySelector("iframe") && setFailed(true), 9000);
-    return () => {
-      mo.disconnect();
-      clearTimeout(t);
-    };
-  }, [near, event, theme]);
+  }, [near, event]);
+
+  const loaded = !!ready[event];
 
   return (
     <div id="book" ref={box} className="scroll-mt-24 overflow-hidden rounded-[28px] border border-line bg-ash/30">
@@ -104,7 +97,7 @@ export function BookingCalendar() {
         </div>
       </div>
 
-      {/* the calendar */}
+      {/* the calendars */}
       <div className="relative min-h-[560px] p-2 md:p-4" data-lenis-prevent>
         {!loaded && !failed ? (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-bone/50">
@@ -119,7 +112,15 @@ export function BookingCalendar() {
             </a>
           </div>
         ) : null}
-        <div ref={host} className={cn("w-full transition-opacity duration-500", loaded ? "opacity-100" : "opacity-0")} />
+        {(Object.keys(CAL_EVENTS) as CalEvent[]).map((k) => (
+          <div
+            key={k}
+            ref={(n) => {
+              hosts.current[k] = n;
+            }}
+            className={cn("w-full transition-opacity duration-500", event === k ? "block" : "hidden", ready[k] && !failed ? "opacity-100" : "opacity-0")}
+          />
+        ))}
       </div>
     </div>
   );
