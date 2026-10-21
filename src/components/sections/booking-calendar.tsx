@@ -106,8 +106,12 @@ export function BookingCalendar() {
       </div>
 
       {/* the calendars */}
-      {/* (dark behind the iframe too, so nothing flashes white while it loads) */}
-      <div className="relative min-h-[560px] bg-ink p-2 [color-scheme:dark] md:p-4 [.light_&]:[color-scheme:light]" data-lenis-prevent>
+      {/* The site declares color-scheme: dark; Cal's page inside the iframe is
+          a light-scheme document. When the two differ, the browser paints the
+          iframe an opaque (white) backdrop whatever Cal's background is, so
+          the frame here takes the light scheme to match: then the page is
+          truly transparent over this dark panel. */}
+      <div className="relative min-h-[560px] bg-ink p-2 [color-scheme:light] md:p-4" data-lenis-prevent>
         {!loaded && !broken ? (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-bone/50">
             <span className="h-2.5 w-2.5 animate-ping rounded-full bg-accent" />
