@@ -1,6 +1,7 @@
 /*
  * Fire sound effects for the hero, synthesised live with Web Audio (no files):
  *
+ *   burn()      the Enter screen burning away from the tap
  *   lidOpen()   the flip-top's metal "clink" as the lid swings open
  *   strike()    the flint wheel's scrape and a scatter of sparks
  *   flame(on)   the lighter catching ("fwoomp") and its soft steady hiss
@@ -198,6 +199,26 @@ export function flame(on: boolean) {
   src.connect(bp).connect(gain).connect(master!);
   src.addEventListener("ended", () => lfo.stop());
   hiss = { src, gain };
+}
+
+/** The Enter screen burning away: a soft rising whoosh with a few crackles. */
+export function burn() {
+  const c = live();
+  if (!c) return;
+  const t = c.currentTime + 0.01;
+  const w = noise(c, t, 1.3);
+  const bp = c.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.Q.value = 0.8;
+  bp.frequency.setValueAtTime(320, t);
+  bp.frequency.exponentialRampToValueAtTime(1900, t + 0.55);
+  bp.frequency.exponentialRampToValueAtTime(700, t + 1.2);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.22, t + 0.35);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.25);
+  w.connect(bp).connect(g).connect(master!);
+  for (let i = 0; i < 8; i++) crackle(c, t + 0.15 + Math.random() * 0.9, 0.5);
 }
 
 /** The title catching fire: a deep whoosh that swells into the music's drop. */

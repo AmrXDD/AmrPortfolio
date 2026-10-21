@@ -330,6 +330,8 @@ void main () {
 export class EmberFluid {
   private gl: WebGL2RenderingContext;
   private programs: Record<string, { prog: WebGLProgram; u: Record<string, WebGLUniformLocation | null> }> = {};
+  private pending: { name: string; prog: WebGLProgram; fs: WebGLShader }[] = [];
+  private parallel: { COMPLETION_STATUS_KHR: number } | null = null;
   private quadVao: WebGLVertexArrayObject;
   private pointVao: WebGLVertexArrayObject;
   private velocity!: DoubleFBO;
@@ -408,13 +410,37 @@ export class EmberFluid {
       emberUpdate: [vs, EMBER_UPDATE],
       emberDraw: [EMBER_VERT, EMBER_FRAG],
     };
+    // Start every compile and link now, but don't ask for the results here:
+    // asking blocks until the driver is done, which froze the Enter screen
+    // while the fire built behind it. ready() collects them across frames.
+    this.parallel = gl.getExtension("KHR_parallel_shader_compile");
     for (const [name, [v, src]] of Object.entries(defs)) {
       const prog = gl.createProgram()!;
+      const fs = this.shader(gl.FRAGMENT_SHADER, src);
       gl.attachShader(prog, typeof v === "string" ? this.shader(gl.VERTEX_SHADER, v) : v);
-      gl.attachShader(prog, this.shader(gl.FRAGMENT_SHADER, src));
+      gl.attachShader(prog, fs);
       gl.bindAttribLocation(prog, 0, "aPosition");
       gl.linkProgram(prog);
-      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(`link ${name}: ${gl.getProgramInfoLog(prog)}`);
+      this.pending.push({ name, prog, fs });
+    }
+
+    this.mask = gl.createTexture()!;
+    this.resize();
+  }
+
+  /**
+   * Resolves once every program has linked, one per frame (or as the driver
+   * finishes them in the background, where it can), so no single long task
+   * blocks the page. Rejects if one failed: the hero then falls back.
+   */
+  async ready() {
+    const gl = this.gl;
+    const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const finish = ({ name, prog, fs }: (typeof this.pending)[number]) => {
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        const why = gl.getShaderParameter(fs, gl.COMPILE_STATUS) ? gl.getProgramInfoLog(prog) : gl.getShaderInfoLog(fs);
+        throw new Error(`link ${name}: ${why}`);
+      }
       const u: Record<string, WebGLUniformLocation | null> = {};
       const n = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS) as number;
       for (let i = 0; i < n; i++) {
@@ -422,10 +448,22 @@ export class EmberFluid {
         if (info) u[info.name] = gl.getUniformLocation(prog, info.name);
       }
       this.programs[name] = { prog, u };
+    };
+    let left = this.pending;
+    for (let polls = 0; left.length; polls++) {
+      await frame();
+      if (this.parallel && polls < 300) {
+        // collect whatever the driver has finished in the background
+        const ext = this.parallel;
+        const done = left.filter((p) => gl.getProgramParameter(p.prog, ext.COMPLETION_STATUS_KHR));
+        done.forEach(finish);
+        left = left.filter((p) => !done.includes(p));
+      } else {
+        // no background compiling: a few at a time, so no one task is long
+        left.splice(0, 4).forEach(finish);
+      }
     }
-
-    this.mask = gl.createTexture()!;
-    this.resize();
+    this.pending = [];
   }
 
   private shader(type: number, src: string) {
@@ -433,7 +471,6 @@ export class EmberFluid {
     const s = gl.createShader(type)!;
     gl.shaderSource(s, src);
     gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
     return s;
   }
 

@@ -2,100 +2,241 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { Volume2, VolumeX } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { Btn } from "@/components/ui/btn";
+import { CITIES, timeIn, useMinute } from "@/components/ui/studio-clocks";
+import * as sfx from "@/lib/fire-sfx";
 import { SITE } from "@/lib/constants";
-import { useCopy } from "@/lib/i18n";
+import { useCopy, useLang } from "@/lib/i18n";
+import { cn } from "@/lib/cn";
+
+/*
+ * The Enter screen: ignition.
+ *
+ * A single ember draws the logo's ring as a glowing filament; the ring
+ * catches and becomes the logo; the wordmark is forged in letter by letter,
+ * hot then cooling; a line says where the studio is, with the cities'
+ * live times; then the choice, sound or silent (the tap is what lets the
+ * site play sound). On the tap the black burns away from the finger like
+ * paper, an ember edge running out to the corners, while the logo glides up
+ * into the top bar: the opening shot of the hero, where a lighter is rising.
+ *
+ * The build-up is CSS animation only (globals.css, "The Enter screen"), so the
+ * main thread stays free while the hero's fire compiles behind it; the burn
+ * is one short-lived 2D canvas. Returning visitors get it compressed (choice
+ * in about half a second); reduced motion gets a plain fade.
+ */
 
 const COPY = {
   en: {
-    hint: "Best experienced with sound",
+    where: "Based in Cairo & Kuwait · working with UK studios",
     withSound: "Enter with sound",
     silent: "Enter silent",
-    recommended: "Recommended: sound on",
-    desktop: "For the best experience, visit on a laptop / desktop",
+    hint: "Best with sound on",
   },
   ar: {
-    hint: "التجربة أجمل مع الصوت",
+    where: "من القاهرة والكويت · أعمل مع استوديوهات في المملكة المتحدة",
     withSound: "الدخول مع الصوت",
     silent: "الدخول بدون صوت",
-    recommended: "يُنصح بتشغيل الصوت",
-    desktop: "للحصول على أفضل تجربة، تصفّح من جهاز لابتوب أو كمبيوتر",
+    hint: "التجربة أجمل مع الصوت",
   },
 };
 
 const EASE = [0.76, 0, 0.24, 1] as const;
-const LOADER_SCALE = 2.6; // how much bigger the logo is on the loader vs its final size
+const SEEN = "amr-intro-seen";
+const MAX_SCALE = 2.6; // the logo group on the loader vs its size in the top bar
+const WORD = `${SITE.name}/studio`;
+
+/** The burn: the black backdrop burns away from (ox, oy) like paper. */
+function burnAway(canvas: HTMLCanvasElement, ox: number, oy: number, onDone: () => void) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return onDone();
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const dpr = Math.min(W < 768 ? 1 : 1.5, window.devicePixelRatio || 1);
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const far = Math.max(Math.hypot(ox, oy), Math.hypot(W - ox, oy), Math.hypot(ox, H - oy), Math.hypot(W - ox, H - oy)) + 90;
+  const ph = [Math.random() * 6.3, Math.random() * 6.3, Math.random() * 6.3];
+  // a ragged edge: a few slow waves round the circle, drifting as it burns
+  const edge = (a: number, R: number, t: number) =>
+    R * (1 + 0.1 * Math.sin(a * 3 + ph[0] + t * 2) + 0.06 * Math.sin(a * 7 + ph[1] - t * 3) + 0.035 * Math.sin(a * 13 + ph[2] + t * 5));
+  const N = 96;
+  const D = 1150;
+  const sparks: { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number }[] = [];
+  const t0 = performance.now();
+  let last = t0;
+  let raf = 0;
+
+  const frame = (now: number) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const k = Math.min(1, (now - t0) / D);
+    // it catches slowly, then runs
+    const e = k * k * (3 - 2 * k);
+    const R = 4 + e * far;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, W, H);
+    if (k < 1) {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const a = (i / N) * Math.PI * 2;
+        const r = edge(a, R, k);
+        const x = ox + Math.cos(a) * r;
+        const y = oy + Math.sin(a) * r;
+        if (i) ctx.lineTo(x, y);
+        else ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+      // char, just beyond the edge
+      ctx.strokeStyle = "rgba(74,26,8,0.92)";
+      ctx.lineWidth = 28;
+      ctx.stroke();
+      // the hole
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fill();
+      // the burning edge, glowing over both sides
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = "rgba(255,77,31,0.32)";
+      ctx.lineWidth = 18;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,138,60,0.75)";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,232,205,0.95)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      // embers lift off the edge
+      for (let i = 0; i < 5 && sparks.length < 140; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = edge(a, R, k);
+        const sp = 0.6 + Math.random() * 1.6;
+        sparks.push({ x: ox + Math.cos(a) * r, y: oy + Math.sin(a) * r, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.8, life: 0, max: 0.4 + Math.random() * 0.6, r: 0.7 + Math.random() * 1.6 });
+      }
+    }
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      s.life += dt;
+      if (s.life >= s.max) {
+        sparks.splice(i, 1);
+        continue;
+      }
+      const f = dt * 60;
+      s.x += s.vx * f;
+      s.y += s.vy * f;
+      s.vy -= 0.02 * f;
+      const q = 1 - s.life / s.max;
+      ctx.fillStyle = `rgba(255,${150 + Math.round(80 * q)},90,${0.9 * q})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r * q, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (k < 1 || sparks.length) raf = requestAnimationFrame(frame);
+    else onDone();
+  };
+  raf = requestAnimationFrame(frame);
+  return () => cancelAnimationFrame(raf);
+}
 
 export function Preloader() {
   const c = useCopy(COPY);
-  const [count, setCount] = useState(0);
-  const [phase, setPhase] = useState<"count" | "ready" | "exit">("count");
+  const ar = useLang().lang === "ar";
+  const now = useMinute();
+  const [phase, setPhase] = useState<"build" | "ready" | "exit">("build");
   const [mounted, setMounted] = useState(true);
-  // vertical offset (from viewport centre) the logo glides to on exit
-  const [targetY, setTargetY] = useState(0);
-  const [wordW, setWordW] = useState(0);
-  const wordRef = useRef<HTMLSpanElement>(null);
+  const [fast, setFast] = useState(false);
+  const [reduce, setReduce] = useState(false);
+  // the logo group: its fitted scale on this screen, and where it glides to
+  const [scale, setScale] = useState(MAX_SCALE);
+  // while the ring is drawn it sits centred; the wordmark then unrolls out of it
+  const [shift, setShift] = useState(0);
+  const [target, setTarget] = useState({ x: 0, y: 0 });
+  const groupRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const lockedRef = useRef(false);
-
-  // Measure the wordmark's natural width so we can wipe it open cleanly.
-  useLayoutEffect(() => {
-    if (wordRef.current) setWordW(wordRef.current.scrollWidth || wordRef.current.offsetWidth);
-  }, []);
+  const stopBurn = useRef<(() => void) | void>(undefined);
 
   // Lock scroll immediately, and keep it locked until the visitor chooses.
   useEffect(() => {
     document.documentElement.classList.add("preloading");
     (window as unknown as { __lenis?: { stop?: () => void } }).__lenis?.stop?.();
     lockedRef.current = true;
-    return () => unlock();
+    return () => {
+      unlock();
+      stopBurn.current?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Count 00 → 100, then reveal the wordmark + sound choice.
-  useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const dur = reduce ? 500 : 1900;
-    const start = performance.now();
-    let raf = 0;
-    const tick = (t: number) => {
-      const e = Math.min(1, (t - start) / dur);
-      setCount(Math.round((1 - Math.pow(1 - e, 3)) * 100));
-      if (e < 1) raf = requestAnimationFrame(tick);
-      else setPhase((p) => (p === "count" ? "ready" : p));
+  // Fit the logo group to the screen (it must never clip on a phone), once
+  // the mono face has loaded and the wordmark has its real width.
+  useLayoutEffect(() => {
+    const fit = () => {
+      const el = groupRef.current;
+      if (!el) return;
+      const w = el.offsetWidth;
+      if (!w) return;
+      setScale(Math.min(MAX_SCALE, (window.innerWidth - 48) / w));
+      setShift((w - 26) / 2);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    fit();
+    document.fonts?.ready.then(fit);
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
   }, []);
 
-  // Safety: never get stuck on the counter if rAF is throttled.
+  // The build-up runs in CSS; the choice becomes tappable when it has landed.
   useEffect(() => {
+    const r = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let seen = false;
+    try {
+      seen = localStorage.getItem(SEEN) === "1";
+    } catch {}
+    setReduce(r);
+    setFast(seen);
     const t = setTimeout(() => {
-      setCount(100);
-      setPhase((p) => (p === "count" ? "ready" : p));
-    }, 3000);
+      setPhase((p) => (p === "build" ? "ready" : p));
+    }, r ? 300 : seen ? 520 : 1700);
     return () => clearTimeout(t);
   }, []);
 
-  // NO auto-enter and NO auto-sound: the loader waits indefinitely for a click.
-
-  function enter(sound: boolean) {
+  function enter(sound: boolean, from: HTMLElement | null) {
     if (phase === "exit") return;
-    // Both the loader group and the top-bar group are horizontally centred, so
-    // we only need the vertical glide: measure the top-bar brand row's centre.
-    const tc = document.querySelector('a[aria-label="Back to top"]') as HTMLElement | null;
-    if (tc) {
-      const r = tc.getBoundingClientRect();
-      setTargetY(r.top + r.height / 2 - window.innerHeight / 2);
-    } else {
-      setTargetY(-(window.innerHeight / 2 - 34));
+    // the glide: from the logo group's centre to the top-bar brand's centre
+    // (scaling about its centre, so the centres are what must meet)
+    const g = groupRef.current?.getBoundingClientRect();
+    const tc = (document.querySelector('a[aria-label="Back to top"]') as HTMLElement | null)?.getBoundingClientRect();
+    if (g) {
+      const gx = g.left + g.width / 2;
+      const gy = g.top + g.height / 2;
+      setTarget(tc ? { x: tc.left + tc.width / 2 - gx, y: tc.top + tc.height / 2 - gy } : { x: 0, y: 34 - gy });
     }
+    // inside the tap: this is what lets the music and the fire's sounds play
     window.dispatchEvent(new CustomEvent("ambient:start", { detail: { on: sound } }));
+    // (the lighter strikes its own flint a moment later; the tap only burns)
+    if (sound) sfx.burn();
+    try {
+      localStorage.setItem(SEEN, "1");
+    } catch {}
     unlock();
     setPhase("exit");
+    // the black burns away from the finger
+    const canvas = canvasRef.current;
+    if (canvas && !reduce) {
+      const r = from?.getBoundingClientRect();
+      const ox = r ? r.left + r.width / 2 : window.innerWidth / 2;
+      const oy = r ? r.top + r.height / 2 : window.innerHeight * 0.66;
+      stopBurn.current = burnAway(canvas, ox, oy, () => {});
+    }
     // Reveal the top-bar logo exactly when the glide lands (matches the 1.05s
-    // transition), then unmount the loader just after so the handoff is seamless.
+    // transition), then unmount the loader once the burn has cleared.
     setTimeout(() => window.dispatchEvent(new CustomEvent("brand:reveal")), 1050);
-    setTimeout(() => setMounted(false), 1300);
+    setTimeout(() => setMounted(false), 1500);
   }
 
   function unlock() {
@@ -109,90 +250,102 @@ export function Preloader() {
   if (!mounted) return null;
 
   const exiting = phase === "exit";
-  const showWord = phase !== "count";
 
   return (
-    <div className="fixed inset-0 z-[200] overflow-hidden" style={{ pointerEvents: exiting ? "none" : "auto" }}>
-      {/* Black backdrop that fades away as we glide out */}
+    <div
+      className={cn("intro fixed inset-0 z-[200] overflow-hidden", fast && "fast", exiting && "exiting")}
+      style={{ pointerEvents: exiting ? "none" : "auto" }}
+    >
+      {/* the black (it burns away on the tap; with reduced motion it fades) */}
       <motion.div
         className="absolute inset-0 bg-black"
-        animate={{ opacity: exiting ? 0 : 1 }}
-        transition={{ duration: 0.9, ease: EASE, delay: exiting ? 0.2 : 0 }}
+        initial={false}
+        animate={{ opacity: exiting && reduce ? 0 : 1 }}
+        transition={{ duration: 0.7, ease: EASE }}
+        style={{ visibility: exiting && !reduce ? "hidden" : "visible" }}
       />
+      <canvas ref={canvasRef} aria-hidden className="absolute inset-0 h-full w-full" />
 
-      {/* Centre stage: the logo + wordmark group, centred, that glides up to
-          its resting place on the top bar. Only the group is centred, so both
-          loader and top-bar align horizontally and we only move vertically. */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Centre stage: the logo + wordmark, which glides up into the top bar */}
+      <div className="absolute inset-x-0 top-[38%] flex justify-center md:top-[40%]">
         <motion.div
           dir="ltr"
           className="flex items-center"
-          animate={{ y: exiting ? targetY : 0, scale: exiting ? 1 : LOADER_SCALE }}
+          initial={false}
+          animate={{ x: exiting ? target.x : 0, y: exiting ? target.y : 0, scale: exiting ? 1 : scale }}
           transition={{ duration: 1.05, ease: EASE }}
         >
-          <Logo size={26} />
-          {/* wordmark wipes open from the logo's edge once loaded, then rides
-              along to its resting spot next to the top-bar logo */}
-          <motion.div
-            className="overflow-hidden"
-            initial={false}
-            animate={{ width: showWord ? wordW : 0, marginLeft: showWord ? 10 : 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: showWord && !exiting ? 0.15 : 0 }}
-          >
-            <span
-              ref={wordRef}
-              className="text-mono block w-max whitespace-nowrap text-[11px] uppercase tracking-[0.24em] text-[#f5f5f5]"
-            >
-              {SITE.name}/studio
+          <div ref={groupRef} className="intro-group flex items-center" style={{ ["--shift" as string]: `${shift}px` }}>
+            <span className="relative block h-[26px] w-[26px]">
+              <span aria-hidden className="intro-flash pointer-events-none absolute -inset-6 rounded-full bg-[radial-gradient(circle,rgba(255,150,80,0.9),rgba(255,77,31,0.35)_40%,transparent_70%)]" />
+              <span className="intro-logo block">
+                <Logo size={26} />
+              </span>
+              {/* the filament: an ember runs once round the ring with a glowing
+                  tail, then the ring catches (transform and opacity only, so it
+                  stays smooth however busy the page is underneath) */}
+              <span aria-hidden className="intro-filament pointer-events-none absolute inset-0">
+                <span className="intro-track absolute inset-0 rounded-full" />
+                <span className="intro-orbit absolute inset-0">
+                  <span className="intro-tail absolute inset-0 rounded-full" />
+                  <span className="absolute left-1/2 top-[1.5px] h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgba(255,120,40,0.5)]" />
+                  <span className="absolute left-1/2 top-[1.5px] h-[3px] w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fff4e6]" />
+                </span>
+              </span>
             </span>
-          </motion.div>
+            <span className="ms-[10px] block whitespace-nowrap text-mono text-[11px] uppercase tracking-[0.24em] text-[#f5f5f5]">
+              <span className="sr-only">{WORD}</span>
+              {[...WORD].map((ch, i) => (
+                <span key={i} aria-hidden data-ch={ch} className="intro-ch relative inline-block" style={{ ["--i" as string]: i }}>
+                  {ch}
+                </span>
+              ))}
+            </span>
+          </div>
         </motion.div>
       </div>
 
-      {/* Sound choice — appears once loaded, fades on exit */}
-      <motion.div
-        className="absolute inset-x-0 top-[58%] flex flex-col items-center gap-4"
-        animate={{ opacity: phase === "ready" ? 1 : 0, y: phase === "ready" ? 0 : 14 }}
-        transition={{ duration: 0.55, ease: EASE, delay: phase === "ready" ? 0.55 : 0 }}
+      {/* where, when, and the choice */}
+      <div
+        className="intro-ui absolute inset-x-0 top-[50%] flex flex-col items-center px-6 text-center md:top-[52%]"
         style={{ pointerEvents: phase === "ready" ? "auto" : "none" }}
       >
-        <span className="text-mono text-[10px] uppercase tracking-[0.34em] text-[#F5F5F5]/45">
-          {c.hint}
-        </span>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => enter(true)}
-            className="rounded-full bg-[#F5F5F5] px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#000] transition-transform duration-300 hover:scale-[1.04]"
+        <p className="intro-rise max-w-[320px] text-balance text-mono text-[10px] uppercase leading-relaxed tracking-[0.2em] text-[#F5F5F5]/55 sm:max-w-none" style={{ ["--d" as string]: "1.42s" }}>
+          {c.where}
+        </p>
+        <p dir="ltr" className="intro-rise mt-2.5 text-mono text-[10px] uppercase tracking-[0.16em] text-[#F5F5F5]/35" style={{ ["--d" as string]: "1.52s" }}>
+          {CITIES.map((city, i) => (
+            <span key={city.tz}>
+              {i ? <span className="mx-2 text-[#FF4D1F]/70">·</span> : null}
+              {ar ? city.ar : city.en} <span className="tabular-nums text-[#F5F5F5]/70">{now ? timeIn(city.tz, now) : "--:--"}</span>
+            </span>
+          ))}
+        </p>
+
+        <div className="intro-rise mt-8 flex w-full max-w-[300px] flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center" style={{ ["--d" as string]: "1.62s" }}>
+          <Btn
+            variant="ember"
+            magnetic={false}
+            className="justify-between"
+            icon={<Volume2 size={17} strokeWidth={1.8} className="rtl:-scale-x-100" />}
+            onClick={(e) => enter(true, e.currentTarget)}
           >
             {c.withSound}
-            <span className="ms-2 text-[#FF4D1F]">●</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => enter(false)}
-            className="rounded-full border border-[#F5F5F5]/25 px-6 py-3 text-mono text-[11px] uppercase tracking-[0.18em] text-[#F5F5F5]/70 transition-colors duration-300 hover:border-[#F5F5F5]/60 hover:text-[#F5F5F5]"
+          </Btn>
+          <Btn
+            variant="ghost"
+            magnetic={false}
+            className="justify-between !bg-transparent ![--bone-rgb:245_245_245]"
+            icon={<VolumeX size={17} strokeWidth={1.8} className="rtl:-scale-x-100" />}
+            onClick={(e) => enter(false, e.currentTarget)}
           >
             {c.silent}
-          </button>
+          </Btn>
         </div>
-        <span className="text-mono text-[9px] uppercase tracking-[0.3em] text-[#F5F5F5]/30">
-          {c.recommended}
+        <span className="intro-rise mt-4 text-mono text-[9px] uppercase tracking-[0.3em] text-[#F5F5F5]/35" style={{ ["--d" as string]: "1.72s" }}>
+          {c.hint}
         </span>
-        <span className="mt-1 max-w-[280px] text-center text-mono text-[9px] uppercase leading-relaxed tracking-[0.22em] text-[#FF4D1F]/70">
-          {c.desktop}
-        </span>
-      </motion.div>
-
-      {/* Loading percentage */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#F5F5F5]/60 md:bottom-10"
-        style={{ fontFamily: "var(--font-mono)" }}
-        animate={{ opacity: phase === "count" ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <span className="text-[11px] uppercase tracking-[0.4em] tabular-nums">{String(count).padStart(2, "0")}</span>
-      </motion.div>
+      </div>
     </div>
   );
 }

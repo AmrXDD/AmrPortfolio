@@ -137,12 +137,21 @@ export function Hero() {
       await document.fonts?.ready;
       if (!alive) return;
       // first choice: the fire
+      let built: EmberFluid | null = null;
       try {
-        const e = new EmberFluid(canvas, host, [
+        built = new EmberFluid(canvas, host, [
           { el: lines[0], heat: 0.85 },
           { el: lines[1], heat: 0.7 },
           { el: lines[2], heat: 1, bar: true },
         ]);
+        // its shaders finish compiling a frame at a time (never one long
+        // freeze while the Enter screen is playing)
+        await built.ready();
+        if (!alive) {
+          built.dispose();
+          return;
+        }
+        const e = built;
         engine = {
           kind: "ember",
           begin: () => {},
@@ -157,6 +166,7 @@ export function Hero() {
           scroll: (p) => e.scroll(p),
         };
       } catch {
+        built?.dispose();
         // fallback: the particle headline, for good (on a fresh canvas: the
         // failed attempt may have claimed this one for WebGL)
         setFallback(true);
@@ -208,7 +218,8 @@ export function Hero() {
     };
 
     const ric = (window as unknown as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    // the first build waits for idle time behind the Enter screen; a rebuild
+    // the first build waits for idle time behind the Enter screen (which
+    // animates on the compositor, so this work can't stutter it); a rebuild
     // after a language/theme swap starts straight away
     const idle = (cb: () => void) => (!firstBuild.current ? setTimeout(cb, 0) : ric ? ric(cb, { timeout: 800 }) : setTimeout(cb, 120));
     firstBuild.current = false;
