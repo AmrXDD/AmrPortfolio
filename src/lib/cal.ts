@@ -7,6 +7,12 @@
 
 export const CAL_USER = "amrstudios";
 export const CAL_URL = `https://cal.com/${CAL_USER}`;
+/** The bookable calls (their Cal.com event links; change here if renamed). */
+export const CAL_EVENTS = {
+  short: { link: `${CAL_USER}/15min`, minutes: 15 },
+  long: { link: `${CAL_USER}/30min`, minutes: 30 },
+} as const;
+export type CalEvent = keyof typeof CAL_EVENTS;
 const EMBED_SRC = "https://app.cal.com/embed/embed.js";
 const BRAND = "#FF4D1F";
 
@@ -69,6 +75,30 @@ export function warmBooking() {
   }
 }
 
+const theme = () => (document.documentElement.classList.contains("light") ? "light" : "dark");
+const ui = (w: Win) =>
+  w.Cal!("ui", {
+    theme: theme(),
+    hideEventTypeDetails: false,
+    layout: "month_view",
+    styles: { branding: { brandColor: BRAND } },
+    cssVarsPerTheme: { light: { "cal-brand": BRAND }, dark: { "cal-brand": BRAND } },
+  });
+
+/**
+ * The calendar itself, inline in the page (month view, the call's details
+ * beside it, times on the right). Re-run it to switch the call.
+ */
+export function inlineBooking(el: HTMLElement, event: CalEvent) {
+  const w = window as Win;
+  if (state === "failed") return false;
+  load(w);
+  el.innerHTML = "";
+  ui(w);
+  w.Cal!("inline", { elementOrSelector: el, calLink: CAL_EVENTS[event].link, layout: "month_view", config: { layout: "month_view", theme: theme() } });
+  return true;
+}
+
 /**
  * Open the booking modal. Returns false when the embed is unavailable, so the
  * caller lets its link open Cal.com instead.
@@ -81,14 +111,8 @@ export function openBooking(): boolean {
   if (state === "loading" && queued) return true;
   load(w);
   queued = state === "loading";
-  const theme = document.documentElement.classList.contains("light") ? "light" : "dark";
-  w.Cal!("ui", {
-    theme,
-    hideEventTypeDetails: false,
-    layout: "month_view",
-    styles: { branding: { brandColor: BRAND } },
-    cssVarsPerTheme: { light: { "cal-brand": BRAND }, dark: { "cal-brand": BRAND } },
-  });
-  w.Cal!("modal", { calLink: CAL_USER, config: { layout: "month_view", theme } });
+  ui(w);
+  // straight to the calendar of the 30-minute call (not the profile's list)
+  w.Cal!("modal", { calLink: CAL_EVENTS.long.link, config: { layout: "month_view", theme: theme() } });
   return true;
 }

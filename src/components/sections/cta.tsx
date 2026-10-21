@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
 import { useRef } from "react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Reveal } from "@/components/ui/reveal";
@@ -10,8 +10,8 @@ import { BorderGlow } from "@/components/ui/border-glow";
 import { Magnetic } from "@/components/ui/magnetic";
 import { EmailCTA } from "@/components/ui/wa-cta";
 import { Btn } from "@/components/ui/btn";
-import { BookCall } from "@/components/ui/book-call";
 import { StudioClocks } from "@/components/ui/studio-clocks";
+import { BookingCalendar } from "@/components/sections/booking-calendar";
 import { CAL_URL, openBooking, warmBooking } from "@/lib/cal";
 import { ContactForm } from "@/components/sections/contact-form";
 import { useCopy, useLang } from "@/lib/i18n";
@@ -198,7 +198,9 @@ export function CTA() {
               <p className="mt-7 text-mono text-[10px] uppercase tracking-[0.22em] text-bone/45">{c.overlap}</p>
               <StudioClocks ar={ar} className="mt-3" />
               <div className="mt-7 flex flex-wrap items-center gap-3">
-                <BookCall label={c.book} />
+                <Btn href="#book" variant="ember" icon={<CalendarDays size={16} strokeWidth={1.8} />} cursorLabel={ar ? "احجز" : "Book"}>
+                  {c.book}
+                </Btn>
                 <Btn href={waLink(c.waMsg)} target="_blank" rel="noreferrer" variant="ghost" cursorLabel="WhatsApp">
                   {c.openWa}
                 </Btn>
@@ -206,6 +208,11 @@ export function CTA() {
               <EmailCTA className="mt-6 inline-block text-bone/70" />
             </div>
           </Reveal>
+        </div>
+
+        {/* the calendar itself: book a call without leaving the page */}
+        <div className="mt-14 md:mt-20">
+          <BookingCalendar />
         </div>
 
         {/* Inquiry form — budget · service · reason → Supabase + Resend */}
