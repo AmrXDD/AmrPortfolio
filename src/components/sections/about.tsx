@@ -7,6 +7,7 @@ import { RevealWords } from "@/components/ui/reveal";
 import { PROJECTS, SITE, SITE_AR } from "@/lib/constants";
 import { useCopy, useLang } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/use-mobile";
+import { Headshot } from "@/components/sections/headshot";
 
 /*
  * About · "The Slate". The headline says software is built the way a
@@ -294,6 +295,8 @@ export function About() {
           <div className="col-span-12 md:col-span-4">
             <Eyebrow index="02">{c.eyebrow}</Eyebrow>
             <p className="mt-6 text-mono text-[11px] uppercase tracking-[0.22em] text-bone/50">{c.label}</p>
+            {/* the director's headshot */}
+            <Headshot className="mt-10 md:mb-24 md:ms-0" />
           </div>
           <div className="col-span-12 md:col-span-8">
             <h2 key={lang} className="text-display size-h2 text-bone">

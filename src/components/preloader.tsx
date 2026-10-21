@@ -47,6 +47,10 @@ const EASE = [0.76, 0, 0.24, 1] as const;
 const SEEN = "amr-intro-seen";
 const MAX_SCALE = 2.6; // the logo group on the loader vs its size in the top bar
 const WORD = `${SITE.name}/studio`;
+// the build-up's pace (CSS --t): a first visit, and a return (same story,
+// a little quicker, never skipped)
+const FIRST = 1.3;
+const FAST = 0.85;
 
 /** The burn: the black backdrop burns away from (ox, oy) like paper. */
 function burnAway(canvas: HTMLCanvasElement, ox: number, oy: number, onDone: () => void) {
@@ -54,7 +58,9 @@ function burnAway(canvas: HTMLCanvasElement, ox: number, oy: number, onDone: () 
   if (!ctx) return onDone();
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const dpr = Math.min(W < 768 ? 1 : 1.5, window.devicePixelRatio || 1);
+  // fire edges don't need density: 1x, less on big screens (a full-screen
+  // canvas redrawn every frame while the hero starts up underneath)
+  const dpr = W > 1200 ? 0.75 : 1;
   canvas.width = Math.round(W * dpr);
   canvas.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -111,7 +117,7 @@ function burnAway(canvas: HTMLCanvasElement, ox: number, oy: number, onDone: () 
       ctx.lineWidth = 1.6;
       ctx.stroke();
       // embers lift off the edge
-      for (let i = 0; i < 5 && sparks.length < 140; i++) {
+      for (let i = 0; i < 3 && sparks.length < 90; i++) {
         const a = Math.random() * Math.PI * 2;
         const r = edge(a, R, k);
         const sp = 0.6 + Math.random() * 1.6;
@@ -201,7 +207,7 @@ export function Preloader() {
     setFast(seen);
     const t = setTimeout(() => {
       setPhase((p) => (p === "build" ? "ready" : p));
-    }, r ? 300 : seen ? 520 : 1700);
+    }, r ? 300 : Math.round((1.62 * (seen ? FAST : FIRST) + 0.45) * 1000));
     return () => clearTimeout(t);
   }, []);
 
@@ -268,12 +274,15 @@ export function Preloader() {
 
       {/* Centre stage: the logo + wordmark, which glides up into the top bar */}
       <div className="absolute inset-x-0 top-[38%] flex justify-center md:top-[40%]">
-        <motion.div
+        {/* the glide is a CSS transition: it runs on the compositor, smooth
+            even while the hero starts up on the main thread */}
+        <div
           dir="ltr"
-          className="flex items-center"
-          initial={false}
-          animate={{ x: exiting ? target.x : 0, y: exiting ? target.y : 0, scale: exiting ? 1 : scale }}
-          transition={{ duration: 1.05, ease: EASE }}
+          className="flex items-center will-change-transform"
+          style={{
+            transform: exiting ? `translate3d(${target.x}px, ${target.y}px, 0) scale(1)` : `translate3d(0, 0, 0) scale(${scale})`,
+            transition: exiting ? "transform 1.05s cubic-bezier(0.76, 0, 0.24, 1)" : "none",
+          }}
         >
           <div ref={groupRef} className="intro-group flex items-center" style={{ ["--shift" as string]: `${shift}px` }}>
             <span className="relative block h-[26px] w-[26px]">
@@ -302,7 +311,7 @@ export function Preloader() {
               ))}
             </span>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* where, when, and the choice */}

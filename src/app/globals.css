@@ -136,8 +136,8 @@ section[id] { scroll-margin-top: 88px; }
 /* ── The Enter screen (src/components/preloader.tsx) ─────────────────────
    All CSS, so the main thread stays free while the hero's fire compiles.
    --t scales every time: 1 on a first visit, compressed for returning ones. */
-.intro { --t: 1; }
-.intro.fast { --t: 0.3; }
+.intro { --t: 1.3; }
+.intro.fast { --t: 0.85; }
 /* an ember runs once round the ring, its tail glowing behind it */
 .intro-track {
   background: rgba(255, 255, 255, 0.07);
@@ -222,6 +222,68 @@ section[id] { scroll-margin-top: 88px; }
     animation-delay: 0s !important;
   }
   .intro-flash { display: none; }
+}
+
+/* ── The headshot (src/components/sections/headshot.tsx) ─────────────── */
+.hs-tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hs-sun {
+  background: radial-gradient(circle, rgba(255, 120, 50, 0.42), rgba(255, 77, 31, 0.16) 42%, rgba(124, 58, 237, 0.08) 62%, transparent 72%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.7);
+  transition: opacity 1.4s ease 0.2s, transform 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+}
+.hs.in .hs-sun { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.hs-ring {
+  background: conic-gradient(from 0deg, #ff4d1f, #7c3aed, #22d3ee, #ff4d1f);
+  -webkit-mask: radial-gradient(circle, transparent 68.5%, #000 69%, #000 70.5%, transparent 71%);
+  mask: radial-gradient(circle, transparent 68.5%, #000 69%, #000 70.5%, transparent 71%);
+  opacity: 0;
+  transition: opacity 1.2s ease 0.5s;
+  animation: hs-spin 18s linear infinite;
+  animation-play-state: paused;
+}
+@keyframes hs-spin { to { transform: rotate(360deg); } }
+.hs.in .hs-ring { opacity: 0.85; }
+.hs.vis .hs-ring { animation-play-state: running; }
+/* each slice slides in from its side; with a mouse they ripple apart */
+.hs-slice {
+  background-repeat: no-repeat;
+  opacity: 0;
+  transform: translate3d(calc(var(--side) * 36%), 0, 0);
+  transition: transform 1.15s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i) * 65ms), opacity 0.6s ease calc(var(--i) * 65ms);
+}
+.hs.in .hs-slice {
+  opacity: 1;
+  transform: translate3d(calc(var(--sx, 0) * var(--side) * 1px), 0, 0);
+}
+.hs-scan { opacity: 0; transform: translateY(0); }
+.hs.in .hs-scan { animation: hs-scan 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards; }
+@keyframes hs-scan {
+  0% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(100%); }
+}
+.hs-glint {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.28) 50%, transparent 58%);
+  background-size: 260% 100%;
+  background-position: 150% 0;
+  pointer-events: none;
+}
+.hs.in .hs-glint { animation: hs-glint 1.8s ease 1.1s 1 both; }
+.hs:hover .hs-glint { animation: hs-glint 1.4s ease 0s 1 both; }
+@keyframes hs-glint {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-slice, .hs-sun { transition: none; }
+  .hs-ring, .hs-scan, .hs-glint { animation: none !important; }
+  .hs-tilt { transform: none; }
 }
 
 /* the hero's scroll cue: a light running down a hairline */
